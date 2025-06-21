@@ -20,6 +20,7 @@ app.use(cors({
     'http://localhost:5174', // admin panel (your current Vite port)
     'https://pawn-shop-frontend.vercel.app', // deployed frontend
     'https://pawn-shop.vercel.app', // alternative frontend URL
+    'https://pawn-shop-git-local-host-api-used-aditya200410s-projects.vercel.app', // new Vercel frontend URL
     process.env.FRONTEND_URL // from environment variable
   ].filter(Boolean), // Remove undefined values
   credentials: true,
