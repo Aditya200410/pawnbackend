@@ -125,4 +125,4 @@ router.put("/:id", (req, res) => {
   res.json({ message: "Product updated", product: updatedProduct });
 });
 
-module.exports = router; 
+module.exports = router;
