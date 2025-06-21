@@ -18,21 +18,38 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 
-// MongoDB Connection with improved options
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/pawn-shop', {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-    serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
-    socketTimeoutMS: 45000, // Close sockets after 45s of inactivity
-    family: 4 // Use IPv4, skip trying IPv6
-})
-.then(() => {
-    console.log('Connected to MongoDB successfully');
-})
-.catch((err) => {
-    console.error('MongoDB connection error:', err);
-    process.exit(1); // Exit if cannot connect to database
-});
+// MongoDB Connection with improved error handling
+const connectDB = async () => {
+    try {
+        const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/pawn-shop';
+        
+        // Validate MongoDB URI format
+        if (!mongoURI.startsWith('mongodb://') && !mongoURI.startsWith('mongodb+srv://')) {
+            throw new Error('Invalid MongoDB URI format. Must start with "mongodb://" or "mongodb+srv://"');
+        }
+        
+        console.log('Attempting to connect to MongoDB...');
+        console.log('MongoDB URI:', mongoURI.replace(/\/\/[^:]+:[^@]+@/, '//***:***@')); // Hide credentials in logs
+        
+        await mongoose.connect(mongoURI, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true,
+            serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
+            socketTimeoutMS: 45000, // Close sockets after 45s of inactivity
+            family: 4 // Use IPv4, skip trying IPv6
+        });
+        
+        console.log('Connected to MongoDB successfully');
+    } catch (err) {
+        console.error('MongoDB connection error:', err.message);
+        console.error('Please check your MONGODB_URI in the .env file');
+        console.error('Expected format: mongodb://localhost:27017/pawn-shop or mongodb+srv://username:password@cluster.mongodb.net/pawn-shop');
+        process.exit(1); // Exit if cannot connect to database
+    }
+};
+
+// Initialize database connection
+connectDB();
 
 // Handle MongoDB connection errors after initial connection
 mongoose.connection.on('error', err => {
