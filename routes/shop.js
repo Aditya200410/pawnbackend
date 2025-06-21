@@ -8,11 +8,15 @@ const dataFilePath = path.join(__dirname, "../data/shop.json");
 
 // Helper to read products from JSON file
 function readProducts() {
+  console.log('Reading products from:', dataFilePath);
   if (!fs.existsSync(dataFilePath)) {
+    console.log('Shop.json file does not exist, creating empty array');
     fs.writeFileSync(dataFilePath, "[]", "utf-8");
   }
   const data = fs.readFileSync(dataFilePath, "utf-8");
-  return JSON.parse(data);
+  const products = JSON.parse(data);
+  console.log(`Loaded ${products.length} products from shop.json`);
+  return products;
 }
 
 // Helper to write products to JSON file
@@ -22,8 +26,15 @@ function writeProducts(products) {
 
 // Get all products
 router.get("/", (req, res) => {
-  const products = readProducts();
-  res.json(products);
+  try {
+    console.log('GET /api/shop - Fetching all products');
+    const products = readProducts();
+    console.log(`Returning ${products.length} products`);
+    res.json(products);
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    res.status(500).json({ error: 'Failed to fetch products', details: error.message });
+  }
 });
 
 // Add a new product
@@ -126,3 +137,4 @@ router.put("/:id", (req, res) => {
 });
 
 module.exports = router;
+ 
