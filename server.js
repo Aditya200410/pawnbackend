@@ -13,6 +13,7 @@ const categoryRoutes = require('./routes/category');
 const featuredProductRoutes = require('./routes/featuredProduct');
 const bestSellerRoutes = require('./routes/bestSeller');
 const cartRoutes = require('./routes/cart');
+const fs = require('fs');
 const app = express();
 
 // CORS configuration - Allow specific origins for production
@@ -54,7 +55,7 @@ app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', origin);
   }
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Content-Length');
   res.header('Access-Control-Allow-Credentials', 'true');
   
   // Handle preflight requests
@@ -70,6 +71,13 @@ app.use(cookieParser());
 
 // Serve static files from the data directory
 app.use('/pawnbackend/data', express.static(path.join(__dirname, 'data')));
+
+// Ensure the upload directory exists on startup (for Render and local)
+const userProductDir = path.join(__dirname, 'data/userproduct');
+if (!fs.existsSync(userProductDir)) {
+  fs.mkdirSync(userProductDir, { recursive: true });
+  console.log('Created userproduct directory:', userProductDir);
+}
 
 // MongoDB Connection URL from environment variable
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/pawn";

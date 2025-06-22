@@ -2,9 +2,52 @@ const express = require("express");
 const router = express.Router();
 const fs = require("fs");
 const path = require("path");
+const multer = require("multer");
 
 // Path to JSON file where products are stored
 const dataFilePath = path.join(__dirname, "../data/shop.json");
+const userProductDir = path.join(__dirname, "../data/userproduct");
+
+// Ensure userproduct directory exists
+if (!fs.existsSync(userProductDir)) {
+  fs.mkdirSync(userProductDir, { recursive: true });
+}
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, userProductDir);
+  },
+  filename: function (req, file, cb) {
+    // Generate unique filename with timestamp
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname);
+    cb(null, file.fieldname + '-' + uniqueSuffix + ext);
+  }
+});
+
+const upload = multer({ 
+  storage: storage,
+  fileFilter: function (req, file, cb) {
+    // Accept only image files
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed!'), false);
+    }
+  },
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  }
+});
+
+// Upload multiple images (main image + 3 additional images)
+const uploadImages = upload.fields([
+  { name: 'mainImage', maxCount: 1 },
+  { name: 'image1', maxCount: 1 },
+  { name: 'image2', maxCount: 1 },
+  { name: 'image3', maxCount: 1 }
+]);
 
 // Helper to read products from JSON file
 function readProducts() {
@@ -37,7 +80,112 @@ router.get("/", (req, res) => {
   }
 });
 
-// Add a new product
+// Upload images and create product
+router.post("/upload", (req, res, next) => {
+  uploadImages(req, res, function(err) {
+    if (err instanceof multer.MulterError) {
+      console.error('Multer error:', err);
+      return res.status(400).json({ error: 'File upload error', details: err.message });
+    } else if (err) {
+      console.error('Other error:', err);
+      return res.status(400).json({ error: 'File upload error', details: err.message });
+    }
+    
+    // If no error, proceed with the upload logic
+    try {
+      console.log('POST /api/shop/upload - Uploading images and creating product');
+      console.log('Request body:', req.body);
+      console.log('Request files:', req.files);
+      
+      const files = req.files;
+      const productData = req.body;
+      
+      // Validate required fields
+      const requiredFields = [
+        "name",
+        "price",
+        "regularPrice",
+        "category",
+        "description"
+      ];
+
+      for (const field of requiredFields) {
+        if (!productData[field]) {
+          console.error(`Missing required field: ${field}`);
+          return res.status(400).json({ error: `Field "${field}" is required` });
+        }
+      }
+
+      // Process uploaded files
+      const imagePaths = [];
+      
+      // Main image
+      if (files.mainImage && files.mainImage[0]) {
+        const mainImagePath = `/pawnbackend/data/userproduct/${files.mainImage[0].filename}`;
+        imagePaths.push(mainImagePath);
+        console.log('Main image path:', mainImagePath);
+      } else {
+        console.error('No main image uploaded');
+        return res.status(400).json({ error: "Main image is required" });
+      }
+
+      // Additional images
+      for (let i = 1; i <= 3; i++) {
+        if (files[`image${i}`] && files[`image${i}`][0]) {
+          const imagePath = `/pawnbackend/data/userproduct/${files[`image${i}`][0].filename}`;
+          imagePaths.push(imagePath);
+          console.log(`Additional image ${i} path:`, imagePath);
+        }
+      }
+
+      console.log('All image paths:', imagePaths);
+
+      // Create product object
+      const newProduct = {
+        id: Date.now(),
+        name: productData.name,
+        price: parseFloat(productData.price),
+        regularPrice: parseFloat(productData.regularPrice),
+        category: productData.category,
+        subcategory: productData.subcategory || "",
+        image: imagePaths[0], // Main image
+        preview: imagePaths[0], // Use main image as preview
+        color: productData.color || "",
+        size: productData.size || "",
+        font: productData.font || "",
+        rating: productData.rating ? parseFloat(productData.rating) : 0,
+        popularity: productData.popularity ? parseFloat(productData.popularity) : 0,
+        reviews: productData.reviews ? parseInt(productData.reviews, 10) : 0,
+        inStock: productData.inStock === 'true' || productData.inStock === true,
+        outOfStock: productData.outOfStock === 'true' || productData.outOfStock === false,
+        description: productData.description,
+        date: new Date().toISOString().split('T')[0],
+        images: imagePaths // All uploaded images
+      };
+
+      console.log('New product object:', newProduct);
+
+      const products = readProducts();
+      products.push(newProduct);
+      writeProducts(products);
+
+      console.log('Product saved successfully');
+
+      res.status(201).json({ 
+        message: "Product created successfully", 
+        product: newProduct,
+        uploadedFiles: files
+      });
+
+    } catch (error) {
+      console.error('Error uploading product:', error);
+      console.error('Error stack:', error.stack);
+      res.status(500).json({ error: 'Failed to upload product', details: error.message });
+    }
+  });
+});
+
+// Add a new product (legacy route for backward compatibility)
 router.post("/", (req, res) => {
   const newProduct = req.body;
 
