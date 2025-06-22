@@ -19,8 +19,8 @@
       "description": "Exquisite wooden flamingo sculpture with detailed carving, a premium decor piece.",
       "date": "2024-03-20",
       "images": [
-        "../pawnbackend/data/Rikocraft.com/WOODEN CRAFT/WOODEN CARVERD FLSMINGO SCULPTURE/WhatsApp Image 2025-06-19 at 19.21.19_6199c3f5.jpg",
-        "../pawnbackend/data/Rikocraft.com/WOODEN CRAFT/WOODEN CARVERD FLSMINGO SCULPTURE/WhatsApp Image 2025-06-19 at 19.21.19_936201da.jpg"
+        "/pawnbackend/data/Rikocraft.com/WOODEN CRAFT/WOODEN CARVERD FLSMINGO SCULPTURE/WhatsApp Image 2025-06-19 at 19.21.19_6199c3f5.jpg",
+        "/pawnbackend/data/Rikocraft.com/WOODEN CRAFT/WOODEN CARVERD FLSMINGO SCULPTURE/WhatsApp Image 2025-06-19 at 19.21.19_936201da.jpg"
       ]
     },
     {
@@ -65,7 +65,7 @@
       "description": "Detailed wooden house boat model, inspired by traditional Kerala houseboats.",
       "date": "2024-04-01",
       "images": [
-        "../pawnbackend/data/Rikocraft.com/WOODEN CRAFT/WOODEN HOUSE BOAT/WhatsApp Image 2025-06-19 at 19.49.44_d2f48d5b.jpg"
+        "/pawnbackend/data/Rikocraft.com/WOODEN CRAFT/WOODEN HOUSE BOAT/WhatsApp Image 2025-06-19 at 19.49.44_d2f48d5b.jpg"
       ]
     },
     {
