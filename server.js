@@ -23,7 +23,8 @@ const allowedOrigins = [
   'https://pawn-shop-admin.vercel.app',
   'https://pawn-shop.vercel.app',
   'https://pawn-shop-git-main-adityas-projects.vercel.app',
-  'https://pawn-shop-adityas-projects.vercel.app'
+  'https://pawn-shop-adityas-projects.vercel.app',
+  'https://pawnadmin-thnt.vercel.app'
 ];
 
 app.use(cors({
