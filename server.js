@@ -4,6 +4,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const path = require("path");
+const cookieParser = require("cookie-parser");
 const productRoutes = require("./routes/shop");
 const orderRoutes = require("./routes/orders");
 const authRoutes = require('./routes/auth'); // Assuming your auth routes are here
@@ -15,7 +16,7 @@ const app = express();
 
 // CORS configuration - Allow all origins and routes
 app.use(cors({
-  origin: true, // Allow all origins
+  origin: true, // Allow all origins for now
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'Access-Control-Allow-Origin'],
@@ -26,7 +27,7 @@ app.use(cors({
 
 // Additional CORS headers for all routes
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
   res.header('Access-Control-Allow-Credentials', 'true');
@@ -40,6 +41,7 @@ app.use((req, res, next) => {
 });
 
 app.use(express.json());
+app.use(cookieParser());
 
 // Serve static files from the data directory
 app.use('/pawnbackend/data', express.static(path.join(__dirname, 'data')));

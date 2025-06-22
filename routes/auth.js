@@ -10,16 +10,39 @@ const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('he
 
 // Middleware to protect routes
 const auth = (req, res, next) => {
-  const token = req.header('Authorization')?.replace('Bearer ', '');
+  // Check for token in Authorization header first
+  let token = req.header('Authorization')?.replace('Bearer ', '');
+  
+  // If not in header, check cookies
+  if (!token) {
+    token = req.cookies?.token;
+  }
+  
   if (!token) return res.status(401).json({ message: 'No token, authorization denied' });
+  
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     req.user = decoded;
     next();
-  } catch {
+  } catch (err) {
+    console.error('Token verification error:', err);
     return res.status(401).json({ message: 'Invalid token' });
   }
 };
+
+// GET /me - Get current user information
+router.get('/me', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('-password');
+    if (!user) return res.status(401).json({ message: 'Invalid user' });
+
+    res.json({ user });
+  } catch (err) {
+    console.error('Error in /me route:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 router.get('/validate-token', auth, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('-password');
@@ -44,6 +67,15 @@ router.post('/signup', async (req, res) => {
     await user.save();
 
     const token = jwt.sign({ id: user._id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
+    
+    // Set HTTP-only cookie
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
+    
     return res.status(201).json({ token, user: { id: user._id, name, email } });
   } catch (err) {
     console.error(err);
@@ -65,6 +97,15 @@ router.post('/register', async (req, res) => {
     await user.save();
 
     const token = jwt.sign({ id: user._id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
+    
+    // Set HTTP-only cookie
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
+    
     return res.status(201).json({ token, user: { id: user._id, name, email } });
   } catch (err) {
     console.error(err);
@@ -88,6 +129,15 @@ router.post('/login', async (req, res) => {
       JWT_SECRET,
       { expiresIn: '7d' }
     );
+    
+    // Set HTTP-only cookie
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
+    
     return res.json({
       token,
       user: {
@@ -115,6 +165,15 @@ router.post('/login', async (req, res) => {
       JWT_SECRET,
       { expiresIn: '7d' }
     );
+    
+    // Set HTTP-only cookie
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
+    
     res.json({
       token,
       user: {
@@ -175,6 +234,23 @@ router.post('/reset-password/:token', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Error resetting password' });
+  }
+});
+
+// POST /logout
+router.post('/logout', async (req, res) => {
+  try {
+    // Clear the token cookie
+    res.clearCookie('token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict'
+    });
+    
+    res.json({ message: 'Logged out successfully' });
+  } catch (err) {
+    console.error('Error in logout:', err);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
