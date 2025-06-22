@@ -3,6 +3,7 @@ require('dotenv').config();
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
+const path = require("path");
 const productRoutes = require("./routes/shop");
 const orderRoutes = require("./routes/orders");
 const authRoutes = require('./routes/auth'); // Assuming your auth routes are here
@@ -12,22 +13,36 @@ const featuredProductRoutes = require('./routes/featuredProduct');
 const bestSellerRoutes = require('./routes/bestSeller');
 const app = express();
 
-// Middleware
+// CORS configuration - Allow all origins and routes
 app.use(cors({
-  origin: [
-    'http://localhost:3000', // main client
-    'http://localhost:5173', // admin panel (old Vite default)
-    'http://localhost:5174', // admin panel (your current Vite port)
-    'https://pawn-shop-frontend.vercel.app', // deployed frontend
-    'https://pawn-shop.vercel.app', // alternative frontend URL
-    'https://pawn-shop-git-local-host-api-used-aditya200410s-projects.vercel.app', // new Vercel frontend URL
-    process.env.FRONTEND_URL // from environment variable
-  ].filter(Boolean), // Remove undefined values
+  origin: true, // Allow all origins
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'Access-Control-Allow-Origin'],
+  exposedHeaders: ['Content-Length', 'X-Requested-With'],
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 }));
+
+// Additional CORS headers for all routes
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(200);
+  } else {
+    next();
+  }
+});
+
 app.use(express.json());
+
+// Serve static files from the data directory
+app.use('/pawnbackend/data', express.static(path.join(__dirname, 'data')));
 
 // MongoDB Connection URL from environment variable
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/pawn";
