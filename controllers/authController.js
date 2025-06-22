@@ -10,11 +10,11 @@ const login = (req, res) => {
 
   // For demo purposes, using hardcoded admin credentials
   // In production, you should use a proper database and password hashing
-  if (username === "admin" && password === "admin123") {
+  if (username === "test" && password === "test") {
     const token = jwt.sign(
       { 
         id: 1, 
-        username: "admin",
+        username: "test",
         isAdmin: true 
       },
       process.env.JWT_SECRET || 'your-secret-key',
@@ -25,7 +25,7 @@ const login = (req, res) => {
       token,
       user: {
         id: 1,
-        username: "admin",
+        username: "test",
         isAdmin: true
       }
     });
