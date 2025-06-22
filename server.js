@@ -12,6 +12,7 @@ const lovedRoutes = require('./routes/loved'); // Assuming your loved routes are
 const categoryRoutes = require('./routes/category');
 const featuredProductRoutes = require('./routes/featuredProduct');
 const bestSellerRoutes = require('./routes/bestSeller');
+const cartRoutes = require('./routes/cart');
 const app = express();
 
 // CORS configuration - Allow all origins and routes
@@ -65,6 +66,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/loved', lovedRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/featured-products', featuredProductRoutes);
+app.use('/api/cart', cartRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

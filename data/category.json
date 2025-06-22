@@ -1,29 +1,22 @@
 {
   "categories": [
-   
+    {
+      "id": 1,
+      "name": "Wooden Craft",
+      "description": "Handcrafted wooden decor and figurines, showcasing traditional Indian craftsmanship and artistry.",
+      "image": "/pawnbackend/data/Rikocraft.com/WOODEN CRAFT/WOODEN HORSE PAIR (H23 CM)/WhatsApp Image 2025-06-19 at 19.13.55_d22fa396.jpg"
+    },
+    {
+      "id": 2,
+      "name": "Terracotta Items",
+      "description": "Authentic terracotta art, including figurines and decor, crafted with age-old techniques for a rustic, cultural touch.",
+      "image": "/pawnbackend/data/Rikocraft.com/TERRACOTTA ITEMS/TERRACOTTA HORSE PAIR SMALL (H21 CM)/IMAGE 1.jpg"
+    },
     {
       "id": 3,
-      "name": "Terracotta",
-      "description": "Beautiful wooden dolls and wood carvings are intrinsic to Bengal",
-      "image": "https://srejonee.com/wp-content/uploads/2024/07/DSC9933-e1719832715970.jpg"
-    },
-    {
-      "id": 4,
       "name": "Dokra Art",
-      "description": "Ancient Audio-visual art from of Bengal with bio colours",
-      "image": "https://srejonee.com/wp-content/uploads/2024/07/DSC9933-e1719832715970.jpg"
-    },
-    {
-      "id": 5,
-      "name": "Wooden Craft",
-      "description": "Bengal mastered in baking clay into long-lasting terracotta for centuries.",
-      "image": "https://srejonee.com/wp-content/uploads/2022/08/Terracotta-Clay-small-image.jpg"
-    },
-    {
-      "id": 6,
-      "name": "Handmade Jewellry",
-      "description": "Bengal produced finest woven-grass articles for generations",
-      "image": "https://srejonee.com/wp-content/uploads/2022/08/Apparels-accessories-small-img.jpg"
+      "description": "Exquisite Dokra brass art, featuring spiritual and decorative pieces made with the ancient lost-wax casting method.",
+      "image": "/pawnbackend/data/Rikocraft.com/DOKRA ART/DOKRA BRASS METAL GANESH  JI/IMAGE 1.jpg"
     }
   ]
 }
