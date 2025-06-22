@@ -4,7 +4,7 @@ const Order = require("../models/Order");
 const router = express.Router();
 const fs = require('fs');
 const path = require('path');
-const { createOrder, getOrdersByEmail } = require('../controllers/orderController');
+const { createOrder, getOrdersByEmail, getOrderById } = require('../controllers/orderController');
 
 const ordersFilePath = path.join(__dirname, '../data/orders.json');
 
@@ -165,5 +165,9 @@ router.put("/:id/payment", async (req, res) => {
 // Route to get all orders for a user by email
 // GET /api/orders?email=user@example.com
 router.get('/', getOrdersByEmail);
+
+// Route to get a single order by its ID
+// GET /api/orders/:id
+router.get('/:id', getOrderById);
 
 module.exports = router;

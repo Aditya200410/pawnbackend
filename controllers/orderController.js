@@ -53,7 +53,22 @@ const getOrdersByEmail = async (req, res) => {
   }
 };
 
+// Get a single order by its ID
+const getOrderById = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order not found.' });
+    }
+    res.status(200).json({ success: true, order });
+  } catch (error) {
+    console.error('Error fetching order by ID:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch order.', error: error.message });
+  }
+};
+
 module.exports = {
   createOrder,
   getOrdersByEmail,
+  getOrderById,
 }; 
