@@ -7,10 +7,10 @@ const {
   removeFromCart, 
   clearCart 
 } = require('../controllers/cartController');
-const { authenticateToken } = require('../middleware/auth');
+// const { authenticateToken } = require('../middleware/auth');
 
-// All cart routes require authentication
-router.use(authenticateToken);
+// All cart routes are now public (no authentication)
+// router.use(authenticateToken);
 
 // Get user's cart
 router.get('/', getCart);

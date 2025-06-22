@@ -4,19 +4,25 @@
       "id": 1,
       "name": "Wooden Craft",
       "description": "Handcrafted wooden decor and figurines, showcasing traditional Indian craftsmanship and artistry.",
-      "image": "/pawnbackend/data/Rikocraft.com/WOODEN CRAFT/WOODEN HORSE PAIR (H23 CM)/WhatsApp Image 2025-06-19 at 19.13.55_d22fa396.jpg"
+      "image": "/images/categories/1.png"
     },
     {
       "id": 2,
       "name": "Terracotta Items",
       "description": "Authentic terracotta art, including figurines and decor, crafted with age-old techniques for a rustic, cultural touch.",
-      "image": "/pawnbackend/data/Rikocraft.com/TERRACOTTA ITEMS/TERRACOTTA HORSE PAIR SMALL (H21 CM)/IMAGE 1.jpg"
+      "image": "/images/categories/2.png"
     },
     {
       "id": 3,
       "name": "Dokra Art",
       "description": "Exquisite Dokra brass art, featuring spiritual and decorative pieces made with the ancient lost-wax casting method.",
-      "image": "/pawnbackend/data/Rikocraft.com/DOKRA ART/DOKRA BRASS METAL GANESH  JI/IMAGE 1.jpg"
+      "image": "/images/categories/3.png"
+    },
+    {
+      "id": 4,
+      "name": "Handmade Jewellery",
+      "description": "Unique handmade jewellery pieces crafted with care, blending tradition and modern style.",
+      "image": "/images/categories/4.png"
     }
   ]
 }
