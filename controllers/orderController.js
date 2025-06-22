@@ -8,22 +8,60 @@ const createOrder = async (req, res) => {
       email,
       phone,
       address,
+      city,
+      state,
+      pincode,
+      country,
       items,
       totalAmount,
       paymentMethod,
       paymentStatus,
     } = req.body;
 
-    // Basic validation
-    if (!email || !items || items.length === 0) {
-      return res.status(400).json({ success: false, message: 'Missing required order fields.' });
+    // Comprehensive validation
+    const requiredFields = ['customerName', 'email', 'phone', 'address', 'city', 'state', 'pincode', 'country', 'items', 'totalAmount', 'paymentMethod', 'paymentStatus'];
+    const missingFields = requiredFields.filter(field => !req.body[field]);
+    
+    if (missingFields.length > 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Missing required fields: ${missingFields.join(', ')}` 
+      });
+    }
+
+    // Validate items array
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Items array is required and must not be empty.' 
+      });
+    }
+
+    // Validate each item has required fields
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      const itemRequiredFields = ['productId', 'name', 'price', 'quantity'];
+      const missingItemFields = itemRequiredFields.filter(field => !item[field]);
+      
+      if (missingItemFields.length > 0) {
+        return res.status(400).json({ 
+          success: false, 
+          message: `Item ${i + 1} is missing required fields: ${missingItemFields.join(', ')}` 
+        });
+      }
     }
 
     const newOrder = new Order({
       customerName,
       email,
       phone,
-      address,
+      address: {
+        street: address,
+        city,
+        state,
+        pincode,
+        country,
+      },
       items,
       totalAmount,
       paymentMethod,
