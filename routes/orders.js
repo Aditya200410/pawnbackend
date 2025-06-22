@@ -4,6 +4,7 @@ const Order = require("../models/Order");
 const router = express.Router();
 const fs = require('fs');
 const path = require('path');
+const { createOrder, getOrdersByEmail } = require('../controllers/orderController');
 
 const ordersFilePath = path.join(__dirname, '../data/orders.json');
 
@@ -67,37 +68,7 @@ router.get("/:id", async (req, res) => {
 });
 
 // Create order
-router.post("/", async (req, res) => {
-  try {
-    // Create new order
-    const newOrder = new Order(req.body);
-
-    // Validate order data
-    await newOrder.validate();
-
-    // Save to MongoDB
-    const savedOrder = await newOrder.save();
-
-    // Save to JSON file
-    const orders = readOrders();
-    orders.push(savedOrder.toObject({ virtuals: true }));
-    writeOrders(orders);
-
-    res.status(201).json(savedOrder);
-  } catch (error) {
-    console.error('Error creating order:', error);
-    if (error.name === 'ValidationError') {
-      return res.status(400).json({
-        message: 'Invalid order data',
-        errors: Object.values(error.errors).map(err => err.message)
-      });
-    }
-    res.status(500).json({ 
-      message: 'Failed to create order',
-      error: error.message 
-    });
-  }
-});
+router.post("/", createOrder);
 
 // Update order status
 router.put("/:id/status", async (req, res) => {
@@ -190,5 +161,9 @@ router.put("/:id/payment", async (req, res) => {
     });
   }
 });
+
+// Route to get all orders for a user by email
+// GET /api/orders?email=user@example.com
+router.get('/', getOrdersByEmail);
 
 module.exports = router;

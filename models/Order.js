@@ -1,36 +1,32 @@
 const mongoose = require('mongoose');
 
-const itemSchema = new mongoose.Schema({
-  id: String,
-  type: String,
-  text: String,
-  font: String,
-  color: String,
-  size: String,
-  shape: String,
-  usage: String,
-  addOns: [String],
-  dimmer: Boolean,
-  price: Number,
-  preview: String,
-});
+// Schema for individual items within an order
+const orderItemSchema = new mongoose.Schema({
+  productId: { type: String, required: true },
+  name: { type: String, required: true },
+  price: { type: Number, required: true },
+  quantity: { type: Number, required: true },
+  image: { type: String, required: false }, // Store primary image for reference
+}, { _id: false });
 
+
+// Main schema for an order
 const orderSchema = new mongoose.Schema({
-  customerName: String,
-  email: String,
-  phone: String,
+  customerName: { type: String, required: true },
+  email: { type: String, required: true, index: true }, // Index for fast lookups
+  phone: { type: String, required: true },
   address: {
-    street: String,
-    city: String,
-    state: String,
-    pincode: String,
-    country: String,
+    street: { type: String, required: true },
+    city: { type: String, required: true },
+    state: { type: String, required: true },
+    pincode: { type: String, required: true },
+    country: { type: String, required: true },
   },
-  items: [itemSchema], // ✅ this must be array of objects, not strings
-  totalAmount: Number,
-  paymentMethod: String,
-  orderStatus: String,
-  paymentStatus: String,
+  items: [orderItemSchema], // Use the correct schema for items
+  totalAmount: { type: Number, required: true },
+  paymentMethod: { type: String, required: true },
+  orderStatus: { type: String, default: 'Pending' },
+  paymentStatus: { type: String, required: true },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Order', orderSchema);
