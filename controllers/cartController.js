@@ -72,7 +72,9 @@ const addToCart = async (req, res) => {
         quantity,
         price: product.price,
         name: product.name,
-        image: product.image
+        image: product.image,
+        images: product.images || [],
+        category: product.category
       });
     }
     await cart.save();

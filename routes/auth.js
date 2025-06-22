@@ -191,19 +191,39 @@ router.post('/login', async (req, res) => {
 // POST /forgot-password
 router.post('/forgot-password', async (req, res) => {
   const { email } = req.body;
+  
+  if (!email) {
+    return res.status(400).json({ message: 'Email is required' });
+  }
+  
   try {
+    console.log('Forgot password request for email:', email);
+    
     const user = await User.findOne({ email });
     if (user) {
       const resetToken = crypto.randomBytes(32).toString('hex');
       user.resetPasswordToken = await bcrypt.hash(resetToken, 10);
-      user.resetPasswordExpires = Date.now() + 3600000;
+      user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
       await user.save();
-      // Send email here with resetToken (not shown)
+      
+      console.log('Reset token generated for user:', user.email);
+      
+      // In a real application, you would send an email here
+      // For now, we'll just return a success message
+      return res.json({ 
+        message: 'If an account with this email exists, a password reset link has been sent.',
+        resetToken: resetToken // Remove this in production - only for testing
+      });
+    } else {
+      console.log('No user found with email:', email);
+      // For security reasons, don't reveal if the email exists or not
+      return res.json({ 
+        message: 'If an account with this email exists, a password reset link has been sent.' 
+      });
     }
-    return res.json({ message: 'If user exists, reset link sent' });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Error sending reset link' });
+    console.error('Forgot password error:', err);
+    res.status(500).json({ message: 'Error processing password reset request' });
   }
 });
 
