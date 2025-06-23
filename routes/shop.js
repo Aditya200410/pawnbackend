@@ -3,6 +3,8 @@ const router = express.Router();
 const fs = require("fs");
 const path = require("path");
 const multer = require("multer");
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
 // Path to JSON file where products are stored
 const dataFilePath = path.join(__dirname, "../data/shop.json");
@@ -13,33 +15,24 @@ if (!fs.existsSync(userProductDir)) {
   fs.mkdirSync(userProductDir, { recursive: true });
 }
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, userProductDir);
-  },
-  filename: function (req, file, cb) {
-    // Generate unique filename with timestamp
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const ext = path.extname(file.originalname);
-    cb(null, file.fieldname + '-' + uniqueSuffix + ext);
-  }
+// Cloudinary config
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const upload = multer({ 
-  storage: storage,
-  fileFilter: function (req, file, cb) {
-    // Accept only image files
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed!'), false);
-    }
+// Multer storage for Cloudinary
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'pawnshop-products',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+    transformation: [{ width: 800, height: 800, crop: 'limit' }],
   },
-  limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
-  }
 });
+
+const upload = multer({ storage: storage });
 
 // Upload multiple images (main image + 3 additional images)
 const uploadImages = upload.fields([
@@ -97,6 +90,10 @@ router.post("/upload", (req, res, next) => {
       console.log('Request body:', req.body);
       console.log('Request files:', req.files);
       
+      if (!req.files) {
+        console.error('No files received in the request.');
+        return res.status(400).json({ error: 'No files received. Make sure you are uploading as multipart/form-data and the main image field is named "mainImage".' });
+      }
       const files = req.files;
       const productData = req.body;
       
@@ -121,9 +118,9 @@ router.post("/upload", (req, res, next) => {
       
       // Main image
       if (files.mainImage && files.mainImage[0]) {
-        const mainImagePath = `/pawnbackend/data/userproduct/${files.mainImage[0].filename}`;
-        imagePaths.push(mainImagePath);
-        console.log('Main image path:', mainImagePath);
+        const mainImageUrl = files.mainImage[0].path; // Cloudinary URL
+        imagePaths.push(mainImageUrl);
+        console.log('Main image Cloudinary URL:', mainImageUrl);
       } else {
         console.error('No main image uploaded');
         return res.status(400).json({ error: "Main image is required" });
@@ -132,9 +129,9 @@ router.post("/upload", (req, res, next) => {
       // Additional images
       for (let i = 1; i <= 3; i++) {
         if (files[`image${i}`] && files[`image${i}`][0]) {
-          const imagePath = `/pawnbackend/data/userproduct/${files[`image${i}`][0].filename}`;
-          imagePaths.push(imagePath);
-          console.log(`Additional image ${i} path:`, imagePath);
+          const imageUrl = files[`image${i}`][0].path; // Cloudinary URL
+          imagePaths.push(imageUrl);
+          console.log(`Additional image ${i} Cloudinary URL:`, imageUrl);
         }
       }
 
@@ -148,7 +145,7 @@ router.post("/upload", (req, res, next) => {
         regularPrice: parseFloat(productData.regularPrice),
         category: productData.category,
         subcategory: productData.subcategory || "",
-        image: imagePaths[0], // Main image
+        image: imagePaths[0], // Main image Cloudinary URL
         preview: imagePaths[0], // Use main image as preview
         color: productData.color || "",
         size: productData.size || "",
@@ -160,7 +157,7 @@ router.post("/upload", (req, res, next) => {
         outOfStock: productData.outOfStock === 'true' || productData.outOfStock === false,
         description: productData.description,
         date: new Date().toISOString().split('T')[0],
-        images: imagePaths // All uploaded images
+        images: imagePaths // All Cloudinary URLs
       };
 
       console.log('New product object:', newProduct);
