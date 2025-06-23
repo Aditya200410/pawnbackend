@@ -1,4 +1,7 @@
 const Order = require('../models/Order');
+const fs = require('fs').promises;
+const path = require('path');
+const ordersJsonPath = path.join(__dirname, '../data/orders.json');
 
 // Create a new order
 const createOrder = async (req, res) => {
@@ -40,7 +43,7 @@ const createOrder = async (req, res) => {
     // Validate each item has required fields
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
-      const itemRequiredFields = ['productId', 'name', 'price', 'quantity'];
+      const itemRequiredFields = ['name', 'price', 'quantity'];
       const missingItemFields = itemRequiredFields.filter(field => !item[field]);
       
       if (missingItemFields.length > 0) {
@@ -69,6 +72,8 @@ const createOrder = async (req, res) => {
     });
 
     const savedOrder = await newOrder.save();
+    // Save to orders.json for admin
+    await appendOrderToJson(savedOrder);
     res.status(201).json({ success: true, message: 'Order created successfully!', order: savedOrder });
   } catch (error) {
     console.error('Error creating order:', error);
@@ -104,6 +109,25 @@ const getOrderById = async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to fetch order.', error: error.message });
   }
 };
+
+// Helper to append order to orders.json
+async function appendOrderToJson(order) {
+  try {
+    let orders = [];
+    try {
+      const data = await fs.readFile(ordersJsonPath, 'utf8');
+      orders = JSON.parse(data);
+      if (!Array.isArray(orders)) orders = [];
+    } catch (err) {
+      // If file doesn't exist, start with empty array
+      orders = [];
+    }
+    orders.push(order);
+    await fs.writeFile(ordersJsonPath, JSON.stringify(orders, null, 2));
+  } catch (err) {
+    console.error('Failed to append order to orders.json:', err);
+  }
+}
 
 module.exports = {
   createOrder,
