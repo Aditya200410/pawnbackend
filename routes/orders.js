@@ -170,13 +170,13 @@ router.get('/', getOrdersByEmail);
 // GET /api/orders/:id
 router.get('/:id', getOrderById);
 
-// Admin: Get all orders from orders.json
-router.get('/json', (req, res) => {
+// Admin: Get all orders from MongoDB (not orders.json)
+router.get('/json', async (req, res) => {
   try {
-    const orders = readOrders();
+    const orders = await Order.find().sort({ createdAt: -1 });
     res.json(orders);
   } catch (error) {
-    res.status(500).json({ message: 'Failed to read orders.json', error: error.message });
+    res.status(500).json({ message: 'Failed to fetch orders from MongoDB', error: error.message });
   }
 });
 
