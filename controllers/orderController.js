@@ -88,7 +88,8 @@ const getOrdersByEmail = async (req, res) => {
     if (!userEmail) {
       return res.status(400).json({ success: false, message: 'Email query parameter is required.' });
     }
-    const orders = await Order.find({ email: userEmail }).sort({ createdAt: -1 }); // Sort by newest first
+    // Case-insensitive search for email
+    const orders = await Order.find({ email: { $regex: new RegExp(`^${userEmail}$`, 'i') } }).sort({ createdAt: -1 });
     res.status(200).json({ success: true, orders });
   } catch (error) {
     console.error('Error fetching orders:', error);
