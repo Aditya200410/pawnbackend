@@ -170,4 +170,14 @@ router.get('/', getOrdersByEmail);
 // GET /api/orders/:id
 router.get('/:id', getOrderById);
 
+// Admin: Get all orders from orders.json
+router.get('/json', (req, res) => {
+  try {
+    const orders = readOrders();
+    res.json(orders);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to read orders.json', error: error.message });
+  }
+});
+
 module.exports = router;
