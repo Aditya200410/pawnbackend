@@ -36,6 +36,16 @@ const writeOrders = (orders) => {
   }
 };
 
+// Admin: Get all orders from MongoDB (not orders.json)
+router.get('/json', async (req, res) => {
+  try {
+    const orders = await Order.find().sort({ createdAt: -1 });
+    res.json(orders);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch orders from MongoDB', error: error.message });
+  }
+});
+
 // Get all orders
 router.get("/", async (req, res) => {
   try {
@@ -169,15 +179,5 @@ router.get('/', getOrdersByEmail);
 // Route to get a single order by its ID
 // GET /api/orders/:id
 router.get('/:id', getOrderById);
-
-// Admin: Get all orders from MongoDB (not orders.json)
-router.get('/json', async (req, res) => {
-  try {
-    const orders = await Order.find().sort({ createdAt: -1 });
-    res.json(orders);
-  } catch (error) {
-    res.status(500).json({ message: 'Failed to fetch orders from MongoDB', error: error.message });
-  }
-});
 
 module.exports = router;
