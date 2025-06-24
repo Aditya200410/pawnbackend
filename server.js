@@ -14,6 +14,7 @@ const featuredProductRoutes = require('./routes/featuredProduct');
 const bestSellerRoutes = require('./routes/bestSeller');
 const cartRoutes = require('./routes/cart');
 const fs = require('fs');
+const heroCarouselRoutes = require('./routes/heroCarousel');
 const app = express();
 
 // CORS configuration - Allow specific origins for production
@@ -103,6 +104,7 @@ app.use('/api/loved', lovedRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/featured-products', featuredProductRoutes);
 app.use('/api/cart', cartRoutes);
+app.use('/api/hero-carousel', heroCarouselRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
