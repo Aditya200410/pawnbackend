@@ -57,15 +57,19 @@ exports.getCategory = async (req, res) => {
   }
 };
 
-// Create new category
+// Create new category with file upload
 exports.createCategory = async (req, res) => {
   try {
+    if (!req.body.name || !req.body.description) {
+      return res.status(400).json({ message: 'Name and description are required' });
+    }
+
     const categories = await readCategories();
     const newCategory = {
       id: categories.length > 0 ? Math.max(...categories.map(c => c.id)) + 1 : 1,
       name: req.body.name,
       description: req.body.description,
-      image: req.body.image
+      image: req.file ? req.file.path : '' // Use Cloudinary URL from uploaded file
     };
 
     categories.push(newCategory);
@@ -79,7 +83,7 @@ exports.createCategory = async (req, res) => {
   }
 };
 
-// Update category
+// Update category with file upload
 exports.updateCategory = async (req, res) => {
   try {
     const categories = await readCategories();
@@ -89,11 +93,12 @@ exports.updateCategory = async (req, res) => {
       return res.status(404).json({ message: 'Category not found' });
     }
 
+    // Update category with new data
     categories[index] = {
       ...categories[index],
-      name: req.body.name,
-      description: req.body.description,
-      image: req.body.image
+      name: req.body.name || categories[index].name,
+      description: req.body.description || categories[index].description,
+      image: req.file ? req.file.path : (req.body.image || categories[index].image) // Use new Cloudinary URL or keep existing
     };
 
     await writeCategories(categories);
