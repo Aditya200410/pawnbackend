@@ -40,40 +40,9 @@ const writeOrders = (orders) => {
 router.get('/json', async (req, res) => {
   try {
     const orders = await Order.find().sort({ createdAt: -1 });
-    res.json(orders);
+    res.json({ success: true, orders });
   } catch (error) {
-    res.status(500).json({ message: 'Failed to fetch orders from MongoDB', error: error.message });
-  }
-});
-
-// Get all orders
-router.get("/", async (req, res) => {
-  try {
-    const orders = await Order.find().sort({ createdAt: -1 });
-    res.json(orders);
-  } catch (error) {
-    console.error('Error fetching orders:', error);
-    res.status(500).json({ 
-      message: 'Failed to fetch orders',
-      error: error.message 
-    });
-  }
-});
-
-// Get single order
-router.get("/:id", async (req, res) => {
-  try {
-    const order = await Order.findById(req.params.id);
-    if (!order) {
-      return res.status(404).json({ message: 'Order not found' });
-    }
-    res.json(order);
-  } catch (error) {
-    console.error('Error fetching order:', error);
-    res.status(500).json({ 
-      message: 'Failed to fetch order',
-      error: error.message 
-    });
+    res.status(500).json({ success: false, message: 'Failed to fetch orders from MongoDB', error: error.message });
   }
 });
 
@@ -88,7 +57,7 @@ router.put("/:id/status", async (req, res) => {
 
     // Validate status
     if (!['processing', 'confirmed', 'manufacturing', 'shipped', 'delivered'].includes(orderStatus)) {
-      return res.status(400).json({ message: 'Invalid order status' });
+      return res.status(400).json({ success: false, message: 'Invalid order status' });
     }
 
     // Update in MongoDB
@@ -99,7 +68,7 @@ router.put("/:id/status", async (req, res) => {
     );
 
     if (!updatedOrder) {
-      return res.status(404).json({ message: 'Order not found' });
+      return res.status(404).json({ success: false, message: 'Order not found' });
     }
 
     // Update in JSON file
@@ -110,16 +79,18 @@ router.put("/:id/status", async (req, res) => {
       writeOrders(orders);
     }
 
-    res.json(updatedOrder);
+    res.json({ success: true, order: updatedOrder });
   } catch (error) {
     console.error('Error updating order status:', error);
     if (error.name === 'ValidationError') {
       return res.status(400).json({
+        success: false,
         message: 'Invalid order status',
         errors: Object.values(error.errors).map(err => err.message)
       });
     }
     res.status(500).json({ 
+      success: false,
       message: 'Failed to update order status',
       error: error.message 
     });
@@ -134,7 +105,7 @@ router.put("/:id/payment", async (req, res) => {
 
     // Validate payment status
     if (!['pending', 'completed', 'failed'].includes(paymentStatus)) {
-      return res.status(400).json({ message: 'Invalid payment status' });
+      return res.status(400).json({ success: false, message: 'Invalid payment status' });
     }
 
     // Update in MongoDB
@@ -145,7 +116,7 @@ router.put("/:id/payment", async (req, res) => {
     );
 
     if (!updatedOrder) {
-      return res.status(404).json({ message: 'Order not found' });
+      return res.status(404).json({ success: false, message: 'Order not found' });
     }
 
     // Update in JSON file
@@ -156,16 +127,18 @@ router.put("/:id/payment", async (req, res) => {
       writeOrders(orders);
     }
 
-    res.json(updatedOrder);
+    res.json({ success: true, order: updatedOrder });
   } catch (error) {
     console.error('Error updating payment status:', error);
     if (error.name === 'ValidationError') {
       return res.status(400).json({
+        success: false,
         message: 'Invalid payment status',
         errors: Object.values(error.errors).map(err => err.message)
       });
     }
     res.status(500).json({ 
+      success: false,
       message: 'Failed to update payment status',
       error: error.message 
     });
