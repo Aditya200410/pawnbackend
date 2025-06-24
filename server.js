@@ -94,13 +94,14 @@ mongoose.connect(MONGODB_URI, {
   .catch(err => console.error("MongoDB connection error:", err));
 
 // API Routes
-app.use("/api/shop", productRoutes);
+app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
+app.use('/api/shop', productRoutes); // Use the same shop routes for /api/shop
+app.use('/api/bestseller', bestSellerRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/loved', lovedRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/featured-products', featuredProductRoutes);
-app.use('/api/bestseller', bestSellerRoutes);
 app.use('/api/cart', cartRoutes);
 
 // Health check endpoint

@@ -5,7 +5,6 @@ const router = express.Router();
 const fs = require('fs');
 const path = require('path');
 const { createOrder, getOrdersByEmail, getOrderById } = require('../controllers/orderController');
-const { authenticateToken } = require('../middleware/auth');
 
 const ordersFilePath = path.join(__dirname, '../data/orders.json');
 
@@ -38,10 +37,10 @@ const writeOrders = (orders) => {
 };
 
 // Admin: Get all orders from MongoDB (not orders.json)
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/json', async (req, res) => {
   try {
     const orders = await Order.find().sort({ createdAt: -1 });
-    res.json(orders);
+    res.json({ success: true, orders });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch orders from MongoDB', error: error.message });
   }
@@ -51,7 +50,7 @@ router.get('/', authenticateToken, async (req, res) => {
 router.post("/", createOrder);
 
 // Update order status
-router.put("/:id/status", authenticateToken, async (req, res) => {
+router.put("/:id/status", async (req, res) => {
   try {
     const { id } = req.params;
     const { orderStatus } = req.body;
@@ -148,7 +147,7 @@ router.put("/:id/payment", async (req, res) => {
 
 // Route to get all orders for a user by email
 // GET /api/orders?email=user@example.com
-router.get('/user', getOrdersByEmail);
+router.get('/', getOrdersByEmail);
 
 // Route to get a single order by its ID
 // GET /api/orders/:id
