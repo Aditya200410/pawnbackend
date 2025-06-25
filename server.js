@@ -74,15 +74,39 @@ app.use((req, res, next) => {
 app.use(express.json());
 app.use(cookieParser());
 
-// Serve static files from the data directory
-app.use('/pawnbackend/data', express.static(path.join(__dirname, 'data')));
+// Ensure data directories exist
+const dataDir = path.join(__dirname, 'data');
+const userProductDir = path.join(dataDir, 'userproduct');
 
-// Ensure the upload directory exists on startup (for Render and local)
-const userProductDir = path.join(__dirname, 'data/userproduct');
-if (!fs.existsSync(userProductDir)) {
-  fs.mkdirSync(userProductDir, { recursive: true });
-  console.log('Created userproduct directory:', userProductDir);
-}
+// Create directories if they don't exist
+[dataDir, userProductDir].forEach(dir => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+    console.log('Created directory:', dir);
+  }
+});
+
+// Serve static files with proper MIME types
+app.use('/pawnbackend/data', (req, res, next) => {
+  const filePath = path.join(__dirname, 'data', req.path);
+  const ext = path.extname(filePath).toLowerCase();
+  
+  // Set proper content type for videos and images
+  if (ext === '.mp4') {
+    res.setHeader('Content-Type', 'video/mp4');
+  } else if (ext === '.png') {
+    res.setHeader('Content-Type', 'image/png');
+  } else if (ext === '.jpg' || ext === '.jpeg') {
+    res.setHeader('Content-Type', 'image/jpeg');
+  } else if (ext === '.gif') {
+    res.setHeader('Content-Type', 'image/gif');
+  }
+  
+  next();
+}, express.static(path.join(__dirname, 'data'), {
+  fallthrough: true,
+  maxAge: '1h'
+}));
 
 // MongoDB Connection URL from environment variable
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/pawn";

@@ -2,9 +2,9 @@
   "carousel": [
     {
       "id": "1",
-      "title": "Welcome to Ricko Craft",
-      "subtitle": "Handcrafted with Love",
-      "description": "Discover our unique collection of handmade crafts from Jharkhand",
+      "title": "Welcome to Riko Craft",
+      "subtitle": "Discover Authentic Indian Handicrafts",
+      "description": "Explore our curated collection of traditional and contemporary artworks",
       "image": "1.png",
       "buttonText": "Shop Now",
       "buttonLink": "/shop",
