@@ -10,17 +10,17 @@ const {
   updateCarouselOrder,
   toggleCarouselActive
 } = require('../controllers/heroCarouselController');
-const { isAdmin } = require('../middleware/auth');
+const { isAdmin, authenticateToken } = require('../middleware/auth');
 
 // Public routes
 router.get('/active', getActiveCarouselItems);
 
 // Admin routes
-router.get('/', isAdmin, getCarouselItems);
-router.post('/', isAdmin, upload.single('image'), createCarouselItem);
-router.put('/:id', isAdmin, upload.single('image'), updateCarouselItem);
-router.delete('/:id', isAdmin, deleteCarouselItem);
-router.put('/order/update', isAdmin, updateCarouselOrder);
-router.put('/toggle/:id', isAdmin, toggleCarouselActive);
+router.get('/', authenticateToken, isAdmin, getCarouselItems);
+router.post('/', authenticateToken, isAdmin, upload.single('image'), createCarouselItem);
+router.put('/:id', authenticateToken, isAdmin, upload.single('image'), updateCarouselItem);
+router.delete('/:id', authenticateToken, isAdmin, deleteCarouselItem);
+router.put('/order/update', authenticateToken, isAdmin, updateCarouselOrder);
+router.put('/toggle/:id', authenticateToken, isAdmin, toggleCarouselActive);
 
 module.exports = router; 

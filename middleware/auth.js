@@ -18,9 +18,13 @@ const authenticateToken = (req, res, next) => {
 };
 
 const isAdmin = (req, res, next) => {
-  if (req.user && req.user.isAdmin) {
+  if (req.user && req.user.isAdmin === true) {
     next();
   } else {
+    console.error('Admin check failed:', {
+      user: req.user,
+      isAdmin: req.user?.isAdmin
+    });
     res.status(403).json({ message: 'Access denied. Admin privileges required.' });
   }
 };
