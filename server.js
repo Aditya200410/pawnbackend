@@ -16,7 +16,14 @@ const cartRoutes = require('./routes/cart');
 const fs = require('fs');
 const heroCarouselRoutes = require('./routes/heroCarousel');
 const sellerRoutes = require('./routes/seller');
+const crypto = require('crypto');
 const app = express();
+
+// Generate a random JWT secret for seller authentication if not provided
+if (!process.env.JWT_SECRET_SELLER) {
+  process.env.JWT_SECRET_SELLER = crypto.randomBytes(64).toString('hex');
+  console.log('Generated random JWT_SECRET_SELLER');
+}
 
 // CORS configuration - Allow specific origins for production
 const allowedOrigins = [
