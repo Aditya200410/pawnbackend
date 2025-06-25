@@ -83,7 +83,17 @@ const getCarouselItems = async (req, res) => {
 const getActiveCarouselItems = async (req, res) => {
   try {
     const items = readCarouselData().filter(item => item.isActive);
-    res.json(items);
+    
+    // Map items to ensure image paths are correct
+    const processedItems = items.map(item => ({
+      ...item,
+      image: item.image.startsWith('http') ? item.image : 
+        item.image.startsWith('/') ? item.image : 
+        `/${item.image}`
+    }));
+
+    console.log('Sending carousel items:', processedItems);
+    res.json(processedItems);
   } catch (error) {
     console.error('Error getting active carousel items:', error);
     res.status(500).json({ message: 'Error getting active carousel items' });
