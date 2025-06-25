@@ -27,14 +27,6 @@ const sellerSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Address is required']
   },
-  businessType: {
-    type: String,
-    required: [true, 'Business type is required']
-  },
-  verified: {
-    type: Boolean,
-    default: false
-  },
   documents: [{
     type: String // URLs to business documents
   }],

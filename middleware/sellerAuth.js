@@ -33,14 +33,6 @@ const sellerAuth = async (req, res, next) => {
       });
     }
 
-    // Check if seller is approved
-    if (seller.status !== 'approved') {
-      return res.status(403).json({
-        success: false,
-        message: 'Your account is pending approval'
-      });
-    }
-
     // Add seller to request
     req.seller = seller;
     next();

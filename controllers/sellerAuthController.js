@@ -30,12 +30,11 @@ exports.register = async (req, res) => {
       email,
       password,
       phone,
-      address,
-      businessType
+      address
     } = req.body;
 
     // Validate required fields
-    if (!businessName || !email || !password || !phone || !address || !businessType) {
+    if (!businessName || !email || !password || !phone || !address) {
       return res.status(400).json({
         success: false,
         message: 'All fields are required'
@@ -82,7 +81,6 @@ exports.register = async (req, res) => {
       password,
       phone,
       address,
-      businessType,
       status: 'pending' // Ensure status is set to pending
     });
 
@@ -105,9 +103,7 @@ exports.register = async (req, res) => {
         email: seller.email,
         phone: seller.phone,
         address: seller.address,
-        status: seller.status,
-        verified: seller.verified,
-        businessType: seller.businessType
+        status: seller.status
       }
     });
   } catch (error) {
@@ -195,9 +191,7 @@ exports.login = async (req, res) => {
         email: seller.email,
         phone: seller.phone,
         address: seller.address,
-        status: seller.status,
-        verified: seller.verified,
-        businessType: seller.businessType
+        status: seller.status
       }
     });
   } catch (error) {
@@ -231,8 +225,6 @@ exports.getProfile = async (req, res) => {
       phone: seller.phone,
       address: seller.address,
       status: seller.status,
-      verified: seller.verified,
-      businessType: seller.businessType,
       createdAt: seller.createdAt
     };
 
@@ -255,8 +247,7 @@ exports.updateProfile = async (req, res) => {
     const updates = {
       businessName: req.body.businessName,
       phone: req.body.phone,
-      address: req.body.address,
-      businessType: req.body.businessType
+      address: req.body.address
     };
 
     // Validate phone number if provided
@@ -288,8 +279,6 @@ exports.updateProfile = async (req, res) => {
       phone: seller.phone,
       address: seller.address,
       status: seller.status,
-      verified: seller.verified,
-      businessType: seller.businessType,
       createdAt: seller.createdAt
     };
 
