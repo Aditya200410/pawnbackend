@@ -204,23 +204,39 @@ const deleteCarouselItem = async (req, res) => {
 const updateCarouselOrder = async (req, res) => {
   try {
     const { items } = req.body;
+    
+    if (!Array.isArray(items)) {
+      return res.status(400).json({ message: 'Invalid items data. Expected an array.' });
+    }
+
     const currentItems = readCarouselData();
     
+    // Create a map of current items for quick lookup
+    const itemMap = new Map(currentItems.map(item => [item.id || item._id, item]));
+    
     // Update order while preserving other properties
-    const updatedItems = items.map((itemId, index) => {
-      const item = currentItems.find(i => i.id === itemId);
+    const updatedItems = items.map((item, index) => {
+      const currentItem = itemMap.get(item.id);
+      if (!currentItem) {
+        throw new Error(`Item with id ${item.id} not found`);
+      }
       return {
-        ...item,
+        ...currentItem,
         order: index + 1
       };
     });
 
-    writeCarouselData(updatedItems);
+    // Sort by order
+    updatedItems.sort((a, b) => a.order - b.order);
 
-    res.json(updatedItems);
+    if (writeCarouselData(updatedItems)) {
+      res.json(updatedItems);
+    } else {
+      throw new Error('Failed to write carousel data');
+    }
   } catch (error) {
     console.error('Error updating carousel order:', error);
-    res.status(500).json({ message: 'Error updating carousel order' });
+    res.status(500).json({ message: 'Error updating carousel order', error: error.message });
   }
 };
 
@@ -228,20 +244,27 @@ const updateCarouselOrder = async (req, res) => {
 const toggleCarouselActive = async (req, res) => {
   try {
     const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ message: 'Item ID is required' });
+    }
+
     let items = readCarouselData();
-    const index = items.findIndex(item => item.id === id);
+    const index = items.findIndex(item => (item.id || item._id) === id);
 
     if (index === -1) {
       return res.status(404).json({ message: 'Carousel item not found' });
     }
 
     items[index].isActive = !items[index].isActive;
-    writeCarouselData(items);
-
-    res.json(items[index]);
+    
+    if (writeCarouselData(items)) {
+      res.json(items[index]);
+    } else {
+      throw new Error('Failed to write carousel data');
+    }
   } catch (error) {
     console.error('Error toggling carousel item status:', error);
-    res.status(500).json({ message: 'Error toggling carousel item status' });
+    res.status(500).json({ message: 'Error toggling carousel item status', error: error.message });
   }
 };
 
