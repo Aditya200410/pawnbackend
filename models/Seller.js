@@ -1,9 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
-// Use the seller database connection
-const sellerConnection = global.sellerDb;
-
 const sellerSchema = new mongoose.Schema({
   businessName: {
     type: String,
@@ -70,4 +67,4 @@ sellerSchema.methods.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
-module.exports = sellerConnection.model('Seller', sellerSchema); 
+module.exports = mongoose.model('Seller', sellerSchema); 

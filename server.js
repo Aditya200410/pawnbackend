@@ -109,38 +109,20 @@ app.use('/pawnbackend/data', (req, res, next) => {
   maxAge: '1h'
 }));
 
-// MongoDB Connection URLs from environment variables
+// MongoDB Connection URL from environment variable
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/pawn";
-const MONGODB_SELLER_URI = process.env.MONGODB_SELLER_URI || "mongodb://127.0.0.1:27017/pawn_seller";
 
-// Connect to main MongoDB database
+// Connect to MongoDB
 mongoose.connect(MONGODB_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true
-}).then(() => console.log("Main MongoDB connected to:", MONGODB_URI))
-  .catch(err => console.error("Main MongoDB connection error:", err));
-
-// Create a separate connection for the seller database
-const sellerConnection = mongoose.createConnection(MONGODB_SELLER_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-});
-
-sellerConnection.on('connected', () => {
-    console.log('Seller MongoDB connected to:', MONGODB_SELLER_URI);
-});
-
-sellerConnection.on('error', (err) => {
-    console.error('Seller MongoDB connection error:', err);
-});
-
-// Export the seller connection for use in the Seller model
-global.sellerDb = sellerConnection;
+}).then(() => console.log("MongoDB connected to:", MONGODB_URI))
+  .catch(err => console.error("MongoDB connection error:", err));
 
 // API Routes
 app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
-app.use('/api/shop', productRoutes); // Use the same shop routes for /api/shop
+app.use('/api/shop', productRoutes);
 app.use('/api/bestseller', bestSellerRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/loved', lovedRoutes);
