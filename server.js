@@ -15,6 +15,7 @@ const bestSellerRoutes = require('./routes/bestSeller');
 const cartRoutes = require('./routes/cart');
 const fs = require('fs');
 const heroCarouselRoutes = require('./routes/heroCarousel');
+const sellerRoutes = require('./routes/seller');
 const app = express();
 
 // CORS configuration - Allow specific origins for production
@@ -108,15 +109,33 @@ app.use('/pawnbackend/data', (req, res, next) => {
   maxAge: '1h'
 }));
 
-// MongoDB Connection URL from environment variable
+// MongoDB Connection URLs from environment variables
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/pawn";
+const MONGODB_SELLER_URI = process.env.MONGODB_SELLER_URI || "mongodb://127.0.0.1:27017/pawn_seller";
 
-// Connect to MongoDB
+// Connect to main MongoDB database
 mongoose.connect(MONGODB_URI, {
     useNewUrlParser: true,
-  useUnifiedTopology: true
-}).then(() => console.log("MongoDB connected to:", MONGODB_URI))
-  .catch(err => console.error("MongoDB connection error:", err));
+    useUnifiedTopology: true
+}).then(() => console.log("Main MongoDB connected to:", MONGODB_URI))
+  .catch(err => console.error("Main MongoDB connection error:", err));
+
+// Create a separate connection for the seller database
+const sellerConnection = mongoose.createConnection(MONGODB_SELLER_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+});
+
+sellerConnection.on('connected', () => {
+    console.log('Seller MongoDB connected to:', MONGODB_SELLER_URI);
+});
+
+sellerConnection.on('error', (err) => {
+    console.error('Seller MongoDB connection error:', err);
+});
+
+// Export the seller connection for use in the Seller model
+global.sellerDb = sellerConnection;
 
 // API Routes
 app.use("/api/products", productRoutes);
@@ -129,6 +148,7 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/featured-products', featuredProductRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/hero-carousel', heroCarouselRoutes);
+app.use('/api/seller', sellerRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
