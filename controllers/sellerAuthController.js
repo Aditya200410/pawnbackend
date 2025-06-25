@@ -103,6 +103,8 @@ exports.register = async (req, res) => {
         id: seller._id,
         businessName: seller.businessName,
         email: seller.email,
+        phone: seller.phone,
+        address: seller.address,
         status: seller.status,
         verified: seller.verified,
         businessType: seller.businessType
@@ -191,6 +193,8 @@ exports.login = async (req, res) => {
         id: seller._id,
         businessName: seller.businessName,
         email: seller.email,
+        phone: seller.phone,
+        address: seller.address,
         status: seller.status,
         verified: seller.verified,
         businessType: seller.businessType
@@ -208,7 +212,10 @@ exports.login = async (req, res) => {
 // Get seller profile
 exports.getProfile = async (req, res) => {
   try {
-    const seller = await Seller.findById(req.seller.id).select('-password');
+    const seller = await Seller.findById(req.seller.id)
+      .select('-password')
+      .lean(); // Use lean() for better performance
+
     if (!seller) {
       return res.status(404).json({
         success: false,
@@ -216,9 +223,22 @@ exports.getProfile = async (req, res) => {
       });
     }
 
+    // Ensure all required fields are included
+    const sellerResponse = {
+      id: seller._id,
+      businessName: seller.businessName,
+      email: seller.email,
+      phone: seller.phone,
+      address: seller.address,
+      status: seller.status,
+      verified: seller.verified,
+      businessType: seller.businessType,
+      createdAt: seller.createdAt
+    };
+
     res.json({
       success: true,
-      seller
+      seller: sellerResponse
     });
   } catch (error) {
     console.error('Get seller profile error:', error);
@@ -260,9 +280,22 @@ exports.updateProfile = async (req, res) => {
       });
     }
 
+    // Ensure all required fields are included in response
+    const sellerResponse = {
+      id: seller._id,
+      businessName: seller.businessName,
+      email: seller.email,
+      phone: seller.phone,
+      address: seller.address,
+      status: seller.status,
+      verified: seller.verified,
+      businessType: seller.businessType,
+      createdAt: seller.createdAt
+    };
+
     res.json({
       success: true,
-      seller
+      seller: sellerResponse
     });
   } catch (error) {
     console.error('Update seller profile error:', error);
