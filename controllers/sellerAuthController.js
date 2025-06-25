@@ -80,8 +80,7 @@ exports.register = async (req, res) => {
       email,
       password,
       phone,
-      address,
-      status: 'pending' // Ensure status is set to pending
+      address
     });
 
     // Generate token
@@ -102,8 +101,7 @@ exports.register = async (req, res) => {
         businessName: seller.businessName,
         email: seller.email,
         phone: seller.phone,
-        address: seller.address,
-        status: seller.status
+        address: seller.address
       }
     });
   } catch (error) {
@@ -165,14 +163,6 @@ exports.login = async (req, res) => {
       });
     }
 
-    // Check if seller is approved
-    if (seller.status !== 'approved') {
-      return res.status(403).json({
-        success: false,
-        message: 'Your account is pending approval'
-      });
-    }
-
     // Generate token
     const token = generateToken(seller);
 
@@ -190,8 +180,7 @@ exports.login = async (req, res) => {
         businessName: seller.businessName,
         email: seller.email,
         phone: seller.phone,
-        address: seller.address,
-        status: seller.status
+        address: seller.address
       }
     });
   } catch (error) {
@@ -206,31 +195,16 @@ exports.login = async (req, res) => {
 // Get seller profile
 exports.getProfile = async (req, res) => {
   try {
-    const seller = await Seller.findById(req.seller.id)
-      .select('-password')
-      .lean(); // Use lean() for better performance
-
-    if (!seller) {
-      return res.status(404).json({
-        success: false,
-        message: 'Seller not found'
-      });
-    }
-
-    // Ensure all required fields are included
-    const sellerResponse = {
-      id: seller._id,
-      businessName: seller.businessName,
-      email: seller.email,
-      phone: seller.phone,
-      address: seller.address,
-      status: seller.status,
-      createdAt: seller.createdAt
-    };
-
+    const seller = req.seller;
     res.json({
       success: true,
-      seller: sellerResponse
+      seller: {
+        id: seller._id,
+        businessName: seller.businessName,
+        email: seller.email,
+        phone: seller.phone,
+        address: seller.address
+      }
     });
   } catch (error) {
     console.error('Get seller profile error:', error);
@@ -244,52 +218,30 @@ exports.getProfile = async (req, res) => {
 // Update seller profile
 exports.updateProfile = async (req, res) => {
   try {
-    const updates = {
-      businessName: req.body.businessName,
-      phone: req.body.phone,
-      address: req.body.address
-    };
+    const seller = req.seller;
+    const { businessName, phone, address } = req.body;
 
-    // Validate phone number if provided
-    if (updates.phone && !isValidPhone(updates.phone)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid phone number format'
-      });
-    }
+    // Update fields if provided
+    if (businessName) seller.businessName = businessName;
+    if (phone) seller.phone = phone;
+    if (address) seller.address = address;
 
-    const seller = await Seller.findByIdAndUpdate(
-      req.seller.id,
-      { $set: updates },
-      { new: true, runValidators: true }
-    ).select('-password');
-
-    if (!seller) {
-      return res.status(404).json({
-        success: false,
-        message: 'Seller not found'
-      });
-    }
-
-    // Ensure all required fields are included in response
-    const sellerResponse = {
-      id: seller._id,
-      businessName: seller.businessName,
-      email: seller.email,
-      phone: seller.phone,
-      address: seller.address,
-      status: seller.status,
-      createdAt: seller.createdAt
-    };
+    await seller.save();
 
     res.json({
       success: true,
-      seller: sellerResponse
+      seller: {
+        id: seller._id,
+        businessName: seller.businessName,
+        email: seller.email,
+        phone: seller.phone,
+        address: seller.address
+      }
     });
   } catch (error) {
     console.error('Update seller profile error:', error);
     
-    // Handle mongoose validation errors
+    // Handle validation errors
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(err => err.message);
       return res.status(400).json({
