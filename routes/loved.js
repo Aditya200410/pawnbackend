@@ -38,6 +38,18 @@ const uploadImages = upload.fields([
   { name: 'image3', maxCount: 1 }
 ]);
 
+// Middleware to handle multer upload
+const handleUpload = (req, res, next) => {
+  uploadImages(req, res, function(err) {
+    if (err instanceof multer.MulterError) {
+      return res.status(400).json({ error: 'File upload error', details: err.message });
+    } else if (err) {
+      return res.status(500).json({ error: 'File upload error', details: err.message });
+    }
+    next();
+  });
+};
+
 // Get all loved products
 router.get("/", getAllLovedProducts);
 
@@ -45,10 +57,10 @@ router.get("/", getAllLovedProducts);
 router.get("/:id", getLovedProduct);
 
 // Upload images and create loved product
-router.post("/upload", uploadImages, createLovedProductWithFiles);
+router.post("/upload", handleUpload, createLovedProductWithFiles);
 
 // Update loved product by id
-router.put("/:id", uploadImages, updateLovedProductWithFiles);
+router.put("/:id", handleUpload, updateLovedProductWithFiles);
 
 // Delete loved product by id
 router.delete("/:id", deleteLovedProduct);

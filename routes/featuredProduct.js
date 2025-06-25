@@ -3,7 +3,13 @@ const router = express.Router();
 const multer = require("multer");
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
-const featuredProductController = require('../controllers/featuredProductController');
+const { 
+  getAllFeaturedProducts, 
+  getFeaturedProduct, 
+  createFeaturedProductWithFiles, 
+  updateFeaturedProductWithFiles, 
+  deleteFeaturedProduct 
+} = require('../controllers/featuredProductController');
 
 // Cloudinary config
 cloudinary.config({
@@ -16,7 +22,7 @@ cloudinary.config({
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: 'pawnshop-featured',
+    folder: 'pawnshop-products',
     allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
     transformation: [{ width: 800, height: 800, crop: 'limit' }],
   },
@@ -32,25 +38,31 @@ const uploadImages = upload.fields([
   { name: 'image3', maxCount: 1 }
 ]);
 
+// Middleware to handle multer upload
+const handleUpload = (req, res, next) => {
+  uploadImages(req, res, function(err) {
+    if (err instanceof multer.MulterError) {
+      return res.status(400).json({ error: 'File upload error', details: err.message });
+    } else if (err) {
+      return res.status(500).json({ error: 'File upload error', details: err.message });
+    }
+    next();
+  });
+};
+
 // Get all featured products
-router.get('/', featuredProductController.getAllFeaturedProducts);
+router.get('/', getAllFeaturedProducts);
 
 // Get single featured product
-router.get('/:id', featuredProductController.getFeaturedProduct);
+router.get('/:id', getFeaturedProduct);
 
-// Create new featured product with file upload
-router.post('/upload', uploadImages, featuredProductController.createFeaturedProductWithFiles);
+// Upload images and create featured product
+router.post('/upload', handleUpload, createFeaturedProductWithFiles);
 
-// Create new featured product (legacy JSON endpoint)
-router.post('/', featuredProductController.createFeaturedProduct);
-
-// Update featured product with file upload
-router.put('/:id/upload', uploadImages, featuredProductController.updateFeaturedProductWithFiles);
-
-// Update featured product (legacy JSON endpoint)
-router.put('/:id', featuredProductController.updateFeaturedProduct);
+// Update featured product by id
+router.put('/:id', handleUpload, updateFeaturedProductWithFiles);
 
 // Delete featured product
-router.delete('/:id', featuredProductController.deleteFeaturedProduct);
+router.delete('/:id', deleteFeaturedProduct);
 
 module.exports = router; 
