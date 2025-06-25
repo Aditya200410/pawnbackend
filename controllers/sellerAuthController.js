@@ -258,7 +258,7 @@ exports.updateProfile = async (req, res) => {
   }
 };
 
-// Get all sellers (for admin)
+// Get all sellers
 exports.getAllSellers = async (req, res) => {
   try {
     const sellers = await Seller.find({}, '-password');
@@ -266,7 +266,7 @@ exports.getAllSellers = async (req, res) => {
     res.json({
       success: true,
       sellers: sellers.map(seller => ({
-        _id: seller._id,
+        id: seller._id,
         businessName: seller.businessName,
         email: seller.email,
         phone: seller.phone,
