@@ -29,7 +29,22 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({ storage: storage });
+// File filter to allow only images and MP4 videos
+const fileFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith('image/') || file.mimetype === 'video/mp4') {
+    cb(null, true);
+  } else {
+    cb(new Error('Only images and MP4 videos are allowed!'), false);
+  }
+};
+
+const upload = multer({ 
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB limit
+  }
+});
 
 // Helper function to read carousel data
 const readCarouselData = () => {
