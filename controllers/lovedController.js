@@ -2,7 +2,7 @@ const fs = require('fs').promises;
 const path = require('path');
 const Product = require('../models/Product');
 
-const dataPath = path.join(__dirname, '../data/featuredProducts.json');
+const dataPath = path.join(__dirname, '../data/loved.json');
 
 // Helper function to read data
 const readData = async () => {
@@ -12,7 +12,7 @@ const readData = async () => {
   } catch (error) {
     if (error.code === 'ENOENT') {
       // If file doesn't exist, create it with empty array
-      const initialData = { featuredProducts: [] };
+      const initialData = { lovedProducts: [] };
       await writeData(initialData);
       return initialData;
     }
@@ -25,36 +25,36 @@ const writeData = async (data) => {
   await fs.writeFile(dataPath, JSON.stringify(data, null, 2));
 };
 
-// Get all featured products
-const getAllFeaturedProducts = async (req, res) => {
+// Get all loved products
+const getAllLovedProducts = async (req, res) => {
   try {
     const data = await readData();
-    res.json(data.featuredProducts);
+    res.json(data.lovedProducts);
   } catch (error) {
-    console.error('Error fetching featured products:', error);
-    res.status(500).json({ message: "Error fetching featured products", error: error.message });
+    console.error('Error fetching loved products:', error);
+    res.status(500).json({ message: "Error fetching loved products", error: error.message });
   }
 };
 
-// Get single featured product
-const getFeaturedProduct = async (req, res) => {
+// Get single loved product
+const getLovedProduct = async (req, res) => {
   try {
     const data = await readData();
-    const product = data.featuredProducts.find(p => p.id === parseInt(req.params.id));
+    const product = data.lovedProducts.find(p => p.id === parseInt(req.params.id));
     
     if (!product) {
-      return res.status(404).json({ message: "Featured product not found" });
+      return res.status(404).json({ message: "Loved product not found" });
     }
     
     res.json(product);
   } catch (error) {
-    console.error('Error fetching featured product:', error);
-    res.status(500).json({ message: "Error fetching featured product", error: error.message });
+    console.error('Error fetching loved product:', error);
+    res.status(500).json({ message: "Error fetching loved product", error: error.message });
   }
 };
 
-// Create new featured product with file upload
-const createFeaturedProductWithFiles = async (req, res) => {
+// Create new loved product with file upload
+const createLovedProductWithFiles = async (req, res) => {
   try {
     if (!req.files) {
       return res.status(400).json({ 
@@ -125,10 +125,10 @@ const createFeaturedProductWithFiles = async (req, res) => {
     
     const savedProduct = await newProduct.save();
 
-    // Add to featured products JSON
+    // Add to loved products JSON
     const data = await readData();
-    const featuredProduct = {
-      id: data.featuredProducts.length + 1,
+    const lovedProduct = {
+      id: data.lovedProducts.length + 1,
       productId: savedProduct._id, // Reference to MongoDB product
       name: productData.name,
       material: productData.material,
@@ -146,35 +146,35 @@ const createFeaturedProductWithFiles = async (req, res) => {
       inStock: productData.inStock === 'true' || productData.inStock === true
     };
     
-    data.featuredProducts.push(featuredProduct);
+    data.lovedProducts.push(lovedProduct);
     await writeData(data);
     
     res.status(201).json({ 
-      message: "Featured product created successfully", 
-      product: featuredProduct,
+      message: "Loved product created successfully", 
+      product: lovedProduct,
       uploadedFiles: files
     });
   } catch (error) {
-    console.error('Error creating featured product:', error);
-    res.status(500).json({ message: "Error creating featured product", error: error.message });
+    console.error('Error creating loved product:', error);
+    res.status(500).json({ message: "Error creating loved product", error: error.message });
   }
 };
 
-// Update featured product with file upload
-const updateFeaturedProductWithFiles = async (req, res) => {
+// Update loved product with file upload
+const updateLovedProductWithFiles = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const files = req.files;
     const productData = req.body;
     
     const data = await readData();
-    const index = data.featuredProducts.findIndex(p => p.id === id);
+    const index = data.lovedProducts.findIndex(p => p.id === id);
     
     if (index === -1) {
-      return res.status(404).json({ message: "Featured product not found" });
+      return res.status(404).json({ message: "Loved product not found" });
     }
 
-    const existingProduct = data.featuredProducts[index];
+    const existingProduct = data.lovedProducts[index];
     
     // Process uploaded files
     const imagePaths = [];
@@ -219,54 +219,54 @@ const updateFeaturedProductWithFiles = async (req, res) => {
 
     await Product.findByIdAndUpdate(existingProduct.productId, updatedMongoProduct);
 
-    // Update featured product JSON
-    const updatedFeaturedProduct = {
+    // Update loved product JSON
+    const updatedLovedProduct = {
       ...existingProduct,
       ...updatedMongoProduct
     };
 
-    data.featuredProducts[index] = updatedFeaturedProduct;
+    data.lovedProducts[index] = updatedLovedProduct;
     await writeData(data);
 
     res.json({ 
-      message: "Featured product updated successfully", 
-      product: updatedFeaturedProduct,
+      message: "Loved product updated successfully", 
+      product: updatedLovedProduct,
       uploadedFiles: files
     });
   } catch (error) {
-    console.error('Error updating featured product:', error);
-    res.status(500).json({ message: "Error updating featured product", error: error.message });
+    console.error('Error updating loved product:', error);
+    res.status(500).json({ message: "Error updating loved product", error: error.message });
   }
 };
 
-// Delete featured product
-const deleteFeaturedProduct = async (req, res) => {
+// Delete loved product
+const deleteLovedProduct = async (req, res) => {
   try {
     const data = await readData();
-    const index = data.featuredProducts.findIndex(p => p.id === parseInt(req.params.id));
+    const index = data.lovedProducts.findIndex(p => p.id === parseInt(req.params.id));
     
     if (index === -1) {
-      return res.status(404).json({ message: "Featured product not found" });
+      return res.status(404).json({ message: "Loved product not found" });
     }
 
     // Delete from MongoDB
-    await Product.findByIdAndDelete(data.featuredProducts[index].productId);
+    await Product.findByIdAndDelete(data.lovedProducts[index].productId);
     
-    // Delete from featured products JSON
-    data.featuredProducts.splice(index, 1);
+    // Delete from loved products JSON
+    data.lovedProducts.splice(index, 1);
     await writeData(data);
     
-    res.json({ message: "Featured product deleted successfully" });
+    res.json({ message: "Loved product deleted successfully" });
   } catch (error) {
-    console.error('Error deleting featured product:', error);
-    res.status(500).json({ message: "Error deleting featured product", error: error.message });
+    console.error('Error deleting loved product:', error);
+    res.status(500).json({ message: "Error deleting loved product", error: error.message });
   }
 };
 
 module.exports = {
-  getAllFeaturedProducts,
-  getFeaturedProduct,
-  createFeaturedProductWithFiles,
-  updateFeaturedProductWithFiles,
-  deleteFeaturedProduct
+  getAllLovedProducts,
+  getLovedProduct,
+  createLovedProductWithFiles,
+  updateLovedProductWithFiles,
+  deleteLovedProduct
 }; 
