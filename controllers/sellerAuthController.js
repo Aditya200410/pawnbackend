@@ -219,6 +219,7 @@ exports.login = async (req, res) => {
 exports.getProfile = async (req, res) => {
   try {
     const seller = req.seller;
+    console.log('Sending seller profile:', seller); // Debug log
     res.json({
       success: true,
       seller: {
@@ -227,7 +228,10 @@ exports.getProfile = async (req, res) => {
         email: seller.email,
         phone: seller.phone,
         address: seller.address,
-        couponToken: seller.couponToken
+        couponToken: seller.couponToken,
+        websiteLink: seller.websiteLink,
+        qrCode: seller.qrCode,
+        createdAt: seller.createdAt
       }
     });
   } catch (error) {
