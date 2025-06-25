@@ -256,4 +256,31 @@ exports.updateProfile = async (req, res) => {
       message: 'Error updating profile. Please try again later.'
     });
   }
+};
+
+// Get all sellers (for admin)
+exports.getAllSellers = async (req, res) => {
+  try {
+    const sellers = await Seller.find()
+      .select('-password')
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      sellers: sellers.map(seller => ({
+        id: seller._id,
+        businessName: seller.businessName,
+        email: seller.email,
+        phone: seller.phone,
+        address: seller.address,
+        createdAt: seller.createdAt
+      }))
+    });
+  } catch (error) {
+    console.error('Get all sellers error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching sellers. Please try again later.'
+    });
+  }
 }; 

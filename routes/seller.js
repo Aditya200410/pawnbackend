@@ -11,4 +11,7 @@ router.post('/login', sellerAuthController.login);
 router.get('/profile', sellerAuth, sellerAuthController.getProfile);
 router.put('/profile', sellerAuth, sellerAuthController.updateProfile);
 
+// Admin routes
+router.get('/all', sellerAuthController.getAllSellers);
+
 module.exports = router; 
