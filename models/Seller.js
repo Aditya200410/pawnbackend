@@ -27,6 +27,10 @@ const sellerSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Address is required']
   },
+  couponToken: {
+    type: String,
+    unique: true
+  },
   documents: [{
     type: String // URLs to business documents
   }],
@@ -34,6 +38,19 @@ const sellerSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   }
+});
+
+// Generate coupon token before saving
+sellerSchema.pre('save', async function(next) {
+  if (this.isNew) {
+    // Extract username from email
+    const username = this.email.split('@')[0];
+    // Get first three digits of phone
+    const phonePrefix = this.phone.replace(/\D/g, '').slice(0, 3);
+    // Generate coupon token
+    this.couponToken = `${username}@${phonePrefix}`;
+  }
+  next();
 });
 
 // Hash password before saving

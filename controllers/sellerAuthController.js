@@ -101,7 +101,8 @@ exports.register = async (req, res) => {
         businessName: seller.businessName,
         email: seller.email,
         phone: seller.phone,
-        address: seller.address
+        address: seller.address,
+        couponToken: seller.couponToken
       }
     });
   } catch (error) {
@@ -180,7 +181,8 @@ exports.login = async (req, res) => {
         businessName: seller.businessName,
         email: seller.email,
         phone: seller.phone,
-        address: seller.address
+        address: seller.address,
+        couponToken: seller.couponToken
       }
     });
   } catch (error) {
@@ -203,7 +205,8 @@ exports.getProfile = async (req, res) => {
         businessName: seller.businessName,
         email: seller.email,
         phone: seller.phone,
-        address: seller.address
+        address: seller.address,
+        couponToken: seller.couponToken
       }
     });
   } catch (error) {
@@ -235,7 +238,8 @@ exports.updateProfile = async (req, res) => {
         businessName: seller.businessName,
         email: seller.email,
         phone: seller.phone,
-        address: seller.address
+        address: seller.address,
+        couponToken: seller.couponToken
       }
     });
   } catch (error) {
