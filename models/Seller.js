@@ -31,6 +31,13 @@ const sellerSchema = new mongoose.Schema({
     type: String,
     unique: true
   },
+  websiteLink: {
+    type: String,
+    unique: true
+  },
+  qrCode: {
+    type: String // Base64 encoded QR code image
+  },
   documents: [{
     type: String // URLs to business documents
   }],
@@ -40,7 +47,7 @@ const sellerSchema = new mongoose.Schema({
   }
 });
 
-// Generate coupon token before saving
+// Generate coupon token and website link before saving
 sellerSchema.pre('save', async function(next) {
   if (this.isNew) {
     // Extract username from email
@@ -49,6 +56,8 @@ sellerSchema.pre('save', async function(next) {
     const phonePrefix = this.phone.replace(/\D/g, '').slice(0, 3);
     // Generate coupon token
     this.couponToken = `${username}@${phonePrefix}`;
+    // Generate website link
+    this.websiteLink = `https://pawnshop.com/seller/${this.couponToken}`;
   }
   next();
 });

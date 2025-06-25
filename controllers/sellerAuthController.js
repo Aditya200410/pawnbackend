@@ -1,5 +1,6 @@
 const Seller = require('../models/Seller');
 const jwt = require('jsonwebtoken');
+const QRCode = require('qrcode');
 
 // Helper function to generate JWT token
 const generateToken = (seller) => {
@@ -8,6 +9,17 @@ const generateToken = (seller) => {
     process.env.JWT_SECRET_SELLER,
     { expiresIn: '30d' }
   );
+};
+
+// Helper function to generate QR code
+const generateQRCode = async (url) => {
+  try {
+    const qrCode = await QRCode.toDataURL(url);
+    return qrCode;
+  } catch (error) {
+    console.error('Error generating QR code:', error);
+    return null;
+  }
 };
 
 // Helper function to validate email format
@@ -83,6 +95,13 @@ exports.register = async (req, res) => {
       address
     });
 
+    // Generate QR code for the website link
+    const qrCode = await generateQRCode(seller.websiteLink);
+    if (qrCode) {
+      seller.qrCode = qrCode;
+      await seller.save();
+    }
+
     // Generate token
     const token = generateToken(seller);
 
@@ -102,7 +121,9 @@ exports.register = async (req, res) => {
         email: seller.email,
         phone: seller.phone,
         address: seller.address,
-        couponToken: seller.couponToken
+        couponToken: seller.couponToken,
+        websiteLink: seller.websiteLink,
+        qrCode: seller.qrCode
       }
     });
   } catch (error) {
@@ -266,7 +287,7 @@ exports.updateProfile = async (req, res) => {
 exports.getAllSellers = async (req, res) => {
   try {
     const sellers = await Seller.find({}).select('-password');
-    console.log('Fetched sellers:', sellers); // Debug log
+    console.log('Fetched sellers:', sellers);
     
     const mappedSellers = sellers.map(seller => ({
       _id: seller._id,
@@ -275,10 +296,12 @@ exports.getAllSellers = async (req, res) => {
       phone: seller.phone,
       address: seller.address,
       couponToken: seller.couponToken,
+      websiteLink: seller.websiteLink,
+      qrCode: seller.qrCode,
       createdAt: seller.createdAt
     }));
 
-    console.log('Mapped sellers:', mappedSellers); // Debug log
+    console.log('Mapped sellers:', mappedSellers);
     
     res.json({
       success: true,
