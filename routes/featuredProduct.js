@@ -1,4 +1,4 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
 const multer = require("multer");
 const cloudinary = require('cloudinary').v2;
@@ -22,7 +22,7 @@ cloudinary.config({
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: 'pawnshop-products',
+    folder: 'pawnshop-featured',
     allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
     transformation: [{ width: 800, height: 800, crop: 'limit' }],
   },
@@ -51,18 +51,18 @@ const handleUpload = (req, res, next) => {
 };
 
 // Get all featured products
-router.get('/', getAllFeaturedProducts);
+router.get("/", getAllFeaturedProducts);
 
 // Get single featured product
-router.get('/:id', getFeaturedProduct);
+router.get("/:id", getFeaturedProduct);
 
 // Upload images and create featured product
-router.post('/upload', handleUpload, createFeaturedProductWithFiles);
+router.post("/upload", handleUpload, createFeaturedProductWithFiles);
 
 // Update featured product by id
-router.put('/:id', handleUpload, updateFeaturedProductWithFiles);
+router.put("/:id", handleUpload, updateFeaturedProductWithFiles);
 
-// Delete featured product
-router.delete('/:id', deleteFeaturedProduct);
+// Delete featured product by id
+router.delete("/:id", deleteFeaturedProduct);
 
 module.exports = router; 
