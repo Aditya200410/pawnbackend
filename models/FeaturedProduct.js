@@ -1,7 +1,6 @@
-// File: admin/backend/models/Product.js
 const mongoose = require("mongoose");
 
-const bestSellerSchema = new mongoose.Schema({
+const featuredProductSchema = new mongoose.Schema({
   name: { type: String, required: true },
   material: { type: String, required: true },
   description: { type: String, required: true },
@@ -22,5 +21,4 @@ const bestSellerSchema = new mongoose.Schema({
   timestamps: true // Adds createdAt and updatedAt fields
 });
 
-module.exports = mongoose.model('BestSeller', bestSellerSchema);
-
+module.exports = mongoose.model('FeaturedProduct', featuredProductSchema); 

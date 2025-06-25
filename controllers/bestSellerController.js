@@ -1,34 +1,34 @@
-const FeaturedProduct = require('../models/FeaturedProduct');
+const BestSeller = require('../models/bestSeller');
 
-// Get all featured products
-const getAllFeaturedProducts = async (req, res) => {
+// Get all best seller products
+const getAllBestSellers = async (req, res) => {
   try {
-    const products = await FeaturedProduct.find();
+    const products = await BestSeller.find();
     res.json(products);
   } catch (error) {
-    console.error('Error fetching featured products:', error);
-    res.status(500).json({ message: "Error fetching featured products", error: error.message });
+    console.error('Error fetching best sellers:', error);
+    res.status(500).json({ message: "Error fetching best sellers", error: error.message });
   }
 };
 
-// Get single featured product
-const getFeaturedProduct = async (req, res) => {
+// Get single best seller product
+const getBestSeller = async (req, res) => {
   try {
-    const product = await FeaturedProduct.findById(req.params.id);
+    const product = await BestSeller.findById(req.params.id);
     
     if (!product) {
-      return res.status(404).json({ message: "Featured product not found" });
+      return res.status(404).json({ message: "Best seller product not found" });
     }
     
     res.json(product);
   } catch (error) {
-    console.error('Error fetching featured product:', error);
-    res.status(500).json({ message: "Error fetching featured product", error: error.message });
+    console.error('Error fetching best seller:', error);
+    res.status(500).json({ message: "Error fetching best seller", error: error.message });
   }
 };
 
-// Create new featured product with file upload
-const createFeaturedProductWithFiles = async (req, res) => {
+// Create new best seller product with file upload
+const createBestSellerWithFiles = async (req, res) => {
   try {
     if (!req.files) {
       return res.status(400).json({ 
@@ -80,7 +80,7 @@ const createFeaturedProductWithFiles = async (req, res) => {
     }
 
     // Create product in MongoDB
-    const newProduct = new FeaturedProduct({
+    const newProduct = new BestSeller({
       name: productData.name,
       material: productData.material,
       description: productData.description,
@@ -102,27 +102,27 @@ const createFeaturedProductWithFiles = async (req, res) => {
     const savedProduct = await newProduct.save();
     
     res.status(201).json({ 
-      message: "Featured product created successfully", 
+      message: "Best seller product created successfully", 
       product: savedProduct,
       uploadedFiles: files
     });
   } catch (error) {
-    console.error('Error creating featured product:', error);
-    res.status(500).json({ message: "Error creating featured product", error: error.message });
+    console.error('Error creating best seller:', error);
+    res.status(500).json({ message: "Error creating best seller", error: error.message });
   }
 };
 
-// Update featured product with file upload
-const updateFeaturedProductWithFiles = async (req, res) => {
+// Update best seller product with file upload
+const updateBestSellerWithFiles = async (req, res) => {
   try {
     const id = req.params.id;
     const files = req.files;
     const productData = req.body;
     
-    const existingProduct = await FeaturedProduct.findById(id);
+    const existingProduct = await BestSeller.findById(id);
     
     if (!existingProduct) {
-      return res.status(404).json({ message: "Featured product not found" });
+      return res.status(404).json({ message: "Best seller product not found" });
     }
 
     // Process uploaded files
@@ -143,7 +143,7 @@ const updateFeaturedProductWithFiles = async (req, res) => {
     }
 
     // Update MongoDB product
-    const updatedProduct = await FeaturedProduct.findByIdAndUpdate(id, {
+    const updatedProduct = await BestSeller.findByIdAndUpdate(id, {
       name: productData.name || existingProduct.name,
       material: productData.material || existingProduct.material,
       description: productData.description || existingProduct.description,
@@ -161,36 +161,36 @@ const updateFeaturedProductWithFiles = async (req, res) => {
     }, { new: true });
 
     res.json({ 
-      message: "Featured product updated successfully", 
+      message: "Best seller product updated successfully", 
       product: updatedProduct,
       uploadedFiles: files
     });
   } catch (error) {
-    console.error('Error updating featured product:', error);
-    res.status(500).json({ message: "Error updating featured product", error: error.message });
+    console.error('Error updating best seller:', error);
+    res.status(500).json({ message: "Error updating best seller", error: error.message });
   }
 };
 
-// Delete featured product
-const deleteFeaturedProduct = async (req, res) => {
+// Delete best seller product
+const deleteBestSeller = async (req, res) => {
   try {
-    const product = await FeaturedProduct.findByIdAndDelete(req.params.id);
+    const product = await BestSeller.findByIdAndDelete(req.params.id);
     
     if (!product) {
-      return res.status(404).json({ message: "Featured product not found" });
+      return res.status(404).json({ message: "Best seller product not found" });
     }
 
-    res.json({ message: "Featured product deleted successfully" });
+    res.json({ message: "Best seller product deleted successfully" });
   } catch (error) {
-    console.error('Error deleting featured product:', error);
-    res.status(500).json({ message: "Error deleting featured product", error: error.message });
+    console.error('Error deleting best seller:', error);
+    res.status(500).json({ message: "Error deleting best seller", error: error.message });
   }
 };
 
 module.exports = {
-  getAllFeaturedProducts,
-  getFeaturedProduct,
-  createFeaturedProductWithFiles,
-  updateFeaturedProductWithFiles,
-  deleteFeaturedProduct
+  getAllBestSellers,
+  getBestSeller,
+  createBestSellerWithFiles,
+  updateBestSellerWithFiles,
+  deleteBestSeller
 }; 
