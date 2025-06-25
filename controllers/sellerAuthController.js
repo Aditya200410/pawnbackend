@@ -265,18 +265,24 @@ exports.updateProfile = async (req, res) => {
 // Get all sellers
 exports.getAllSellers = async (req, res) => {
   try {
-    const sellers = await Seller.find({}, '-password');
+    const sellers = await Seller.find({}).select('-password');
+    console.log('Fetched sellers:', sellers); // Debug log
+    
+    const mappedSellers = sellers.map(seller => ({
+      _id: seller._id,
+      businessName: seller.businessName,
+      email: seller.email,
+      phone: seller.phone,
+      address: seller.address,
+      couponToken: seller.couponToken,
+      createdAt: seller.createdAt
+    }));
+
+    console.log('Mapped sellers:', mappedSellers); // Debug log
     
     res.json({
       success: true,
-      sellers: sellers.map(seller => ({
-        id: seller._id,
-        businessName: seller.businessName,
-        email: seller.email,
-        phone: seller.phone,
-        address: seller.address,
-        createdAt: seller.createdAt
-      }))
+      sellers: mappedSellers
     });
   } catch (error) {
     console.error('Get all sellers error:', error);
