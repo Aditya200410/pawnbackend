@@ -5,7 +5,7 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const path = require("path");
 const cookieParser = require("cookie-parser");
-const productRoutes = require("./routes/shop");
+const productRoutes = require("./routes/products");
 const orderRoutes = require("./routes/orders");
 const authRoutes = require('./routes/auth'); // Assuming your auth routes are here
 const lovedRoutes = require('./routes/loved'); // Assuming your loved routes are here
@@ -45,42 +45,41 @@ function isVercelPreview(origin) {
   return /^https:\/\/pawn-shop-git-.*-aditya200410s-projects\.vercel\.app$/.test(origin);
 }
 
+// CORS middleware
 app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin) || isVercelPreview(origin)) {
+  origin: function(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin) || isVercelPreview(origin)) {
       callback(null, true);
     } else {
-      console.log('CORS blocked origin:', origin);
       callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'Access-Control-Allow-Origin', 'Content-Length'],
-  exposedHeaders: ['Content-Length', 'X-Requested-With'],
-  preflightContinue: false,
-  optionsSuccessStatus: 204
+  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization', 'Content-Length']
 }));
 
-// Additional CORS headers for all routes
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin) || isVercelPreview(origin)) {
-    res.header('Access-Control-Allow-Origin', origin);
-  }
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Content-Length');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  if (req.method === 'OPTIONS') {
-    res.sendStatus(200);
-  } else {
-    next();
-  }
-});
-
-app.use(express.json());
+// Body parser middleware
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(cookieParser());
+
+// Request logging middleware
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.path}`);
+  console.log('Headers:', req.headers);
+  if (req.body && Object.keys(req.body).length > 0) {
+    console.log('Body:', req.body);
+  }
+  if (req.files) {
+    console.log('Files:', Object.keys(req.files).map(key => ({
+      fieldname: key,
+      originalname: req.files[key][0]?.originalname,
+      size: req.files[key][0]?.size
+    })));
+  }
+  next();
+});
 
 // Ensure data directories exist
 const dataDir = path.join(__dirname, 'data');
@@ -160,8 +159,12 @@ app.get('/test-cors', (req, res) => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-    console.error(err.stack);
-  res.status(500).json({ message: 'Something went wrong!' });
+  console.error('Error:', err);
+  console.error('Stack:', err.stack);
+  res.status(err.status || 500).json({
+    error: err.message || 'Something went wrong!',
+    details: process.env.NODE_ENV === 'development' ? err.stack : undefined
+  });
 });
 
 // Port from environment variable
