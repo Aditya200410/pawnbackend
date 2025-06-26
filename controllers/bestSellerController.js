@@ -23,7 +23,13 @@ const getBestSeller = async (req, res) => {
       return res.status(404).json({ message: "Best seller product not found" });
     }
     
-    res.json(product);
+    const productObj = product.toObject();
+    res.json({ 
+      product: {
+        ...productObj,
+        id: productObj._id
+      }
+    });
   } catch (error) {
     console.error('Error fetching best seller:', error);
     res.status(500).json({ message: "Error fetching best seller", error: error.message });

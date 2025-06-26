@@ -23,7 +23,13 @@ const getFeaturedProduct = async (req, res) => {
       return res.status(404).json({ message: "Featured product not found" });
     }
     
-    res.json(product);
+    const productObj = product.toObject();
+    res.json({ 
+      product: {
+        ...productObj,
+        id: productObj._id
+      }
+    });
   } catch (error) {
     console.error('Error fetching featured product:', error);
     res.status(500).json({ message: "Error fetching featured product", error: error.message });

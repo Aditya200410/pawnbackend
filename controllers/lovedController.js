@@ -23,7 +23,13 @@ const getLovedProduct = async (req, res) => {
       return res.status(404).json({ message: "Loved product not found" });
     }
     
-    res.json(product);
+    const productObj = product.toObject();
+    res.json({ 
+      product: {
+        ...productObj,
+        id: productObj._id
+      }
+    });
   } catch (error) {
     console.error('Error fetching loved product:', error);
     res.status(500).json({ message: "Error fetching loved product", error: error.message });
