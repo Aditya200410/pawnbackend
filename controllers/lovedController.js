@@ -1,29 +1,4 @@
-const fs = require('fs').promises;
-const path = require('path');
 const Loved = require('../models/Loved');
-
-const dataPath = path.join(__dirname, '../data/loved.json');
-
-// Helper function to read data
-const readData = async () => {
-  try {
-    const data = await fs.readFile(dataPath, 'utf8');
-    return JSON.parse(data);
-  } catch (error) {
-    if (error.code === 'ENOENT') {
-      // If file doesn't exist, create it with empty array
-      const initialData = { lovedProducts: [] };
-      await writeData(initialData);
-      return initialData;
-    }
-    throw error;
-  }
-};
-
-// Helper function to write data
-const writeData = async (data) => {
-  await fs.writeFile(dataPath, JSON.stringify(data, null, 2));
-};
 
 // Get all loved products
 const getAllLovedProducts = async (req, res) => {
