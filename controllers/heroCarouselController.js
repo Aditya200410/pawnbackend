@@ -15,37 +15,23 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Configure multer for local storage
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const uploadDir = path.join(__dirname, '../data');
-    if (!fs.promises.access(uploadDir).then(() => true).catch(() => false)) {
-      fs.promises.mkdir(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
+// Configure Cloudinary storage for multer
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'hero-carousel',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'mp4'],
+    resource_type: 'auto'
   }
 });
 
-// File filter to allow only images and MP4 videos
-const fileFilter = (req, file, cb) => {
-  if (file.mimetype.startsWith('image/') || file.mimetype === 'video/mp4') {
-    cb(null, true);
-  } else {
-    cb(new Error('Only images and MP4 videos are allowed!'), false);
-  }
-};
-
-const upload = multer({ 
+// Configure multer
+const upload = multer({
   storage: storage,
-  fileFilter: fileFilter,
   limits: {
     fileSize: 10 * 1024 * 1024 // 10MB limit
   }
-});
+}).single('image');
 
 // Helper function to read carousel data
 const readCarouselData = async () => {
@@ -98,7 +84,7 @@ const createCarouselItem = async (req, res) => {
     let image = '';
 
     if (req.file) {
-      image = '/uploads/' + req.file.filename;
+      image = req.file.path; // Cloudinary URL
     }
 
     const newItem = new HeroCarousel({
@@ -130,17 +116,17 @@ const updateCarouselItem = async (req, res) => {
     };
 
     if (req.file) {
-      // Delete old image if exists
+      // Delete old image from Cloudinary if exists
       const oldItem = await HeroCarousel.findById(req.params.id);
       if (oldItem && oldItem.image) {
-        const oldImagePath = path.join(__dirname, '..', 'public', oldItem.image);
+        const publicId = oldItem.image.split('/').pop().split('.')[0];
         try {
-          await fs.unlink(oldImagePath);
+          await cloudinary.uploader.destroy(publicId);
         } catch (err) {
-          console.error('Error deleting old image:', err);
+          console.error('Error deleting old image from Cloudinary:', err);
         }
       }
-      updateData.image = '/uploads/' + req.file.filename;
+      updateData.image = req.file.path; // New Cloudinary URL
     }
 
     const updatedItem = await HeroCarousel.findByIdAndUpdate(
@@ -168,17 +154,17 @@ const deleteCarouselItem = async (req, res) => {
       return res.status(404).json({ message: "Carousel item not found" });
     }
 
-    // Delete image file if exists
+    // Delete image from Cloudinary if exists
     if (item.image) {
-      const imagePath = path.join(__dirname, '..', 'public', item.image);
+      const publicId = item.image.split('/').pop().split('.')[0];
       try {
-        await fs.unlink(imagePath);
+        await cloudinary.uploader.destroy(publicId);
       } catch (err) {
-        console.error('Error deleting image file:', err);
+        console.error('Error deleting image from Cloudinary:', err);
       }
     }
 
-    await item.remove();
+    await item.deleteOne();
     res.json({ message: "Carousel item deleted successfully" });
   } catch (error) {
     console.error('Error deleting carousel item:', error);
