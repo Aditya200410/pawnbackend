@@ -3,17 +3,15 @@ const mongoose = require('mongoose');
 const heroCarouselSchema = new mongoose.Schema({
   title: {
     type: String,
-    required: true,
-    trim: true
+    required: true
   },
   subtitle: {
     type: String,
-    required: true,
-    trim: true
+    required: false
   },
   description: {
     type: String,
-    required: true
+    required: false
   },
   image: {
     type: String,
@@ -27,22 +25,16 @@ const heroCarouselSchema = new mongoose.Schema({
     type: String,
     default: '/shop'
   },
-  order: {
-    type: Number,
-    default: 0
-  },
   isActive: {
     type: Boolean,
     default: true
   },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now
+  order: {
+    type: Number,
+    default: 0
   }
+}, {
+  timestamps: true
 });
 
 // Update the updatedAt timestamp before saving

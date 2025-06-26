@@ -1,4 +1,5 @@
-const fs = require('fs');
+const HeroCarousel = require('../models/HeroCarousel');
+const fs = require('fs').promises;
 const path = require('path');
 const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
@@ -18,8 +19,8 @@ cloudinary.config({
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     const uploadDir = path.join(__dirname, '../data');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
+    if (!fs.promises.access(uploadDir).then(() => true).catch(() => false)) {
+      fs.promises.mkdir(uploadDir, { recursive: true });
     }
     cb(null, uploadDir);
   },
@@ -47,9 +48,9 @@ const upload = multer({
 });
 
 // Helper function to read carousel data
-const readCarouselData = () => {
+const readCarouselData = async () => {
   try {
-    const data = fs.readFileSync(dataFilePath, 'utf8');
+    const data = await fs.readFile(dataFilePath, 'utf8');
     return JSON.parse(data).carousel || [];
   } catch (error) {
     console.error('Error reading carousel data:', error);
@@ -58,9 +59,9 @@ const readCarouselData = () => {
 };
 
 // Helper function to write carousel data
-const writeCarouselData = (data) => {
+const writeCarouselData = async (data) => {
   try {
-    fs.writeFileSync(dataFilePath, JSON.stringify({ carousel: data }, null, 2));
+    await fs.writeFile(dataFilePath, JSON.stringify({ carousel: data }, null, 2));
     return true;
   } catch (error) {
     console.error('Error writing carousel data:', error);
@@ -69,189 +70,160 @@ const writeCarouselData = (data) => {
 };
 
 // Get all carousel items
-const getCarouselItems = async (req, res) => {
+const getAllCarouselItems = async (req, res) => {
   try {
-    const items = readCarouselData();
+    const items = await HeroCarousel.find().sort('order');
     res.json(items);
   } catch (error) {
-    console.error('Error getting carousel items:', error);
-    res.status(500).json({ message: 'Error getting carousel items' });
+    console.error('Error fetching carousel items:', error);
+    res.status(500).json({ message: "Error fetching carousel items", error: error.message });
   }
 };
 
 // Get active carousel items
 const getActiveCarouselItems = async (req, res) => {
   try {
-    const items = readCarouselData().filter(item => item.isActive);
-    
-    // Map items to ensure image paths are correct
-    const processedItems = items.map(item => ({
-      ...item,
-      image: item.image.startsWith('http') ? item.image : 
-        item.image.startsWith('/') ? item.image : 
-        `/${item.image}`
-    }));
-
-    console.log('Sending carousel items:', processedItems);
-    res.json(processedItems);
+    const items = await HeroCarousel.find({ isActive: true }).sort('order');
+    res.json(items);
   } catch (error) {
-    console.error('Error getting active carousel items:', error);
-    res.status(500).json({ message: 'Error getting active carousel items' });
+    console.error('Error fetching active carousel items:', error);
+    res.status(500).json({ message: "Error fetching active carousel items", error: error.message });
   }
 };
 
-// Create new carousel item
+// Create carousel item with file upload
 const createCarouselItem = async (req, res) => {
   try {
-    const items = readCarouselData();
-    const newItem = {
-      id: Date.now().toString(),
-      ...req.body,
-      order: items.length + 1,
-      isActive: true
-    };
+    const { title, subtitle, description, isActive } = req.body;
+    let image = '';
 
     if (req.file) {
-      newItem.image = `/pawnbackend/data/${req.file.filename}`;
+      image = '/uploads/' + req.file.filename;
     }
 
-    items.push(newItem);
-    writeCarouselData(items);
+    const newItem = new HeroCarousel({
+      title,
+      subtitle,
+      description,
+      image,
+      isActive: isActive === 'true',
+      order: (await HeroCarousel.countDocuments()) // Put new items at the end
+    });
 
+    await newItem.save();
     res.status(201).json(newItem);
   } catch (error) {
     console.error('Error creating carousel item:', error);
-    res.status(500).json({ message: 'Error creating carousel item' });
+    res.status(500).json({ message: "Error creating carousel item", error: error.message });
   }
 };
 
-// Update carousel item
+// Update carousel item with file upload
 const updateCarouselItem = async (req, res) => {
   try {
-    const { id } = req.params;
-    let items = readCarouselData();
-    const index = items.findIndex(item => item.id === id);
-
-    if (index === -1) {
-      return res.status(404).json({ message: 'Carousel item not found' });
-    }
-
-    const updatedItem = {
-      ...items[index],
-      ...req.body
+    const { title, subtitle, description, isActive } = req.body;
+    const updateData = {
+      title,
+      subtitle,
+      description,
+      isActive: isActive === 'true'
     };
 
     if (req.file) {
       // Delete old image if exists
-      const oldImage = items[index].image;
-      if (oldImage && oldImage.startsWith('/pawnbackend/data/')) {
-        const oldImagePath = path.join(__dirname, '..', oldImage);
-        if (fs.existsSync(oldImagePath)) {
-          fs.unlinkSync(oldImagePath);
+      const oldItem = await HeroCarousel.findById(req.params.id);
+      if (oldItem && oldItem.image) {
+        const oldImagePath = path.join(__dirname, '..', 'public', oldItem.image);
+        try {
+          await fs.unlink(oldImagePath);
+        } catch (err) {
+          console.error('Error deleting old image:', err);
         }
       }
-      updatedItem.image = `/pawnbackend/data/${req.file.filename}`;
+      updateData.image = '/uploads/' + req.file.filename;
     }
 
-    items[index] = updatedItem;
-    writeCarouselData(items);
+    const updatedItem = await HeroCarousel.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true }
+    );
+
+    if (!updatedItem) {
+      return res.status(404).json({ message: "Carousel item not found" });
+    }
 
     res.json(updatedItem);
   } catch (error) {
     console.error('Error updating carousel item:', error);
-    res.status(500).json({ message: 'Error updating carousel item' });
+    res.status(500).json({ message: "Error updating carousel item", error: error.message });
   }
 };
 
 // Delete carousel item
 const deleteCarouselItem = async (req, res) => {
   try {
-    const { id } = req.params;
-    let items = readCarouselData();
-    const index = items.findIndex(item => item.id === id);
-
-    if (index === -1) {
-      return res.status(404).json({ message: 'Carousel item not found' });
+    const item = await HeroCarousel.findById(req.params.id);
+    if (!item) {
+      return res.status(404).json({ message: "Carousel item not found" });
     }
 
-    // Delete image if exists
-    const oldImage = items[index].image;
-    if (oldImage && oldImage.startsWith('/pawnbackend/data/')) {
-      const oldImagePath = path.join(__dirname, '..', oldImage);
-      if (fs.existsSync(oldImagePath)) {
-        fs.unlinkSync(oldImagePath);
+    // Delete image file if exists
+    if (item.image) {
+      const imagePath = path.join(__dirname, '..', 'public', item.image);
+      try {
+        await fs.unlink(imagePath);
+      } catch (err) {
+        console.error('Error deleting image file:', err);
       }
     }
 
-    items.splice(index, 1);
-    
-    // Update order of remaining items
-    items = items.map((item, idx) => ({
-      ...item,
-      order: idx + 1
-    }));
-
-    writeCarouselData(items);
-
-    res.json({ message: 'Carousel item deleted successfully' });
+    await item.remove();
+    res.json({ message: "Carousel item deleted successfully" });
   } catch (error) {
     console.error('Error deleting carousel item:', error);
-    res.status(500).json({ message: 'Error deleting carousel item' });
+    res.status(500).json({ message: "Error deleting carousel item", error: error.message });
+  }
+};
+
+// Toggle active status
+const toggleCarouselActive = async (req, res) => {
+  try {
+    const item = await HeroCarousel.findById(req.params.id);
+    if (!item) {
+      return res.status(404).json({ message: "Carousel item not found" });
+    }
+
+    item.isActive = !item.isActive;
+    await item.save();
+    res.json(item);
+  } catch (error) {
+    console.error('Error toggling carousel item status:', error);
+    res.status(500).json({ message: "Error toggling carousel item status", error: error.message });
   }
 };
 
 // Update carousel items order
 const updateCarouselOrder = async (req, res) => {
   try {
-    const { items } = req.body;
-    const currentItems = readCarouselData();
-    
-    // Update order while preserving other properties
-    const updatedItems = items.map((itemId, index) => {
-      const item = currentItems.find(i => i.id === itemId);
-      return {
-        ...item,
-        order: index + 1
-      };
-    });
-
-    writeCarouselData(updatedItems);
-
-    res.json(updatedItems);
+    const items = req.body;
+    for (let i = 0; i < items.length; i++) {
+      await HeroCarousel.findByIdAndUpdate(items[i]._id, { order: i });
+    }
+    res.json({ message: "Order updated successfully" });
   } catch (error) {
     console.error('Error updating carousel order:', error);
-    res.status(500).json({ message: 'Error updating carousel order' });
-  }
-};
-
-// Toggle carousel item active status
-const toggleCarouselActive = async (req, res) => {
-  try {
-    const { id } = req.params;
-    let items = readCarouselData();
-    const index = items.findIndex(item => item.id === id);
-
-    if (index === -1) {
-      return res.status(404).json({ message: 'Carousel item not found' });
-    }
-
-    items[index].isActive = !items[index].isActive;
-    writeCarouselData(items);
-
-    res.json(items[index]);
-  } catch (error) {
-    console.error('Error toggling carousel item status:', error);
-    res.status(500).json({ message: 'Error toggling carousel item status' });
+    res.status(500).json({ message: "Error updating carousel order", error: error.message });
   }
 };
 
 module.exports = {
   upload,
-  getCarouselItems,
+  getAllCarouselItems,
   getActiveCarouselItems,
   createCarouselItem,
   updateCarouselItem,
   deleteCarouselItem,
-  updateCarouselOrder,
-  toggleCarouselActive
+  toggleCarouselActive,
+  updateCarouselOrder
 }; 

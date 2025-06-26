@@ -5,7 +5,10 @@ const path = require('path');
 // Get all products
 const getAllProducts = async (req, res) => {
   try {
-    const products = await Product.find({});
+    console.log('Fetching all products...');
+    const products = await Product.find({}).lean();
+    console.log('Found products:', products.length);
+    console.log('Sample product:', products[0]);
     res.json(products);
   } catch (error) {
     console.error('Error fetching products:', error);
@@ -16,10 +19,13 @@ const getAllProducts = async (req, res) => {
 // Get single product
 const getProduct = async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id);
+    console.log('Fetching product with ID:', req.params.id);
+    const product = await Product.findById(req.params.id).lean();
     if (!product) {
+      console.log('Product not found with ID:', req.params.id);
       return res.status(404).json({ message: "Product not found" });
     }
+    console.log('Found product:', product);
     res.json(product);
   } catch (error) {
     console.error('Error fetching product:', error);
