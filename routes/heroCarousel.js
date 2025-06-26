@@ -13,19 +13,15 @@ const {
   updateCarouselOrder
 } = require('../controllers/heroCarouselController');
 
-// Routes
+// Public routes
 router.get('/', getAllCarouselItems);
 router.get('/active', getActiveCarouselItems);
-router.post('/', upload, createCarouselItem);
-router.put('/:id', upload, updateCarouselItem);
-router.delete('/:id', deleteCarouselItem);
-router.patch('/:id/toggle-active', toggleCarouselActive);
-router.put('/order/update', updateCarouselOrder);
 
 // Admin routes
-router.get('/admin', authenticateToken, isAdmin, getAllCarouselItems);
-router.post('/admin', authenticateToken, isAdmin, upload, createCarouselItem);
-router.put('/admin/:id', authenticateToken, isAdmin, upload, updateCarouselItem);
-router.delete('/admin/:id', authenticateToken, isAdmin, deleteCarouselItem);
+router.post('/', authenticateToken, isAdmin, upload, createCarouselItem);
+router.put('/:id', authenticateToken, isAdmin, upload, updateCarouselItem);
+router.delete('/:id', authenticateToken, isAdmin, deleteCarouselItem);
+router.patch('/:id/toggle-active', authenticateToken, isAdmin, toggleCarouselActive);
+router.put('/order/update', authenticateToken, isAdmin, updateCarouselOrder);
 
 module.exports = router; 
