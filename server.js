@@ -138,7 +138,7 @@ app.use('/api/featured-products', featuredProductRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/hero-carousel', heroCarouselRoutes);
 app.use('/api/seller', sellerRoutes);
-app.use('/api/coupon', couponRoutes);
+app.use('/api/coupons', couponRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
