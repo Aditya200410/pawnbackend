@@ -1,6 +1,7 @@
 const Cart = require('../models/Cart');
 const fs = require('fs');
 const path = require('path');
+const Product = require('../models/Product');
 
 // Helper function to get products from shop.json
 const getProducts = () => {
@@ -47,21 +48,24 @@ const addToCart = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Email is required' });
     }
     const { productId, quantity = 1 } = req.body;
-    // Get products from shop.json
-    const products = getProducts();
-    const product = products.find(p => p.id.toString() === productId.toString());
+    
+    // Find product in MongoDB
+    const product = await Product.findById(productId);
     if (!product) {
       return res.status(404).json({ success: false, message: 'Product not found' });
     }
+
     let cart = await Cart.findOne({ userId });
     if (!cart) {
       // Create new cart if it doesn't exist
       cart = new Cart({ userId, items: [] });
     }
+
     // Check if item already exists in cart
     const existingItemIndex = cart.items.findIndex(item => 
       item.productId.toString() === productId.toString()
     );
+
     if (existingItemIndex > -1) {
       // Update quantity if item exists
       cart.items[existingItemIndex].quantity += quantity;
@@ -77,6 +81,7 @@ const addToCart = async (req, res) => {
         category: product.category
       });
     }
+
     await cart.save();
     res.json({
       success: true,
