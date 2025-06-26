@@ -118,6 +118,10 @@ const updateCarouselItem = async (req, res) => {
     console.log('Update request body:', req.body);
     const { title, subtitle, description, buttonText, buttonLink, isActive } = req.body;
     
+    if (!req.params.id) {
+      return res.status(400).json({ message: "Carousel item ID is required" });
+    }
+
     if (!title) {
       return res.status(400).json({ message: "Title is required" });
     }
