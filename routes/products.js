@@ -5,7 +5,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { authenticateToken, isAdmin } = require('../middleware/auth');
-const Product = require('../models/schemas/product');
+const Product = require('../models/Product');
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
