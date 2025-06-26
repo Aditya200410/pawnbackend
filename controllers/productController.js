@@ -1,14 +1,12 @@
 const Product = require('../models/Product');
+const mongoose = require('mongoose');
 const fs = require('fs').promises;
 const path = require('path');
 
 // Get all products
 const getAllProducts = async (req, res) => {
   try {
-    console.log('Fetching all products...');
-    const products = await Product.find({}).lean();
-    console.log('Found products:', products.length);
-    console.log('Sample product:', products[0]);
+    const products = await Product.find();
     res.json(products);
   } catch (error) {
     console.error('Error fetching products:', error);
@@ -19,13 +17,10 @@ const getAllProducts = async (req, res) => {
 // Get single product
 const getProduct = async (req, res) => {
   try {
-    console.log('Fetching product with ID:', req.params.id);
-    const product = await Product.findById(req.params.id).lean();
+    const product = await Product.findById(req.params.id);
     if (!product) {
-      console.log('Product not found with ID:', req.params.id);
       return res.status(404).json({ message: "Product not found" });
     }
-    console.log('Found product:', product);
     res.json(product);
   } catch (error) {
     console.error('Error fetching product:', error);
@@ -36,10 +31,14 @@ const getProduct = async (req, res) => {
 // Create new product with file upload
 const createProductWithFiles = async (req, res) => {
   try {
-    console.log('Creating product with files:', req.files);
-    console.log('Product data:', req.body);
+    console.log('=== Starting Product Creation ===');
+    console.log('Headers:', req.headers);
+    console.log('Files received:', req.files);
+    console.log('Body data:', req.body);
+    console.log('Auth token:', req.headers.authorization);
 
     if (!req.files || !req.files.mainImage) {
+      console.log('Error: Missing main image');
       return res.status(400).json({ 
         error: 'Main image is required. Make sure you are uploading as multipart/form-data and the main image field is named "mainImage".' 
       });
@@ -63,19 +62,29 @@ const createProductWithFiles = async (req, res) => {
       "regularPrice"
     ];
 
+    console.log('Validating required fields...');
+    const missingFields = [];
     for (const field of requiredFields) {
       if (!productData[field]) {
-        return res.status(400).json({ error: `Field "${field}" is required` });
+        missingFields.push(field);
+        console.log(`Missing required field: ${field}`);
       }
     }
 
+    if (missingFields.length > 0) {
+      console.log('Error: Missing required fields:', missingFields);
+      return res.status(400).json({ error: `Missing required fields: ${missingFields.join(', ')}` });
+    }
+
     // Process uploaded files
+    console.log('Processing uploaded files...');
     const imagePaths = [];
     
     // Main image
     if (files.mainImage && files.mainImage[0]) {
       const mainImageUrl = files.mainImage[0].path; // Cloudinary URL
       imagePaths.push(mainImageUrl);
+      console.log('Added main image:', mainImageUrl);
     }
 
     // Additional images
@@ -83,8 +92,16 @@ const createProductWithFiles = async (req, res) => {
       if (files[`image${i}`] && files[`image${i}`][0]) {
         const imageUrl = files[`image${i}`][0].path; // Cloudinary URL
         imagePaths.push(imageUrl);
+        console.log(`Added image${i}:`, imageUrl);
       }
     }
+
+    console.log('Creating new product with data:', {
+      name: productData.name,
+      category: productData.category,
+      price: productData.price,
+      images: imagePaths
+    });
 
     const newProduct = new Product({
       name: productData.name,
@@ -103,7 +120,9 @@ const createProductWithFiles = async (req, res) => {
       inStock: productData.inStock === 'true' || productData.inStock === true
     });
     
+    console.log('Saving product to database...');
     const savedProduct = await newProduct.save();
+    console.log('Product saved successfully:', savedProduct);
     
     res.status(201).json({ 
       message: "Product created successfully", 
@@ -111,8 +130,14 @@ const createProductWithFiles = async (req, res) => {
       uploadedFiles: files
     });
   } catch (error) {
-    console.error('Error creating product:', error);
-    res.status(500).json({ message: "Error creating product", error: error.message });
+    console.error('=== Error creating product ===');
+    console.error('Error details:', error);
+    console.error('Stack trace:', error.stack);
+    res.status(500).json({ 
+      message: "Error creating product", 
+      error: error.message,
+      details: error.stack
+    });
   }
 };
 
