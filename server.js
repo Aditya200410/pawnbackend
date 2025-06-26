@@ -5,7 +5,7 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const path = require("path");
 const cookieParser = require("cookie-parser");
-const productRoutes = require("./routes/products");
+const shopRoutes = require("./routes/shop");
 const orderRoutes = require("./routes/orders");
 const authRoutes = require('./routes/auth'); // Assuming your auth routes are here
 const lovedRoutes = require('./routes/loved'); // Assuming your loved routes are here
@@ -45,41 +45,42 @@ function isVercelPreview(origin) {
   return /^https:\/\/pawn-shop-git-.*-aditya200410s-projects\.vercel\.app$/.test(origin);
 }
 
-// CORS middleware
 app.use(cors({
-  origin: function(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin) || isVercelPreview(origin)) {
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin) || isVercelPreview(origin)) {
       callback(null, true);
     } else {
+      console.log('CORS blocked origin:', origin);
       callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization', 'Content-Length']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'Access-Control-Allow-Origin', 'Content-Length'],
+  exposedHeaders: ['Content-Length', 'X-Requested-With'],
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 }));
 
-// Body parser middleware
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-app.use(cookieParser());
-
-// Request logging middleware
+// Additional CORS headers for all routes
 app.use((req, res, next) => {
-  console.log(`${req.method} ${req.path}`);
-  console.log('Headers:', req.headers);
-  if (req.body && Object.keys(req.body).length > 0) {
-    console.log('Body:', req.body);
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin) || isVercelPreview(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
   }
-  if (req.files) {
-    console.log('Files:', Object.keys(req.files).map(key => ({
-      fieldname: key,
-      originalname: req.files[key][0]?.originalname,
-      size: req.files[key][0]?.size
-    })));
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Content-Length');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(200);
+  } else {
+    next();
   }
-  next();
 });
+
+app.use(express.json());
+app.use(cookieParser());
 
 // Ensure data directories exist
 const dataDir = path.join(__dirname, 'data');
@@ -126,7 +127,7 @@ mongoose.connect(MONGODB_URI, {
   .catch(err => console.error("MongoDB connection error:", err));
 
 // API Routes
-app.use("/api/products", productRoutes);
+app.use("/api/shop", shopRoutes);
 app.use("/api/orders", orderRoutes);
 app.use('/api/bestseller', bestSellerRoutes);
 app.use('/api/auth', authRoutes);
@@ -159,12 +160,12 @@ app.get('/test-cors', (req, res) => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error('Error:', err);
-  console.error('Stack:', err.stack);
-  res.status(err.status || 500).json({
-    error: err.message || 'Something went wrong!',
-    details: process.env.NODE_ENV === 'development' ? err.stack : undefined
-  });
+    console.error('Error:', err);
+    console.error('Stack:', err.stack);
+    res.status(500).json({ 
+        message: 'Something went wrong!',
+        error: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
+    });
 });
 
 // Port from environment variable
