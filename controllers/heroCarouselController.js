@@ -115,12 +115,20 @@ const createCarouselItem = async (req, res) => {
 // Update carousel item with file upload
 const updateCarouselItem = async (req, res) => {
   try {
-    const { title, subtitle, description, isActive } = req.body;
+    console.log('Update request body:', req.body);
+    const { title, subtitle, description, buttonText, buttonLink, isActive } = req.body;
+    
+    if (!title) {
+      return res.status(400).json({ message: "Title is required" });
+    }
+
     const updateData = {
       title,
-      subtitle,
-      description,
-      isActive: isActive === 'true'
+      subtitle: subtitle || '',
+      description: description || '',
+      buttonText: buttonText || 'Shop Now',
+      buttonLink: buttonLink || '/shop',
+      isActive: isActive === 'true' || isActive === true
     };
 
     if (req.file) {
@@ -137,6 +145,7 @@ const updateCarouselItem = async (req, res) => {
       updateData.image = req.file.path; // New Cloudinary URL
     }
 
+    console.log('Update data:', updateData);
     const updatedItem = await HeroCarousel.findByIdAndUpdate(
       req.params.id,
       updateData,
@@ -147,6 +156,7 @@ const updateCarouselItem = async (req, res) => {
       return res.status(404).json({ message: "Carousel item not found" });
     }
 
+    console.log('Updated item:', updatedItem);
     res.json(updatedItem);
   } catch (error) {
     console.error('Error updating carousel item:', error);
