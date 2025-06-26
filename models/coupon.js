@@ -8,42 +8,46 @@ const couponSchema = new mongoose.Schema({
     uppercase: true,
     trim: true
   },
-  name: {
+  discountType: {
     type: String,
-    required: true
-  },
-  discountPercentage: {
-    type: Number,
     required: true,
-    min: 0,
-    max: 100
+    enum: ['percentage', 'fixed'],
+    default: 'percentage'
   },
-  maxUses: {
-    type: Number,
-    required: true,
-    min: 1
-  },
-  currentUses: {
-    type: Number,
-    default: 0
-  },
-  minOrderAmount: {
+  discountValue: {
     type: Number,
     required: true,
     min: 0
   },
-  isActive: {
-    type: Boolean,
-    default: true
+  minPurchase: {
+    type: Number,
+    default: 0
   },
-  expiryDate: {
+  maxDiscount: {
+    type: Number
+  },
+  startDate: {
+    type: Date,
+    default: Date.now
+  },
+  endDate: {
     type: Date,
     required: true
   },
-  createdAt: {
-    type: Date,
-    default: Date.now
+  usageLimit: {
+    type: Number,
+    default: null
+  },
+  usedCount: {
+    type: Number,
+    default: 0
+  },
+  isActive: {
+    type: Boolean,
+    default: true
   }
+}, {
+  timestamps: true
 });
 
 // Add index for faster lookups

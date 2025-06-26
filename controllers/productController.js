@@ -131,26 +131,38 @@ const updateProductWithFiles = async (req, res) => {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    // Process uploaded files
-    let imagePaths = [...(existingProduct.images || [])];
-    
+    // Initialize imagePaths with existing images
+    let imagePaths = existingProduct.images || [];
+    if (!Array.isArray(imagePaths)) {
+      // If images is not an array, initialize it with the main image if it exists
+      imagePaths = existingProduct.image ? [existingProduct.image] : [];
+    }
+
     // Handle main image update
     if (files.mainImage && files.mainImage[0]) {
       const mainImageUrl = files.mainImage[0].path;
-      imagePaths[0] = mainImageUrl; // Replace main image
+      if (imagePaths.length === 0) {
+        imagePaths.push(mainImageUrl);
+      } else {
+        imagePaths[0] = mainImageUrl;
+      }
     }
 
     // Handle additional images
     for (let i = 1; i <= 3; i++) {
       if (files[`image${i}`] && files[`image${i}`][0]) {
         const imageUrl = files[`image${i}`][0].path;
-        // Replace or add the image at the correct index
         if (i < imagePaths.length) {
           imagePaths[i] = imageUrl;
         } else {
           imagePaths.push(imageUrl);
         }
       }
+    }
+
+    // Ensure we have at least one image
+    if (imagePaths.length === 0 && existingProduct.image) {
+      imagePaths.push(existingProduct.image);
     }
 
     // Update product object
@@ -166,10 +178,18 @@ const updateProductWithFiles = async (req, res) => {
       care: productData.care || existingProduct.care,
       price: productData.price ? parseFloat(productData.price) : existingProduct.price,
       regularPrice: productData.regularPrice ? parseFloat(productData.regularPrice) : existingProduct.regularPrice,
-      image: imagePaths[0] || existingProduct.image, // Keep existing main image if no new one
+      image: imagePaths[0], // Always use first image as main image
       images: imagePaths,
       inStock: productData.inStock !== undefined ? (productData.inStock === 'true' || productData.inStock === true) : existingProduct.inStock
     };
+
+    // Log the update operation
+    console.log('Updating product with data:', {
+      id,
+      imagePaths,
+      mainImage: updatedProduct.image,
+      filesReceived: Object.keys(files)
+    });
 
     const savedProduct = await Product.findByIdAndUpdate(id, updatedProduct, { new: true });
 

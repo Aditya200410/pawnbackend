@@ -1,4 +1,4 @@
-const Coupon = require('../models/coupon');
+const Coupon = require('../models/Coupon');
 
 // Get all coupons
 exports.getAllCoupons = async (req, res) => {
@@ -98,56 +98,79 @@ exports.deleteCoupon = async (req, res) => {
   }
 };
 
-// Validate coupon
+// Validate coupon and calculate discounted price
 exports.validateCoupon = async (req, res) => {
   try {
-    const { code, orderAmount } = req.body;
+    const { code, cartTotal } = req.body;
 
-    if (!code || orderAmount === undefined) {
-      return res.status(400).json({ message: "Coupon code and order amount are required" });
-    }
-
-    const coupon = await Coupon.findOne({ code: code.toUpperCase() });
-
-    if (!coupon) {
-      return res.status(404).json({ message: "Invalid coupon code" });
-    }
-
-    // Check if coupon is active
-    if (!coupon.isActive) {
-      return res.status(400).json({ message: "This coupon is no longer active" });
-    }
-
-    // Check if coupon has expired
-    if (new Date() > new Date(coupon.expiryDate)) {
-      return res.status(400).json({ message: "This coupon has expired" });
-    }
-
-    // Check if coupon has reached max uses
-    if (coupon.currentUses >= coupon.maxUses) {
-      return res.status(400).json({ message: "This coupon has reached its maximum usage limit" });
-    }
-
-    // Check minimum order amount
-    if (orderAmount < coupon.minOrderAmount) {
-      return res.status(400).json({ 
-        message: `Minimum order amount for this coupon is ₹${coupon.minOrderAmount}`,
-        minOrderAmount: coupon.minOrderAmount
+    if (!code || !cartTotal) {
+      return res.status(400).json({
+        success: false,
+        message: 'Coupon code and cart total are required'
       });
     }
 
-    // Calculate discount amount
-    const discountAmount = (orderAmount * coupon.discountPercentage) / 100;
+    const coupon = await Coupon.findOne({ 
+      code: code.toUpperCase(),
+      isActive: true,
+      startDate: { $lte: new Date() },
+      endDate: { $gt: new Date() }
+    });
+
+    if (!coupon) {
+      return res.status(404).json({
+        success: false,
+        message: 'Invalid or expired coupon code'
+      });
+    }
+
+    // Check minimum purchase requirement
+    if (cartTotal < coupon.minPurchase) {
+      return res.status(400).json({
+        success: false,
+        message: `Minimum purchase of ₹${coupon.minPurchase} required to use this coupon`
+      });
+    }
+
+    // Check usage limit
+    if (coupon.usageLimit !== null && coupon.usedCount >= coupon.usageLimit) {
+      return res.status(400).json({
+        success: false,
+        message: 'Coupon usage limit exceeded'
+      });
+    }
+
+    // Calculate discount
+    let discountAmount;
+    if (coupon.discountType === 'percentage') {
+      discountAmount = (cartTotal * coupon.discountValue) / 100;
+      // Apply max discount if specified
+      if (coupon.maxDiscount && discountAmount > coupon.maxDiscount) {
+        discountAmount = coupon.maxDiscount;
+      }
+    } else {
+      discountAmount = coupon.discountValue;
+    }
+
+    // Calculate final price
+    const finalPrice = cartTotal - discountAmount;
 
     res.json({
-      valid: true,
-      discountPercentage: coupon.discountPercentage,
-      discountAmount,
-      finalAmount: orderAmount - discountAmount
+      success: true,
+      data: {
+        coupon,
+        discountAmount,
+        finalPrice,
+        message: `Coupon applied successfully! You saved ₹${discountAmount.toFixed(2)}`
+      }
     });
+
   } catch (error) {
     console.error('Error validating coupon:', error);
-    res.status(500).json({ message: "Error validating coupon", error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Error validating coupon'
+    });
   }
 };
 
@@ -156,18 +179,34 @@ exports.applyCoupon = async (req, res) => {
   try {
     const { code } = req.body;
     
-    const coupon = await Coupon.findOne({ code: code.toUpperCase() });
+    const coupon = await Coupon.findOneAndUpdate(
+      { code: code.toUpperCase() },
+      { $inc: { usedCount: 1 } },
+      { new: true }
+    );
+
     if (!coupon) {
-      return res.status(404).json({ message: "Coupon not found" });
+      return res.status(404).json({
+        success: false,
+        message: 'Coupon not found'
+      });
     }
 
-    // Increment usage count
-    coupon.currentUses += 1;
-    await coupon.save();
+    res.json({
+      success: true,
+      message: 'Coupon applied successfully'
+    });
 
-    res.json({ message: "Coupon applied successfully" });
   } catch (error) {
     console.error('Error applying coupon:', error);
-    res.status(500).json({ message: "Error applying coupon", error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Error applying coupon'
+    });
   }
+};
+
+module.exports = {
+  validateCoupon,
+  applyCoupon
 }; 
