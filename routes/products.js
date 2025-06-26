@@ -1,37 +1,58 @@
 // File: admin/backend/routes/products.js
 const express = require("express");
-const Product = require("../models/Product");
 const router = express.Router();
+const multer = require('multer');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const cloudinary = require('cloudinary').v2;
+const { isAdmin, authenticateToken } = require('../middleware/auth');
+const {
+  getAllProducts,
+  getProduct,
+  createProductWithFiles,
+  updateProductWithFiles,
+  deleteProduct
+} = require('../controllers/productController');
 
-// Get all products
-router.get("/", async (req, res) => {
-  const products = await Product.find();
-  res.json(products);
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// Get single product
-router.get("/:id", async (req, res) => {
-  const product = await Product.findById(req.params.id);
-  res.json(product);
+// Configure storage
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'products',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'gif'],
+    resource_type: 'auto'
+  }
 });
 
-// Create product
-router.post("/", async (req, res) => {
-  const newProduct = new Product(req.body);
-  await newProduct.save();
-  res.json(newProduct);
+// Configure multer
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB limit
+  }
 });
 
-// Update product
-router.put("/:id", async (req, res) => {
-  const updated = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true });
-  res.json(updated);
-});
+// Configure multiple file upload fields
+const uploadFields = upload.fields([
+  { name: 'mainImage', maxCount: 1 },
+  { name: 'image1', maxCount: 1 },
+  { name: 'image2', maxCount: 1 },
+  { name: 'image3', maxCount: 1 }
+]);
 
-// Delete product
-router.delete("/:id", async (req, res) => {
-  await Product.findByIdAndDelete(req.params.id);
-  res.json({ message: "Product deleted" });
-});
+// Public routes
+router.get("/", getAllProducts);
+router.get("/:id", getProduct);
+
+// Admin routes
+router.post("/", authenticateToken, isAdmin, uploadFields, createProductWithFiles);
+router.put("/:id", authenticateToken, isAdmin, uploadFields, updateProductWithFiles);
+router.delete("/:id", authenticateToken, isAdmin, deleteProduct);
 
 module.exports = router;
