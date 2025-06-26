@@ -204,9 +204,4 @@ exports.applyCoupon = async (req, res) => {
       message: 'Error applying coupon'
     });
   }
-};
-
-module.exports = {
-  validateCoupon,
-  applyCoupon
 }; 

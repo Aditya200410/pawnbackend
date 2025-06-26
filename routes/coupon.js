@@ -1,13 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const couponController = require('../controllers/couponController');
-const { auth } = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
 
 // Admin routes (protected)
-router.get('/', auth, couponController.getAllCoupons);
-router.post('/', auth, couponController.createCoupon);
-router.put('/:id', auth, couponController.updateCoupon);
-router.delete('/:id', auth, couponController.deleteCoupon);
+router.get('/', authenticateToken, couponController.getAllCoupons);
+router.post('/', authenticateToken, couponController.createCoupon);
+router.put('/:id', authenticateToken, couponController.updateCoupon);
+router.delete('/:id', authenticateToken, couponController.deleteCoupon);
 
 // Public routes
 router.post('/validate', couponController.validateCoupon);
