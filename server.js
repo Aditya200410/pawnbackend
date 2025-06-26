@@ -16,6 +16,7 @@ const cartRoutes = require('./routes/cart');
 const fs = require('fs');
 const heroCarouselRoutes = require('./routes/heroCarousel');
 const sellerRoutes = require('./routes/seller');
+const couponRoutes = require('./routes/coupon');
 const crypto = require('crypto');
 const app = express();
 
@@ -137,6 +138,7 @@ app.use('/api/featured-products', featuredProductRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/hero-carousel', heroCarouselRoutes);
 app.use('/api/seller', sellerRoutes);
+app.use('/api/coupon', couponRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
