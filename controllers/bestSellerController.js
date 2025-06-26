@@ -4,7 +4,14 @@ const BestSeller = require('../models/bestSeller');
 const getAllBestSellers = async (req, res) => {
   try {
     const products = await BestSeller.find();
-    res.json(products);
+    // Transform the response to match the expected format
+    const transformedProducts = products.map(product => ({
+      ...product.toObject(),
+      id: product._id, // Add id field that matches _id
+      image: product.image || (product.images && product.images[0]), // Ensure image field exists
+      images: product.images || [product.image], // Ensure images array exists
+    }));
+    res.json({ products: transformedProducts }); // Wrap in products object
   } catch (error) {
     console.error('Error fetching best sellers:', error);
     res.status(500).json({ message: "Error fetching best sellers", error: error.message });

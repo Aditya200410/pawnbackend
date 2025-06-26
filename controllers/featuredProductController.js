@@ -4,7 +4,14 @@ const FeaturedProduct = require('../models/FeaturedProduct');
 const getAllFeaturedProducts = async (req, res) => {
   try {
     const products = await FeaturedProduct.find();
-    res.json(products);
+    // Transform the response to match the expected format
+    const transformedProducts = products.map(product => ({
+      ...product.toObject(),
+      id: product._id, // Add id field that matches _id
+      image: product.image || (product.images && product.images[0]), // Ensure image field exists
+      images: product.images || [product.image], // Ensure images array exists
+    }));
+    res.json({ products: transformedProducts }); // Wrap in products object
   } catch (error) {
     console.error('Error fetching featured products:', error);
     res.status(500).json({ message: "Error fetching featured products", error: error.message });
