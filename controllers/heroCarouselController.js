@@ -1,4 +1,4 @@
-const HeroCarousel = require('../models/heroCarousel');
+const HeroCarousel = require('../models/HeroCarousel');
 const fs = require('fs').promises;
 const path = require('path');
 const multer = require('multer');
@@ -80,19 +80,27 @@ const getActiveCarouselItems = async (req, res) => {
 // Create carousel item with file upload
 const createCarouselItem = async (req, res) => {
   try {
-    const { title, subtitle, description, isActive } = req.body;
+    const { title, subtitle, description, buttonText, buttonLink, isActive } = req.body;
     let image = '';
+
+    if (!title) {
+      return res.status(400).json({ message: "Title is required" });
+    }
 
     if (req.file) {
       image = req.file.path; // Cloudinary URL
+    } else {
+      return res.status(400).json({ message: "Image or video is required" });
     }
 
     const newItem = new HeroCarousel({
       title,
-      subtitle,
-      description,
+      subtitle: subtitle || '',
+      description: description || '',
+      buttonText: buttonText || 'Shop Now',
+      buttonLink: buttonLink || '/shop',
       image,
-      isActive: isActive === 'true',
+      isActive: isActive === 'true' || isActive === true,
       order: (await HeroCarousel.countDocuments()) // Put new items at the end
     });
 
