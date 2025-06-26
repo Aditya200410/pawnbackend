@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const productSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: true,
+    required: [true, 'Product name is required'],
     trim: true
   },
   material: {
@@ -13,7 +13,7 @@ const productSchema = new mongoose.Schema({
   },
   description: {
     type: String,
-    required: true,
+    required: [true, 'Product description is required'],
     trim: true
   },
   size: {
@@ -28,7 +28,7 @@ const productSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    required: true,
+    required: [true, 'Product category is required'],
     trim: true
   },
   weight: {
@@ -48,8 +48,8 @@ const productSchema = new mongoose.Schema({
   },
   price: {
     type: Number,
-    required: true,
-    min: 0
+    required: [true, 'Product price is required'],
+    min: [0, 'Price cannot be negative']
   },
   regularPrice: {
     type: Number,
@@ -61,30 +61,77 @@ const productSchema = new mongoose.Schema({
     required: true
   },
   images: [{
-    type: String
+    type: String,
+    required: [true, 'At least one product image is required']
   }],
-  inStock: {
+  stock: {
+    type: Number,
+    required: [true, 'Stock quantity is required'],
+    min: [0, 'Stock cannot be negative'],
+    default: 0
+  },
+  isActive: {
     type: Boolean,
     default: true
   },
-  date: {
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  updatedAt: {
     type: Date,
     default: Date.now
   }
 }, {
-  timestamps: true // Add timestamps
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
 });
 
-// Add index for faster lookups
-productSchema.index({ category: 1 });
+// Add indexes for better query performance
 productSchema.index({ name: 'text', description: 'text' });
+productSchema.index({ category: 1 });
+productSchema.index({ price: 1 });
+productSchema.index({ createdAt: -1 });
 
 // Add pre-save middleware to ensure price validation
 productSchema.pre('save', function(next) {
   if (this.price > this.regularPrice) {
     next(new Error('Price cannot be greater than regular price'));
   }
+  this.updatedAt = new Date();
   next();
 });
 
-module.exports = mongoose.model('Product', productSchema); 
+// Pre-update middleware to update timestamps
+productSchema.pre('findOneAndUpdate', function(next) {
+  this.set({ updatedAt: new Date() });
+  next();
+});
+
+// Virtual for formatted price
+productSchema.virtual('formattedPrice').get(function() {
+  return `$${this.price.toFixed(2)}`;
+});
+
+// Instance method to check if product is in stock
+productSchema.methods.isInStock = function() {
+  return this.stock > 0;
+};
+
+// Static method to find products by category
+productSchema.statics.findByCategory = function(category) {
+  return this.find({ category, isActive: true });
+};
+
+// Static method to find products in price range
+productSchema.statics.findByPriceRange = function(minPrice, maxPrice) {
+  return this.find({
+    price: { $gte: minPrice, $lte: maxPrice },
+    isActive: true
+  });
+};
+
+const Product = mongoose.model('Product', productSchema);
+
+module.exports = Product; 
