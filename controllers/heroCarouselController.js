@@ -15,12 +15,13 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Configure Cloudinary storage for multer
+// Configure storage
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: 'hero-carousel',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'mp4'],
+    allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'mp4', 'webp'],
+    transformation: [{ width: 1920, height: 1080, crop: 'limit' }],
     resource_type: 'auto'
   }
 });
@@ -29,9 +30,9 @@ const storage = new CloudinaryStorage({
 const upload = multer({
   storage: storage,
   limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB limit
+    fileSize: 50 * 1024 * 1024 // 50MB limit for videos
   }
-}).single('image');
+});
 
 // Helper function to read carousel data
 const readCarouselData = async () => {
@@ -78,90 +79,131 @@ const getActiveCarouselItems = async (req, res) => {
 };
 
 // Create carousel item with file upload
-const createCarouselItem = async (req, res) => {
+const createCarouselItemWithFiles = async (req, res) => {
   try {
-    const { title, subtitle, description, buttonText, buttonLink, isActive } = req.body;
-    let image = '';
+    console.log('=== Starting Hero Carousel Item Creation ===');
+    console.log('Headers:', req.headers);
+    console.log('Files received:', req.files);
+    console.log('Body data:', req.body);
 
-    if (!title) {
-      return res.status(400).json({ message: "Title is required" });
+    if (!req.files || !req.files.image) {
+      console.log('Error: Missing image/video');
+      return res.status(400).json({ 
+        error: 'Image or video is required. Make sure you are uploading as multipart/form-data and the file field is named "image".' 
+      });
     }
 
-    if (req.file) {
-      image = req.file.path; // Cloudinary URL
-    } else {
-      return res.status(400).json({ message: "Image or video is required" });
+    const files = req.files;
+    const itemData = req.body;
+    
+    // Validate required fields
+    const requiredFields = ["title"];
+
+    console.log('Validating required fields...');
+    const missingFields = [];
+    for (const field of requiredFields) {
+      if (!itemData[field]) {
+        missingFields.push(field);
+        console.log(`Missing required field: ${field}`);
+      }
     }
 
-    const newItem = new HeroCarousel({
-      title,
-      subtitle: subtitle || '',
-      description: description || '',
-      buttonText: buttonText || 'Shop Now',
-      buttonLink: buttonLink || '/shop',
-      image,
-      isActive: isActive === 'true' || isActive === true,
-      order: (await HeroCarousel.countDocuments()) // Put new items at the end
+    if (missingFields.length > 0) {
+      console.log('Error: Missing required fields:', missingFields);
+      return res.status(400).json({ error: `Missing required fields: ${missingFields.join(', ')}` });
+    }
+
+    // Process uploaded file
+    console.log('Processing uploaded file...');
+    const imageUrl = files.image[0].path; // Cloudinary URL
+    console.log('Added image/video:', imageUrl);
+
+    console.log('Creating new carousel item with data:', {
+      title: itemData.title,
+      image: imageUrl
     });
 
-    await newItem.save();
-    res.status(201).json(newItem);
+    const newItem = new HeroCarousel({
+      title: itemData.title,
+      subtitle: itemData.subtitle || '',
+      description: itemData.description || '',
+      buttonText: itemData.buttonText || 'Shop Now',
+      buttonLink: itemData.buttonLink || '/shop',
+      image: imageUrl,
+      isActive: itemData.isActive === 'true' || itemData.isActive === true,
+      order: (await HeroCarousel.countDocuments()) // Put new items at the end
+    });
+    
+    console.log('Saving carousel item to database...');
+    const savedItem = await newItem.save();
+    console.log('Carousel item saved successfully:', savedItem);
+    
+    res.status(201).json({ 
+      message: "Carousel item created successfully", 
+      item: savedItem,
+      uploadedFiles: files
+    });
   } catch (error) {
-    console.error('Error creating carousel item:', error);
-    res.status(500).json({ message: "Error creating carousel item", error: error.message });
+    console.error('=== Error creating carousel item ===');
+    console.error('Error details:', error);
+    console.error('Stack trace:', error.stack);
+    res.status(500).json({ 
+      message: "Error creating carousel item", 
+      error: error.message,
+      details: error.stack
+    });
   }
 };
 
 // Update carousel item with file upload
-const updateCarouselItem = async (req, res) => {
+const updateCarouselItemWithFiles = async (req, res) => {
   try {
-    console.log('Update request body:', req.body);
-    const { title, subtitle, description, buttonText, buttonLink, isActive } = req.body;
+    console.log('Updating carousel item with files:', req.files);
+    console.log('Update data:', req.body);
+
+    const id = req.params.id;
+    const files = req.files || {};
+    const itemData = req.body;
     
-    if (!req.params.id) {
-      return res.status(400).json({ message: "Carousel item ID is required" });
-    }
-
-    if (!title) {
-      return res.status(400).json({ message: "Title is required" });
-    }
-
-    const updateData = {
-      title,
-      subtitle: subtitle || '',
-      description: description || '',
-      buttonText: buttonText || 'Shop Now',
-      buttonLink: buttonLink || '/shop',
-      isActive: isActive === 'true' || isActive === true
-    };
-
-    if (req.file) {
-      // Delete old image from Cloudinary if exists
-      const oldItem = await HeroCarousel.findById(req.params.id);
-      if (oldItem && oldItem.image) {
-        const publicId = oldItem.image.split('/').pop().split('.')[0];
-        try {
-          await cloudinary.uploader.destroy(publicId);
-        } catch (err) {
-          console.error('Error deleting old image from Cloudinary:', err);
-        }
-      }
-      updateData.image = req.file.path; // New Cloudinary URL
-    }
-
-    console.log('Update data:', updateData);
-    const updatedItem = await HeroCarousel.findByIdAndUpdate(
-      req.params.id,
-      updateData,
-      { new: true }
-    );
-
-    if (!updatedItem) {
+    const existingItem = await HeroCarousel.findById(id);
+    if (!existingItem) {
       return res.status(404).json({ message: "Carousel item not found" });
     }
 
-    console.log('Updated item:', updatedItem);
-    res.json(updatedItem);
+    // Handle image/video update
+    let imageUrl = existingItem.image;
+    if (files.image && files.image[0]) {
+      imageUrl = files.image[0].path;
+    }
+
+    // Update item object
+    const updatedItem = {
+      title: itemData.title || existingItem.title,
+      subtitle: itemData.subtitle || existingItem.subtitle,
+      description: itemData.description || existingItem.description,
+      buttonText: itemData.buttonText || existingItem.buttonText,
+      buttonLink: itemData.buttonLink || existingItem.buttonLink,
+      image: imageUrl,
+      isActive: itemData.isActive !== undefined ? 
+        (itemData.isActive === 'true' || itemData.isActive === true) : 
+        existingItem.isActive,
+      order: existingItem.order
+    };
+
+    // Log the update operation
+    console.log('Updating carousel item with data:', {
+      id,
+      imageUrl,
+      filesReceived: Object.keys(files)
+    });
+
+    const savedItem = await HeroCarousel.findByIdAndUpdate(id, updatedItem, { new: true });
+
+    res.json({ 
+      message: "Carousel item updated successfully", 
+      item: savedItem,
+      uploadedFiles: files
+    });
   } catch (error) {
     console.error('Error updating carousel item:', error);
     res.status(500).json({ message: "Error updating carousel item", error: error.message });
@@ -171,22 +213,10 @@ const updateCarouselItem = async (req, res) => {
 // Delete carousel item
 const deleteCarouselItem = async (req, res) => {
   try {
-    const item = await HeroCarousel.findById(req.params.id);
+    const item = await HeroCarousel.findByIdAndDelete(req.params.id);
     if (!item) {
       return res.status(404).json({ message: "Carousel item not found" });
     }
-
-    // Delete image from Cloudinary if exists
-    if (item.image) {
-      const publicId = item.image.split('/').pop().split('.')[0];
-      try {
-        await cloudinary.uploader.destroy(publicId);
-      } catch (err) {
-        console.error('Error deleting image from Cloudinary:', err);
-      }
-    }
-
-    await item.deleteOne();
     res.json({ message: "Carousel item deleted successfully" });
   } catch (error) {
     console.error('Error deleting carousel item:', error);
@@ -229,8 +259,8 @@ module.exports = {
   upload,
   getAllCarouselItems,
   getActiveCarouselItems,
-  createCarouselItem,
-  updateCarouselItem,
+  createCarouselItemWithFiles,
+  updateCarouselItemWithFiles,
   deleteCarouselItem,
   toggleCarouselActive,
   updateCarouselOrder
