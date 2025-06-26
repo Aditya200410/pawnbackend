@@ -25,7 +25,8 @@ const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: 'products',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'gif'],
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+    transformation: [{ width: 800, height: 800, crop: 'limit' }],
     resource_type: 'auto'
   }
 });
@@ -46,13 +47,25 @@ const uploadFields = upload.fields([
   { name: 'image3', maxCount: 1 }
 ]);
 
+// Middleware to handle multer upload
+const handleUpload = (req, res, next) => {
+  uploadFields(req, res, function(err) {
+    if (err instanceof multer.MulterError) {
+      return res.status(400).json({ error: 'File upload error', details: err.message });
+    } else if (err) {
+      return res.status(500).json({ error: 'File upload error', details: err.message });
+    }
+    next();
+  });
+};
+
 // Public routes
 router.get("/", getAllProducts);
 router.get("/:id", getProduct);
 
 // Admin routes
-router.post("/", authenticateToken, isAdmin, uploadFields, createProductWithFiles);
-router.put("/:id", authenticateToken, isAdmin, uploadFields, updateProductWithFiles);
+router.post("/", authenticateToken, isAdmin, handleUpload, createProductWithFiles);
+router.put("/:id", authenticateToken, isAdmin, handleUpload, updateProductWithFiles);
 router.delete("/:id", authenticateToken, isAdmin, deleteProduct);
 
 module.exports = router;

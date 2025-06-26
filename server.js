@@ -129,7 +129,6 @@ mongoose.connect(MONGODB_URI, {
 // API Routes
 app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
-app.use('/api/shop', productRoutes);
 app.use('/api/bestseller', bestSellerRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/loved', lovedRoutes);
