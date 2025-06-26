@@ -14,10 +14,10 @@ exports.getAllCoupons = async (req, res) => {
 // Create new coupon
 exports.createCoupon = async (req, res) => {
   try {
-    const { code, name, discountPercentage, maxUses, minOrderAmount, expiryDate } = req.body;
+    const { code, name, discountPercentage, maxUses, minOrderAmount, expiryDate, isActive } = req.body;
 
     // Validate required fields
-    if (!code || !name || !discountPercentage || !maxUses || !minOrderAmount || !expiryDate) {
+    if (!code || !discountPercentage || !maxUses || !minOrderAmount || !expiryDate) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
@@ -29,11 +29,13 @@ exports.createCoupon = async (req, res) => {
 
     const newCoupon = new Coupon({
       code: code.toUpperCase(),
-      name,
-      discountPercentage: Number(discountPercentage),
-      maxUses: Number(maxUses),
-      minOrderAmount: Number(minOrderAmount),
-      expiryDate: new Date(expiryDate)
+      discountType: 'percentage',
+      discountValue: Number(discountPercentage),
+      usageLimit: Number(maxUses),
+      minPurchase: Number(minOrderAmount),
+      endDate: new Date(expiryDate),
+      isActive: isActive !== undefined ? isActive : true,
+      startDate: new Date()
     });
 
     await newCoupon.save();
@@ -67,11 +69,11 @@ exports.updateCoupon = async (req, res) => {
       req.params.id,
       {
         code: code ? code.toUpperCase() : coupon.code,
-        name: name || coupon.name,
-        discountPercentage: discountPercentage ? Number(discountPercentage) : coupon.discountPercentage,
-        maxUses: maxUses ? Number(maxUses) : coupon.maxUses,
-        minOrderAmount: minOrderAmount ? Number(minOrderAmount) : coupon.minOrderAmount,
-        expiryDate: expiryDate ? new Date(expiryDate) : coupon.expiryDate,
+        discountType: 'percentage',
+        discountValue: discountPercentage ? Number(discountPercentage) : coupon.discountValue,
+        usageLimit: maxUses ? Number(maxUses) : coupon.usageLimit,
+        minPurchase: minOrderAmount ? Number(minOrderAmount) : coupon.minPurchase,
+        endDate: expiryDate ? new Date(expiryDate) : coupon.endDate,
         isActive: isActive !== undefined ? isActive : coupon.isActive
       },
       { new: true }
@@ -141,15 +143,11 @@ exports.validateCoupon = async (req, res) => {
     }
 
     // Calculate discount
-    let discountAmount;
-    if (coupon.discountType === 'percentage') {
-      discountAmount = (cartTotal * coupon.discountValue) / 100;
-      // Apply max discount if specified
-      if (coupon.maxDiscount && discountAmount > coupon.maxDiscount) {
-        discountAmount = coupon.maxDiscount;
-      }
-    } else {
-      discountAmount = coupon.discountValue;
+    let discountAmount = (cartTotal * coupon.discountValue) / 100;
+    
+    // Apply max discount if specified
+    if (coupon.maxDiscount && discountAmount > coupon.maxDiscount) {
+      discountAmount = coupon.maxDiscount;
     }
 
     // Calculate final price
