@@ -99,7 +99,6 @@ const createCarouselItemWithFiles = async (req, res) => {
     console.log('Headers:', req.headers);
     console.log('Files received:', req.files);
     console.log('Body data:', req.body);
-    console.log('Auth token:', req.headers.authorization);
 
     if (!req.files || !req.files.image) {
       console.log('Error: Missing image/video');
@@ -113,7 +112,6 @@ const createCarouselItemWithFiles = async (req, res) => {
     
     // Validate required fields
     const requiredFields = ["title"];
-
     console.log('Validating required fields...');
     const missingFields = [];
     for (const field of requiredFields) {
@@ -133,22 +131,21 @@ const createCarouselItemWithFiles = async (req, res) => {
     const imageUrl = files.image[0].path; // Cloudinary URL
     console.log('Added image/video:', imageUrl);
 
-    console.log('Creating new carousel item with data:', {
-      title: itemData.title,
-      image: imageUrl
-    });
+    // Get current max order
+    const maxOrderItem = await HeroCarousel.findOne().sort('-order');
+    const newOrder = maxOrderItem ? maxOrderItem.order + 1 : 0;
 
     const newItem = new HeroCarousel({
-      title: itemData.title,
-      subtitle: itemData.subtitle || '',
-      description: itemData.description || '',
-      buttonText: itemData.buttonText || 'Shop Now',
-      buttonLink: itemData.buttonLink || '/shop',
+      title: itemData.title.trim(),
+      subtitle: (itemData.subtitle || '').trim(),
+      description: (itemData.description || '').trim(),
+      buttonText: (itemData.buttonText || 'Shop Now').trim(),
+      buttonLink: (itemData.buttonLink || '/shop').trim(),
       image: imageUrl,
       isActive: itemData.isActive === 'true' || itemData.isActive === true,
-      order: (await HeroCarousel.countDocuments()) // Put new items at the end
+      order: newOrder
     });
-    
+
     console.log('Saving carousel item to database...');
     const savedItem = await newItem.save();
     console.log('Carousel item saved successfully:', savedItem);
@@ -197,11 +194,11 @@ const updateCarouselItemWithFiles = async (req, res) => {
 
     // Update item object
     const updatedItem = {
-      title: itemData.title || existingItem.title,
-      subtitle: itemData.subtitle || existingItem.subtitle,
-      description: itemData.description || existingItem.description,
-      buttonText: itemData.buttonText || existingItem.buttonText,
-      buttonLink: itemData.buttonLink || existingItem.buttonLink,
+      title: (itemData.title || existingItem.title).trim(),
+      subtitle: (itemData.subtitle || existingItem.subtitle || '').trim(),
+      description: (itemData.description || existingItem.description || '').trim(),
+      buttonText: (itemData.buttonText || existingItem.buttonText || 'Shop Now').trim(),
+      buttonLink: (itemData.buttonLink || existingItem.buttonLink || '/shop').trim(),
       image: imageUrl,
       isActive: itemData.isActive !== undefined ? 
         (itemData.isActive === 'true' || itemData.isActive === true) : 
@@ -236,6 +233,13 @@ const deleteCarouselItem = async (req, res) => {
     if (!item) {
       return res.status(404).json({ message: "Carousel item not found" });
     }
+
+    // Reorder remaining items
+    const remainingItems = await HeroCarousel.find().sort('order');
+    for (let i = 0; i < remainingItems.length; i++) {
+      await HeroCarousel.findByIdAndUpdate(remainingItems[i]._id, { order: i });
+    }
+
     res.json({ message: "Carousel item deleted successfully" });
   } catch (error) {
     console.error('Error deleting carousel item:', error);

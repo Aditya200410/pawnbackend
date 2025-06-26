@@ -3,15 +3,18 @@ const mongoose = require('mongoose');
 const heroCarouselSchema = new mongoose.Schema({
   title: {
     type: String,
-    required: true
+    required: true,
+    trim: true
   },
   subtitle: {
     type: String,
-    required: false
+    trim: true,
+    default: ''
   },
   description: {
     type: String,
-    required: false
+    trim: true,
+    default: ''
   },
   image: {
     type: String,
@@ -19,10 +22,12 @@ const heroCarouselSchema = new mongoose.Schema({
   },
   buttonText: {
     type: String,
+    trim: true,
     default: 'Shop Now'
   },
   buttonLink: {
     type: String,
+    trim: true,
     default: '/shop'
   },
   isActive: {
@@ -36,6 +41,10 @@ const heroCarouselSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+
+// Add index for faster lookups
+heroCarouselSchema.index({ order: 1 });
+heroCarouselSchema.index({ isActive: 1 });
 
 // Update the updatedAt timestamp before saving
 heroCarouselSchema.pre('save', function(next) {
