@@ -36,9 +36,12 @@ const getProduct = async (req, res) => {
 // Create new product with file upload
 const createProductWithFiles = async (req, res) => {
   try {
-    if (!req.files) {
+    console.log('Creating product with files:', req.files);
+    console.log('Product data:', req.body);
+
+    if (!req.files || !req.files.mainImage) {
       return res.status(400).json({ 
-        error: 'No files received. Make sure you are uploading as multipart/form-data and the main image field is named "mainImage".' 
+        error: 'Main image is required. Make sure you are uploading as multipart/form-data and the main image field is named "mainImage".' 
       });
     }
 
@@ -73,8 +76,6 @@ const createProductWithFiles = async (req, res) => {
     if (files.mainImage && files.mainImage[0]) {
       const mainImageUrl = files.mainImage[0].path; // Cloudinary URL
       imagePaths.push(mainImageUrl);
-    } else {
-      return res.status(400).json({ error: "Main image is required" });
     }
 
     // Additional images
@@ -118,8 +119,11 @@ const createProductWithFiles = async (req, res) => {
 // Update product with file upload
 const updateProductWithFiles = async (req, res) => {
   try {
+    console.log('Updating product with files:', req.files);
+    console.log('Update data:', req.body);
+
     const id = req.params.id;
-    const files = req.files;
+    const files = req.files || {};
     const productData = req.body;
     
     const existingProduct = await Product.findById(id);
@@ -128,25 +132,24 @@ const updateProductWithFiles = async (req, res) => {
     }
 
     // Process uploaded files
-    const imagePaths = [];
+    let imagePaths = [...(existingProduct.images || [])];
     
-    // Main image
+    // Handle main image update
     if (files.mainImage && files.mainImage[0]) {
       const mainImageUrl = files.mainImage[0].path;
-      imagePaths.push(mainImageUrl);
-    } else {
-      // Keep existing main image
-      imagePaths.push(existingProduct.image);
+      imagePaths[0] = mainImageUrl; // Replace main image
     }
 
-    // Additional images
+    // Handle additional images
     for (let i = 1; i <= 3; i++) {
       if (files[`image${i}`] && files[`image${i}`][0]) {
         const imageUrl = files[`image${i}`][0].path;
-        imagePaths.push(imageUrl);
-      } else if (existingProduct.images && existingProduct.images[i]) {
-        // Keep existing additional image
-        imagePaths.push(existingProduct.images[i]);
+        // Replace or add the image at the correct index
+        if (i < imagePaths.length) {
+          imagePaths[i] = imageUrl;
+        } else {
+          imagePaths.push(imageUrl);
+        }
       }
     }
 
@@ -163,7 +166,7 @@ const updateProductWithFiles = async (req, res) => {
       care: productData.care || existingProduct.care,
       price: productData.price ? parseFloat(productData.price) : existingProduct.price,
       regularPrice: productData.regularPrice ? parseFloat(productData.regularPrice) : existingProduct.regularPrice,
-      image: imagePaths[0],
+      image: imagePaths[0] || existingProduct.image, // Keep existing main image if no new one
       images: imagePaths,
       inStock: productData.inStock !== undefined ? (productData.inStock === 'true' || productData.inStock === true) : existingProduct.inStock
     };
