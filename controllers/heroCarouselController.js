@@ -1,4 +1,4 @@
-const HeroCarousel = require('../models/HeroCarousel');
+const HeroCarousel = require('../models/heroCarousel');
 const fs = require('fs').promises;
 const path = require('path');
 const multer = require('multer');
