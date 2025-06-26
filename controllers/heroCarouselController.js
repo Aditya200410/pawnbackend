@@ -67,6 +67,20 @@ const getAllCarouselItems = async (req, res) => {
   }
 };
 
+// Get single carousel item
+const getCarouselItem = async (req, res) => {
+  try {
+    const item = await HeroCarousel.findById(req.params.id);
+    if (!item) {
+      return res.status(404).json({ message: "Carousel item not found" });
+    }
+    res.json(item);
+  } catch (error) {
+    console.error('Error fetching carousel item:', error);
+    res.status(500).json({ message: "Error fetching carousel item", error: error.message });
+  }
+};
+
 // Get active carousel items
 const getActiveCarouselItems = async (req, res) => {
   try {
@@ -85,6 +99,7 @@ const createCarouselItemWithFiles = async (req, res) => {
     console.log('Headers:', req.headers);
     console.log('Files received:', req.files);
     console.log('Body data:', req.body);
+    console.log('Auth token:', req.headers.authorization);
 
     if (!req.files || !req.files.image) {
       console.log('Error: Missing image/video');
@@ -162,6 +177,10 @@ const updateCarouselItemWithFiles = async (req, res) => {
     console.log('Update data:', req.body);
 
     const id = req.params.id;
+    if (!id) {
+      return res.status(400).json({ message: "Carousel item ID is required" });
+    }
+
     const files = req.files || {};
     const itemData = req.body;
     
@@ -187,7 +206,7 @@ const updateCarouselItemWithFiles = async (req, res) => {
       isActive: itemData.isActive !== undefined ? 
         (itemData.isActive === 'true' || itemData.isActive === true) : 
         existingItem.isActive,
-      order: existingItem.order
+      order: itemData.order !== undefined ? parseInt(itemData.order) : existingItem.order
     };
 
     // Log the update operation
@@ -258,6 +277,7 @@ const updateCarouselOrder = async (req, res) => {
 module.exports = {
   upload,
   getAllCarouselItems,
+  getCarouselItem,
   getActiveCarouselItems,
   createCarouselItemWithFiles,
   updateCarouselItemWithFiles,
