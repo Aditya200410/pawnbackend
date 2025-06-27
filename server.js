@@ -140,6 +140,7 @@ app.use('/api/hero-carousel', heroCarouselRoutes);
 app.use('/api/seller', sellerRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/data-page', require('./routes/dataPage'));
+app.use('/api/payment', require('./routes/payment'));
 
 // Health check endpoint
 app.get('/health', (req, res) => {
