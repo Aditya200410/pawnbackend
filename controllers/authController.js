@@ -5,13 +5,14 @@ const TempUser = require('../models/TempUser');
 
 // Generate a random 6-digit OTP
 const generateOTP = () => {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  console.log('Generated new OTP:', otp);
+  return otp;
 };
 
 // Register endpoint - Step 1: Create temporary user with OTP
 const register = async (req, res) => {
   try {
-    console.log('Received registration data:', req.body);
     const { username, email, password } = req.body;
 
     // Validate input
@@ -19,35 +20,43 @@ const register = async (req, res) => {
       return res.status(400).json({ message: "All fields are required" });
     }
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ message: "Please enter a valid email address" });
+    }
+
+    // Validate password strength
+    if (password.length < 6) {
+      return res.status(400).json({ message: "Password must be at least 6 characters long" });
+    }
+
+    // Remove any existing temp user with the same email or username
+    await TempUser.deleteMany({ $or: [{ email }, { username }] });
+
     // Check if user already exists
     const existingUser = await User.findOne({ $or: [{ email }, { username }] });
     if (existingUser) {
-      return res.status(400).json({ message: "User already exists" });
+      return res.status(400).json({ message: "User already exists. Please login instead." });
     }
 
     // Generate OTP
     const otp = generateOTP();
-    
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Only show OTP in console
+    console.log('OTP for verification:', otp);
 
     // Create temporary user
     const tempUser = new TempUser({
       username,
       email,
-      password: hashedPassword,
+      password, // store plain password
       otp
     });
-
     await tempUser.save();
-
-    // In production, you would send this OTP via email
-    console.log('Generated OTP:', otp); // For testing purposes
 
     res.status(201).json({ message: "Please verify your OTP", email });
   } catch (error) {
-    console.error('Registration error:', error);
-    res.status(500).json({ message: "Registration failed" });
+    res.status(500).json({ message: "Registration failed", error: error.message, stack: error.stack });
   }
 };
 
@@ -55,44 +64,26 @@ const register = async (req, res) => {
 const verifyOTP = async (req, res) => {
   try {
     const { email, otp } = req.body;
-
-    // Find temporary user
+    if (!email || !otp) {
+      return res.status(400).json({ message: "Email and OTP are required" });
+    }
     const tempUser = await TempUser.findOne({ email });
     if (!tempUser) {
-      return res.status(400).json({ message: "Invalid or expired OTP request" });
+      return res.status(400).json({ message: "Invalid or expired OTP request. Please register again." });
     }
-
-    // Verify OTP
     if (tempUser.otp !== otp) {
-      return res.status(400).json({ message: "Invalid OTP" });
+      return res.status(400).json({ message: "Invalid OTP. Please check and try again." });
     }
-
-    // Create actual user
-    const user = new User({
+    const userData = {
       username: tempUser.username,
       email: tempUser.email,
       password: tempUser.password // Already hashed
-    });
-
+    };
+    const user = new User(userData);
     await user.save();
-
-    // Delete temporary user
     await TempUser.deleteOne({ _id: tempUser._id });
-
-    // Generate JWT token
-    const token = jwt.sign(
-      { 
-        id: user._id,
-        username: user.username,
-        email: user.email
-      },
-      process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '24h' }
-    );
-
     res.json({
-      message: "Registration successful",
-      token,
+      message: "Registration successful! You can now login.",
       user: {
         id: user._id,
         username: user.username,
@@ -100,45 +91,35 @@ const verifyOTP = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('OTP verification error:', error);
-    res.status(500).json({ message: "OTP verification failed" });
+    res.status(500).json({ message: "OTP verification failed", error: error.message, stack: error.stack });
   }
 };
 
 const login = async (req, res) => {
   try {
-    const { username, password } = req.body;
-
-    // Validate input
-    if (!username || !password) {
-      return res.status(400).json({ message: "Username and password are required" });
+    const { username, email, password } = req.body;
+    const loginId = username || email;
+    if (!loginId || !password) {
+      return res.status(400).json({ message: "Username/email and password are required" });
     }
-
-    // Find user
-    const user = await User.findOne({ username });
+    const user = await User.findOne({ 
+      $or: [
+        { email: loginId }, 
+        { username: loginId }
+      ]
+    });
     if (!user) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
-
-    // Verify password
+    if (typeof password === 'string' && password.startsWith('$2a$')) {
+      return res.status(400).json({ message: 'Do not send hashed password. Please enter your plain password.' });
+    }
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
-
-    // Generate token
-    const token = jwt.sign(
-      { 
-        id: user._id,
-        username: user.username,
-        email: user.email
-      },
-      process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '24h' }
-    );
-
     res.json({
-      token,
+      message: "Login successful",
       user: {
         id: user._id,
         username: user.username,
@@ -146,8 +127,7 @@ const login = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ message: "Login failed" });
+    res.status(500).json({ message: "Login failed", error: error.message, stack: error.stack });
   }
 };
 

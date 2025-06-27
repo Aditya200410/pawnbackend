@@ -2,25 +2,26 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
-  name: {
+  username: {
     type: String,
     required: true,
+    unique: true
   },
   email: {
     type: String,
     required: true,
-    unique: true,
+    unique: true
   },
   password: {
     type: String,
-    required: true,
+    required: true
   },
   resetPasswordToken: String,
   resetPasswordExpires: Date,
   createdAt: {
     type: Date,
-    default: Date.now,
-  },
+    default: Date.now
+  }
 }, {
   timestamps: true,
 });
@@ -38,13 +39,9 @@ userSchema.pre('save', async function(next) {
   }
 });
 
-// Method to compare password
+// Method to compare password for login
 userSchema.methods.comparePassword = async function(candidatePassword) {
-  try {
-    return await bcrypt.compare(candidatePassword, this.password);
-  } catch (error) {
-    throw error;
-  }
+  return bcrypt.compare(candidatePassword, this.password);
 };
 
 // Check if model exists before creating
