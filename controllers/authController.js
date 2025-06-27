@@ -1,5 +1,5 @@
 const User = require('../models/user');
-const TempUser = require('../models/tempUser');
+const TempUser = require('../models/TempUser');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
@@ -25,10 +25,6 @@ const register = async (req, res) => {
       await TempUser.deleteOne({ email });
     }
 
-    // Hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
     // Generate OTP
     const otp = generateOTP();
 
@@ -36,7 +32,7 @@ const register = async (req, res) => {
     tempUser = new TempUser({
       name,
       email,
-      password: hashedPassword,
+      password, // Password will be hashed by User model when creating actual user
       otp
     });
 
@@ -77,7 +73,7 @@ const verifyOTP = async (req, res) => {
     const user = new User({
       name: tempUser.name,
       email: tempUser.email,
-      password: tempUser.password
+      password: tempUser.password // Will be hashed by User model's pre-save hook
     });
 
     await user.save();
@@ -120,7 +116,7 @@ const login = async (req, res) => {
     }
 
     // Check password
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
