@@ -145,7 +145,7 @@ const createCarouselItemWithFiles = async (req, res) => {
       isActive: itemData.isActive === 'true' || itemData.isActive === true,
       order: newOrder
     });
-
+    
     console.log('Saving carousel item to database...');
     const savedItem = await newItem.save();
     console.log('Carousel item saved successfully:', savedItem);

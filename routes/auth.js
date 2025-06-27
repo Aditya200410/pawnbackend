@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const User = require('../models/User');
-const TempUser = require('../models/TempUser');
+const { register, verifyOTP, login } = require('../controllers/authController');
 
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
 
@@ -64,129 +64,6 @@ router.post('/signup', async (req, res) => {
     const existingUser = await User.findOne({ email });
     if (existingUser) return res.status(400).json({ message: 'Email already in use' });
 
-    // Create temporary user and send OTP
-    const otp = generateOTP();
-    const tempUser = new TempUser({
-      name,
-      email,
-      password,
-      otp: {
-        code: otp,
-        expiresAt: new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
-      }
-    });
-
-    await tempUser.save();
-    await sendOTP(email, otp);
-
-    return res.status(200).json({ 
-      message: 'OTP sent successfully',
-      email
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Signup error' });
-  }
-});
-
-// POST /verify-otp
-router.post('/verify-otp', async (req, res) => {
-  const { email, otp } = req.body;
-  if (!email || !otp) return res.status(400).json({ message: 'Email and OTP required' });
-
-  try {
-    const tempUser = await TempUser.findOne({ email });
-    if (!tempUser) {
-      return res.status(400).json({ message: 'Invalid or expired registration attempt' });
-    }
-
-    // Check OTP validity
-    if (tempUser.otp.code !== otp) {
-      return res.status(400).json({ message: 'Invalid OTP' });
-    }
-
-    // Check OTP expiration
-    if (new Date() > tempUser.otp.expiresAt) {
-      await TempUser.deleteOne({ email });
-      return res.status(400).json({ message: 'OTP expired' });
-    }
-
-    // Create permanent user
-    const user = new User({
-      name: tempUser.name,
-      email: tempUser.email,
-      password: tempUser.password // Already hashed
-    });
-
-    await user.save();
-    await TempUser.deleteOne({ email });
-
-    // Generate JWT
-    const token = jwt.sign(
-      { id: user._id, email: user.email },
-      JWT_SECRET,
-      { expiresIn: '7d' }
-    );
-
-    // Set HTTP-only cookie
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-    });
-
-    return res.status(201).json({
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email
-      }
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Verification error' });
-  }
-});
-
-// POST /resend-otp
-router.post('/resend-otp', async (req, res) => {
-  const { email } = req.body;
-  if (!email) return res.status(400).json({ message: 'Email required' });
-
-  try {
-    const tempUser = await TempUser.findOne({ email });
-    if (!tempUser) {
-      return res.status(400).json({ message: 'No pending registration found' });
-    }
-
-    const otp = generateOTP();
-    tempUser.otp = {
-      code: otp,
-      expiresAt: new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
-    };
-
-    await tempUser.save();
-    await sendOTP(email, otp);
-
-    return res.status(200).json({ message: 'OTP resent successfully' });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Failed to resend OTP' });
-  }
-});
-
-// POST /register (alias for /signup)
-router.post('/register', async (req, res) => {
-  // Reuse the /signup logic
-  const { name, email, password } = req.body;
-  if (!name || !email || !password) return res.status(400).json({ message: 'All fields required' });
-
-  try {
-    const existingUser = await User.findOne({ email });
-    if (existingUser) return res.status(400).json({ message: 'Email already in use' });
-
     const user = new User({ name, email, password });
     await user.save();
 
@@ -203,84 +80,15 @@ router.post('/register', async (req, res) => {
     return res.status(201).json({ token, user: { id: user._id, name, email } });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: 'Registration error' });
+    res.status(500).json({ message: 'Signup error' });
   }
 });
+
+// POST /register (alias for /signup)
+router.post('/register', register);
 
 // POST /login
-router.post('/login', async (req, res) => {
-  const { username, password } = req.body;
-
-  // Validate input
-  if (!username || !password) {
-    return res.status(400).json({ message: "Username and password are required" });
-  }
-
-  // Hardcoded admin login for pawnadmin
-  if (username === 'test' && password === 'test') {
-    const token = jwt.sign(
-      { id: 'admin', username: 'test', isAdmin: true },
-      JWT_SECRET,
-      { expiresIn: '7d' }
-    );
-    
-    // Set HTTP-only cookie
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-    });
-    
-    return res.json({
-      token,
-      user: {
-        id: 'admin',
-        username: 'test',
-        isAdmin: true
-      }
-    });
-  }
-
-  try {
-    // Find user by email
-    const user = await User.findOne({ email: username });
-    if (!user) {
-      return res.status(401).json({ message: "Invalid credentials" });
-    }
-    // Compare password
-    const isMatch = await user.comparePassword(password);
-    if (!isMatch) {
-      return res.status(401).json({ message: "Invalid credentials" });
-    }
-    // Generate JWT
-    const token = jwt.sign(
-      { id: user._id, email: user.email },
-      JWT_SECRET,
-      { expiresIn: '7d' }
-    );
-    
-    // Set HTTP-only cookie
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-    });
-    
-    res.json({
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email
-      }
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
-  }
-});
+router.post('/login', login);
 
 // POST /forgot-password
 router.post('/forgot-password', async (req, res) => {
@@ -386,5 +194,8 @@ router.put('/update-profile', auth, async (req, res) => {
     res.status(500).json({ message: 'Error updating profile' });
   }
 });
+
+// Verify OTP route
+router.post('/verify-otp', verifyOTP);
 
 module.exports = router;
