@@ -50,44 +50,43 @@ const register = async (req, res) => {
       return res.status(400).json({ message: 'Email already registered' });
     }
 
-    // Check if there's a pending registration
+    // Hash password before storing
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Generate OTP
+    const otp = generateOTP();
+
+    // Create or update temporary user
     let tempUser = await TempUser.findOne({ email });
     if (tempUser) {
-      // Generate new OTP for existing temp user
-      const otp = generateOTP();
+      // Update existing temp user
+      tempUser.name = name;
+      tempUser.password = hashedPassword;
       tempUser.otp = {
         code: otp,
         expiresAt: new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
       };
-      await tempUser.save();
-      await sendOTP(email, otp);
-      // Log OTP for testing
-      console.log('\x1b[33m%s\x1b[0m', `[TEST] OTP for ${email}: ${otp}`);
-      return res.status(200).json({ 
-        message: 'OTP sent successfully',
-        email
+    } else {
+      // Create new temporary user
+      tempUser = new TempUser({
+        name,
+        email,
+        password: hashedPassword,
+        otp: {
+          code: otp,
+          expiresAt: new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
+        }
       });
     }
 
-    // Create new temporary user
-    const otp = generateOTP();
-    tempUser = new TempUser({
-      name,
-      email,
-      password,
-      otp: {
-        code: otp,
-        expiresAt: new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
-      }
-    });
-
     await tempUser.save();
     await sendOTP(email, otp);
+
     // Log OTP for testing
     console.log('\x1b[33m%s\x1b[0m', `[TEST] OTP for ${email}: ${otp}`);
 
     res.status(200).json({ 
-      message: 'OTP sent successfully',
+      message: 'Registration initiated. Please verify your email with OTP.',
       email
     });
   } catch (error) {
@@ -117,20 +116,19 @@ const verifyOTP = async (req, res) => {
       return res.status(400).json({ message: 'OTP expired' });
     }
 
-    // Create permanent user
+    // Create permanent user from temp user data
     const user = new User({
       name: tempUser.name,
       email: tempUser.email,
-      password: tempUser.password // Already hashed
+      password: tempUser.password // Already hashed during registration
     });
 
     await user.save();
     await TempUser.deleteOne({ email });
 
-    // Return success without token
     res.status(201).json({
       success: true,
-      message: 'Account verified successfully'
+      message: 'Account verified successfully. Please login to continue.'
     });
   } catch (error) {
     console.error('OTP verification error:', error);
@@ -156,6 +154,7 @@ const resendOTP = async (req, res) => {
 
     await tempUser.save();
     await sendOTP(email, otp);
+
     // Log OTP for testing
     console.log('\x1b[33m%s\x1b[0m', `[TEST] OTP for ${email}: ${otp}`);
 
@@ -166,36 +165,41 @@ const resendOTP = async (req, res) => {
   }
 };
 
+// Login
 const login = async (req, res) => {
-  const { username, password } = req.body;
+  const { email, password } = req.body;
 
-  // Validate input
-  if (!username || !password) {
-    return res.status(400).json({ message: "Username and password are required" });
-  }
+  try {
+    // Find user
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
 
-  // For demo purposes, using hardcoded admin credentials
-  if (username === "test" && password === "test") {
+    // Check password
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    if (!isValidPassword) {
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    // Generate JWT
     const token = jwt.sign(
-      { 
-        id: 1, 
-        username: "test",
-        isAdmin: true 
-      },
+      { id: user._id, email: user.email },
       process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '24h' }
+      { expiresIn: '7d' }
     );
 
-    res.json({
+    res.status(200).json({
       token,
       user: {
-        id: 1,
-        username: "test",
-        isAdmin: true
+        id: user._id,
+        name: user.name,
+        email: user.email
       }
     });
-  } else {
-    res.status(401).json({ message: "Invalid credentials" });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ message: 'Login failed' });
   }
 };
 
