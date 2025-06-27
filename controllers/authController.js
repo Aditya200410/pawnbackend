@@ -61,6 +61,8 @@ const register = async (req, res) => {
       };
       await tempUser.save();
       await sendOTP(email, otp);
+      // Log OTP for testing
+      console.log('\x1b[33m%s\x1b[0m', `[TEST] OTP for ${email}: ${otp}`);
       return res.status(200).json({ 
         message: 'OTP sent successfully',
         email
@@ -81,6 +83,8 @@ const register = async (req, res) => {
 
     await tempUser.save();
     await sendOTP(email, otp);
+    // Log OTP for testing
+    console.log('\x1b[33m%s\x1b[0m', `[TEST] OTP for ${email}: ${otp}`);
 
     res.status(200).json({ 
       message: 'OTP sent successfully',
@@ -170,6 +174,8 @@ const resendOTP = async (req, res) => {
 
     await tempUser.save();
     await sendOTP(email, otp);
+    // Log OTP for testing
+    console.log('\x1b[33m%s\x1b[0m', `[TEST] OTP for ${email}: ${otp}`);
 
     res.status(200).json({ message: 'OTP resent successfully' });
   } catch (error) {
