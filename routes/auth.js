@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const User = require('../models/User');
+const TempUser = require('../models/TempUser');
 
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
 
@@ -54,137 +55,76 @@ router.get('/validate-token', auth, async (req, res) => {
   }
 });
 
-// POST /signup
-router.post('/signup', async (req, res) => {
+// POST /register (alias for /signup)
+router.post('/register', async (req, res) => {
   const { name, email, password } = req.body;
-  if (!name || !email || !password) return res.status(400).json({ message: 'All fields required' });
-
+  if (!name || !email || !password) {
+    return res.status(400).json({ message: 'Name, email, and password are required' });
+  }
   try {
     const existingUser = await User.findOne({ email });
-    if (existingUser) return res.status(400).json({ message: 'Email already in use' });
-
-    const user = new User({ name, email, password });
-    await user.save();
-
-    const token = jwt.sign({ id: user._id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
-    
-    // Set HTTP-only cookie
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-    });
-    
-    return res.status(201).json({ token, user: { id: user._id, name, email } });
+    const existingTemp = await TempUser.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: 'Email already registered' });
+    }
+    if (existingTemp) {
+      return res.status(400).json({ message: 'OTP already sent to this email. Please verify OTP or wait 10 min.' });
+    }
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    // Store password as plain text in TempUser (hashing will be done in User model)
+    await TempUser.create({ username: name, email, password, otp });
+    console.log(`OTP for ${email}: ${otp}`);
+    return res.json({ message: 'OTP sent to your email (check console in dev)', email });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Signup error' });
+    console.error('Register error:', err);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
-// POST /register (alias for /signup)
-router.post('/register', async (req, res) => {
-  // Reuse the /signup logic
-  const { name, email, password } = req.body;
-  if (!name || !email || !password) return res.status(400).json({ message: 'All fields required' });
-
+// POST /verify-otp
+router.post('/verify-otp', async (req, res) => {
+  const { email, otp } = req.body;
+  if (!email || !otp) {
+    return res.status(400).json({ message: 'Email and OTP are required' });
+  }
   try {
-    const existingUser = await User.findOne({ email });
-    if (existingUser) return res.status(400).json({ message: 'Email already in use' });
-
-    const user = new User({ name, email, password });
+    const tempUser = await TempUser.findOne({ email });
+    if (!tempUser) {
+      return res.status(400).json({ message: 'OTP expired or not found. Please register again.' });
+    }
+    if (tempUser.otp !== otp) {
+      return res.status(400).json({ message: 'Invalid OTP' });
+    }
+    const user = new User({ name: tempUser.username, email: tempUser.email, password: tempUser.password });
     await user.save();
-
-    const token = jwt.sign({ id: user._id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
-    
-    // Set HTTP-only cookie
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-    });
-    
-    return res.status(201).json({ token, user: { id: user._id, name, email } });
+    await TempUser.deleteOne({ _id: tempUser._id });
+    return res.json({ message: 'OTP verified, registration complete. Please login.' });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Registration error' });
+    console.error('Verify OTP error:', err);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
 // POST /login
 router.post('/login', async (req, res) => {
-  const { username, password } = req.body;
-
-  // Validate input
-  if (!username || !password) {
-    return res.status(400).json({ message: "Username and password are required" });
+  const { email, password } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ message: 'Email and password are required' });
   }
-
-  // Hardcoded admin login for pawnadmin
-  if (username === 'test' && password === 'test') {
-    const token = jwt.sign(
-      { id: 'admin', username: 'test', isAdmin: true },
-      JWT_SECRET,
-      { expiresIn: '7d' }
-    );
-    
-    // Set HTTP-only cookie
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-    });
-    
-    return res.json({
-      token,
-      user: {
-        id: 'admin',
-        username: 'test',
-        isAdmin: true
-      }
-    });
-  }
-
   try {
-    // Find user by email
-    const user = await User.findOne({ email: username });
+    const user = await User.findOne({ email });
     if (!user) {
-      return res.status(401).json({ message: "Invalid credentials" });
+      return res.status(401).json({ message: 'Invalid credentials' });
     }
-    // Compare password
-    const isMatch = await user.comparePassword(password);
+    const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(401).json({ message: "Invalid credentials" });
+      return res.status(401).json({ message: 'Invalid credentials' });
     }
-    // Generate JWT
-    const token = jwt.sign(
-      { id: user._id, email: user.email },
-      JWT_SECRET,
-      { expiresIn: '7d' }
-    );
-    
-    // Set HTTP-only cookie
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-    });
-    
-    res.json({
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email
-      }
-    });
+    const token = jwt.sign({ id: user._id, email: user.email }, JWT_SECRET, { expiresIn: '24h' });
+    res.json({ token, user: { id: user._id, name: user.name, email: user.email } });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
+    console.error('Login error:', err);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
