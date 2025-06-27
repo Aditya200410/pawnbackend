@@ -6,8 +6,18 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const User = require('../models/User');
 const TempUser = require('../models/TempUser');
+const nodemailer = require('nodemailer');
 
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
+
+// Setup nodemailer transporter using only EMAIL_USER and EMAIL_PASS
+const transporter = nodemailer.createTransport({
+  service: 'gmail', // or leave blank for auto
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
 
 // Middleware to protect routes
 const auth = (req, res, next) => {
@@ -71,10 +81,22 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ message: 'OTP already sent to this email. Please verify OTP or wait 10 min.' });
     }
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    // Store password as plain text in TempUser (hashing will be done in User model)
     await TempUser.create({ username: name, email, password, otp });
     console.log(`OTP for ${email}: ${otp}`);
-    return res.json({ message: 'OTP sent to your email (check console in dev)', email });
+    // Send OTP via email
+    try {
+      await transporter.sendMail({
+        from: process.env.EMAIL_USER,
+        to: email,
+        subject: 'Your OTP Code',
+        text: `Your OTP code is: ${otp}`,
+        html: `<p>Your OTP code is: <b>${otp}</b></p>`
+      });
+      console.log(`OTP email sent to ${email}`);
+    } catch (mailErr) {
+      console.error('Error sending OTP email:', mailErr);
+    }
+    return res.json({ message: 'OTP sent to your email', email });
   } catch (err) {
     console.error('Register error:', err);
     res.status(500).json({ message: 'Server error' });
