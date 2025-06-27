@@ -11,6 +11,7 @@ const generateOTP = () => {
 // Register endpoint - Step 1: Create temporary user with OTP
 const register = async (req, res) => {
   try {
+    console.log('Received registration data:', req.body);
     const { username, email, password } = req.body;
 
     // Validate input
