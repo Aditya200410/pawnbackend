@@ -1,41 +1,28 @@
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
 
 const tempUserSchema = new mongoose.Schema({
-  name: {
+  username: {
     type: String,
     required: true,
+    unique: true
   },
   email: {
     type: String,
     required: true,
-    unique: true,
+    unique: true
   },
   password: {
     type: String,
-    required: true,
+    required: true
   },
   otp: {
     type: String,
-    required: true,
+    required: true
   },
   createdAt: {
     type: Date,
     default: Date.now,
-    expires: 600, // Document will be automatically deleted after 10 minutes
-  },
-});
-
-// Hash password before saving
-tempUserSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
-  
-  try {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
-  } catch (error) {
-    next(error);
+    expires: 600 // Document will be automatically deleted after 10 minutes
   }
 });
 

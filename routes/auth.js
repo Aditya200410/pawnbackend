@@ -87,6 +87,9 @@ router.post('/signup', async (req, res) => {
 // POST /register (alias for /signup)
 router.post('/register', register);
 
+// POST /verify-otp
+router.post('/verify-otp', verifyOTP);
+
 // POST /login
 router.post('/login', login);
 
@@ -194,8 +197,5 @@ router.put('/update-profile', auth, async (req, res) => {
     res.status(500).json({ message: 'Error updating profile' });
   }
 });
-
-// Verify OTP route
-router.post('/verify-otp', verifyOTP);
 
 module.exports = router;
