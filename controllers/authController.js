@@ -3,6 +3,8 @@ const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const TempUser = require('../models/TempUser');
 
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+
 // Generate a random 6-digit OTP
 const generateOTP = () => {
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -118,6 +120,19 @@ const login = async (req, res) => {
     if (!isValidPassword) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
+    // Generate JWT token
+    const token = jwt.sign(
+      { id: user._id, username: user.username, email: user.email },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+    // Set JWT as HTTP-only cookie
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
     res.json({
       message: "Login successful",
       user: {
@@ -131,8 +146,22 @@ const login = async (req, res) => {
   }
 };
 
+const logout = async (req, res) => {
+  try {
+    res.clearCookie('token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict'
+    });
+    res.json({ message: 'Logged out successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Logout failed', error: error.message, stack: error.stack });
+  }
+};
+
 module.exports = {
   register,
   verifyOTP,
-  login
+  login,
+  logout
 }; 
