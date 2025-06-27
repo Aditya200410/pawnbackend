@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const User = require('../models/user');
-const TempUser = require('../models/tempUser');
+const User = require('../models/User');
+const TempUser = require('../models/TempUser');
 
 // Generate a random 6-digit OTP
 const generateOTP = () => {
