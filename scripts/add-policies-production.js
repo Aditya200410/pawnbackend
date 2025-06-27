@@ -1,74 +1,20 @@
+const mongoose = require('mongoose');
 const DataPage = require('../models/DataPage');
 
-// Get all data pages
-const dataPageController = async (req, res) => {
-  try {
-    console.log('Fetching all data pages...');
-    const pages = await DataPage.find();
-    console.log('Found pages:', pages);
-    res.json(pages);
-  } catch (err) {
-    console.error('Error fetching data pages:', err);
-    res.status(500).json({ error: err.message });
-  }
-};
+// Use production MongoDB URI
+const MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/pawn";
 
-// Get data page by type
-exports.getDataPageByType = async (req, res) => {
-  try {
-    const { type } = req.params;
-    const page = await DataPage.findOne({ type });
-    if (!page) return res.status(404).json({ error: 'Not found' });
-    res.json(page);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
+// MongoDB connection
+mongoose.connect(MONGODB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
 
-// Add new data page
-exports.addDataPage = async (req, res) => {
-  try {
-    const { type, heading, content } = req.body;
-    const exists = await DataPage.findOne({ type });
-    if (exists) return res.status(400).json({ error: 'Type already exists' });
-    const page = new DataPage({ type, heading, content });
-    await page.save();
-    res.status(201).json(page);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
-// Update data page by type
-exports.updateDataPage = async (req, res) => {
-  try {
-    const { type } = req.params;
-    const { heading, content } = req.body;
-    const page = await DataPage.findOneAndUpdate(
-      { type },
-      { heading, content },
-      { new: true }
-    );
-    if (!page) return res.status(404).json({ error: 'Not found' });
-    res.json(page);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
-// Get all data pages
-exports.getAllDataPages = dataPageController;
-
-// Initialize default policies data
-exports.initializePolicies = async (req, res) => {
-  try {
-    console.log('Initializing default policies...');
-    
-    const defaultPolicies = [
-      {
-        type: 'terms',
-        heading: 'Terms and Conditions',
-        content: `Terms and Conditions:
+const policies = [
+  {
+    type: 'terms',
+    heading: 'Terms and Conditions',
+    content: `Terms and Conditions:
 Welcome to RikoCraft. By accessing our website, you agree to these terms and conditions.
 
 Acceptance of Terms:
@@ -97,11 +43,11 @@ We shall not be liable for any indirect, incidental, or consequential damages.
 
 Governing Law:
 These terms are governed by the laws of India.`
-      },
-      {
-        type: 'refund',
-        heading: 'Refund Policy',
-        content: `Refund Policy:
+  },
+  {
+    type: 'refund',
+    heading: 'Refund Policy',
+    content: `Refund Policy:
 We want you to be completely satisfied with your purchase from RikoCraft.
 
 Eligibility for Refunds:
@@ -133,11 +79,11 @@ International customers may be subject to additional shipping and customs fees.
 
 Contact Information:
 For return inquiries, email us at support@rikocraft.com or call our customer service.`
-      },
-      {
-        type: 'privacy',
-        heading: 'Privacy Policy',
-        content: `Privacy Policy:
+  },
+  {
+    type: 'privacy',
+    heading: 'Privacy Policy',
+    content: `Privacy Policy:
 Your privacy is important to us. This policy explains how we collect, use, and protect your information.
 
 Information We Collect:
@@ -169,27 +115,36 @@ Our services are not intended for children under 13 years of age.
 
 Changes to Policy:
 We may update this privacy policy from time to time.`
-      }
-    ];
-
-    // Check if policies already exist
-    const existingPolicies = await DataPage.find();
-    if (existingPolicies.length > 0) {
-      console.log('Policies already exist, skipping initialization');
-      return res.json({ message: 'Policies already exist', count: existingPolicies.length });
-    }
-
-    // Add default policies
-    const result = await DataPage.insertMany(defaultPolicies);
-    console.log('Initialized policies:', result.length);
-    
-    res.status(201).json({ 
-      message: 'Policies initialized successfully', 
-      count: result.length,
-      policies: result 
-    });
-  } catch (err) {
-    console.error('Error initializing policies:', err);
-    res.status(500).json({ error: err.message });
   }
-}; 
+];
+
+async function addPoliciesToProduction() {
+  try {
+    console.log('Connecting to database:', MONGODB_URI);
+    
+    // Wait for connection
+    await mongoose.connection.asPromise();
+    console.log('Connected to database');
+    
+    // Clear existing policies
+    await DataPage.deleteMany({});
+    console.log('Cleared existing policies');
+
+    // Add new policies
+    const result = await DataPage.insertMany(policies);
+    console.log('Added policies:', result.length);
+    
+    // Display added policies
+    result.forEach(policy => {
+      console.log(`- ${policy.type}: ${policy.heading}`);
+    });
+
+    console.log('Policies added successfully to production database!');
+  } catch (error) {
+    console.error('Error adding policies to production:', error);
+  } finally {
+    mongoose.connection.close();
+  }
+}
+
+addPoliciesToProduction(); 

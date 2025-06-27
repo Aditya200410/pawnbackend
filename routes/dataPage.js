@@ -14,4 +14,7 @@ router.post('/', dataPageController.addDataPage);
 // Update data page by type
 router.put('/:type', dataPageController.updateDataPage);
 
+// Initialize default policies data
+router.post('/init', dataPageController.initializePolicies);
+
 module.exports = router; 
