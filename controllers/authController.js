@@ -44,27 +44,29 @@ const register = async (req, res) => {
   const { name, email, password } = req.body;
 
   try {
-    // Check if user already exists in main User collection
+    // First check if user exists in main User collection
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({ message: 'Email already registered' });
+      return res.status(400).json({ message: 'Email already registered and verified' });
     }
 
-    // Hash password before storing
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Generate OTP
-    const otp = generateOTP();
-
-    // Create or update temporary user
+    // Then check TempUser collection
     let tempUser = await TempUser.findOne({ email });
+    
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+    
+    // Generate new OTP
+    const otp = generateOTP();
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
     if (tempUser) {
       // Update existing temp user
       tempUser.name = name;
       tempUser.password = hashedPassword;
       tempUser.otp = {
         code: otp,
-        expiresAt: new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
+        expiresAt: otpExpiry
       };
     } else {
       // Create new temporary user
@@ -74,24 +76,40 @@ const register = async (req, res) => {
         password: hashedPassword,
         otp: {
           code: otp,
-          expiresAt: new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
+          expiresAt: otpExpiry
         }
       });
     }
 
+    // Save the temporary user
     await tempUser.save();
-    await sendOTP(email, otp);
+
+    // Send OTP
+    try {
+      await sendOTP(email, otp);
+    } catch (emailError) {
+      console.error('Failed to send OTP email:', emailError);
+      // Even if email fails, we'll show OTP in console for testing
+    }
 
     // Log OTP for testing
     console.log('\x1b[33m%s\x1b[0m', `[TEST] OTP for ${email}: ${otp}`);
 
+    // Return success response
     res.status(200).json({ 
       message: 'Registration initiated. Please verify your email with OTP.',
       email
     });
+
   } catch (error) {
     console.error('Registration error:', error);
-    res.status(500).json({ message: 'Registration failed' });
+    // Delete any partially created temp user in case of error
+    try {
+      await TempUser.deleteOne({ email });
+    } catch (deleteError) {
+      console.error('Error cleaning up temp user:', deleteError);
+    }
+    res.status(500).json({ message: 'Registration failed. Please try again.' });
   }
 };
 
@@ -100,27 +118,42 @@ const verifyOTP = async (req, res) => {
   const { email, otp } = req.body;
 
   try {
+    // Find temp user
     const tempUser = await TempUser.findOne({ email });
     if (!tempUser) {
-      return res.status(400).json({ message: 'Invalid or expired registration attempt' });
+      return res.status(400).json({ 
+        message: 'No pending registration found. Please register again.' 
+      });
+    }
+
+    // Check if user already exists in main collection
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      // Clean up temp user
+      await TempUser.deleteOne({ email });
+      return res.status(400).json({ 
+        message: 'Email already registered and verified. Please login.' 
+      });
     }
 
     // Check OTP validity
     if (tempUser.otp.code !== otp) {
-      return res.status(400).json({ message: 'Invalid OTP' });
+      return res.status(400).json({ message: 'Invalid OTP. Please try again.' });
     }
 
     // Check OTP expiration
     if (new Date() > tempUser.otp.expiresAt) {
       await TempUser.deleteOne({ email });
-      return res.status(400).json({ message: 'OTP expired' });
+      return res.status(400).json({ 
+        message: 'OTP expired. Please register again.' 
+      });
     }
 
     // Create permanent user from temp user data
     const user = new User({
       name: tempUser.name,
       email: tempUser.email,
-      password: tempUser.password // Already hashed during registration
+      password: tempUser.password
     });
 
     await user.save();
@@ -132,7 +165,7 @@ const verifyOTP = async (req, res) => {
     });
   } catch (error) {
     console.error('OTP verification error:', error);
-    res.status(500).json({ message: 'Verification failed' });
+    res.status(500).json({ message: 'Verification failed. Please try again.' });
   }
 };
 
@@ -143,7 +176,9 @@ const resendOTP = async (req, res) => {
   try {
     const tempUser = await TempUser.findOne({ email });
     if (!tempUser) {
-      return res.status(400).json({ message: 'No pending registration found' });
+      return res.status(400).json({ 
+        message: 'No pending registration found. Please register again.' 
+      });
     }
 
     const otp = generateOTP();
@@ -153,7 +188,13 @@ const resendOTP = async (req, res) => {
     };
 
     await tempUser.save();
-    await sendOTP(email, otp);
+
+    try {
+      await sendOTP(email, otp);
+    } catch (emailError) {
+      console.error('Failed to send OTP email:', emailError);
+      // Even if email fails, we'll show OTP in console for testing
+    }
 
     // Log OTP for testing
     console.log('\x1b[33m%s\x1b[0m', `[TEST] OTP for ${email}: ${otp}`);
@@ -161,7 +202,7 @@ const resendOTP = async (req, res) => {
     res.status(200).json({ message: 'OTP resent successfully' });
   } catch (error) {
     console.error('Resend OTP error:', error);
-    res.status(500).json({ message: 'Failed to resend OTP' });
+    res.status(500).json({ message: 'Failed to resend OTP. Please try again.' });
   }
 };
 
