@@ -127,28 +127,10 @@ const verifyOTP = async (req, res) => {
     await user.save();
     await TempUser.deleteOne({ email });
 
-    // Generate JWT
-    const token = jwt.sign(
-      { id: user._id, email: user.email },
-      process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '7d' }
-    );
-
-    // Set HTTP-only cookie
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-    });
-
+    // Return success without token
     res.status(201).json({
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email
-      }
+      success: true,
+      message: 'Account verified successfully'
     });
   } catch (error) {
     console.error('OTP verification error:', error);
