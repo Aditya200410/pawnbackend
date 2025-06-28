@@ -1,4 +1,5 @@
 const Order = require('../models/Order');
+const Seller = require('../models/Seller');
 const fs = require('fs').promises;
 const path = require('path');
 const ordersJsonPath = path.join(__dirname, '../data/orders.json');
@@ -19,6 +20,7 @@ const createOrder = async (req, res) => {
       totalAmount,
       paymentMethod,
       paymentStatus,
+      sellerToken, // Get seller token from request
     } = req.body;
 
     // Comprehensive validation
@@ -54,6 +56,20 @@ const createOrder = async (req, res) => {
       }
     }
 
+    // Calculate commission if seller token is provided
+    let commission = 0;
+    let seller = null;
+    
+    if (sellerToken) {
+      seller = await Seller.findOne({ sellerToken });
+      if (seller) {
+        commission = totalAmount * 0.10; // 10% commission
+        // Add commission to seller's account
+        await seller.addCommission(totalAmount);
+        console.log(`Commission added for seller ${seller.businessName}: ₹${commission}`);
+      }
+    }
+
     const newOrder = new Order({
       customerName,
       email,
@@ -69,12 +85,20 @@ const createOrder = async (req, res) => {
       totalAmount,
       paymentMethod,
       paymentStatus,
+      sellerToken,
+      commission,
     });
 
     const savedOrder = await newOrder.save();
     // Save to orders.json for admin
     await appendOrderToJson(savedOrder);
-    res.status(201).json({ success: true, message: 'Order created successfully!', order: savedOrder });
+    
+    res.status(201).json({ 
+      success: true, 
+      message: 'Order created successfully!', 
+      order: savedOrder,
+      commission: seller ? { amount: commission, sellerName: seller.businessName } : null
+    });
   } catch (error) {
     console.error('Error creating order:', error);
     res.status(500).json({ success: false, message: 'Failed to create order.', error: error.message });

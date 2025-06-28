@@ -35,6 +35,8 @@ const orderSchema = new mongoose.Schema({
     required: true,
     enum: ['pending', 'completed', 'failed']
   },
+  sellerToken: { type: String, required: false }, // Track which seller referred this order
+  commission: { type: Number, default: 0 }, // Commission amount for this order
 }, { timestamps: true });
 
 module.exports = mongoose.model('Order', orderSchema);

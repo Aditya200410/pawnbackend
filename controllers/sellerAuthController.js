@@ -1,6 +1,5 @@
 const Seller = require('../models/Seller');
 const jwt = require('jsonwebtoken');
-const QRCode = require('qrcode');
 
 // Helper function to generate JWT token
 const generateToken = (seller) => {
@@ -9,17 +8,6 @@ const generateToken = (seller) => {
     process.env.JWT_SECRET_SELLER,
     { expiresIn: '30d' }
   );
-};
-
-// Helper function to generate QR code
-const generateQRCode = async (url) => {
-  try {
-    const qrCode = await QRCode.toDataURL(url);
-    return qrCode;
-  } catch (error) {
-    console.error('Error generating QR code:', error);
-    return null;
-  }
 };
 
 // Helper function to validate email format
@@ -95,13 +83,6 @@ exports.register = async (req, res) => {
       address
     });
 
-    // Generate QR code for the website link
-    const qrCode = await generateQRCode(seller.websiteLink);
-    if (qrCode) {
-      seller.qrCode = qrCode;
-      await seller.save();
-    }
-
     // Generate token
     const token = generateToken(seller);
 
@@ -109,7 +90,8 @@ exports.register = async (req, res) => {
     console.log('New seller registered:', {
       id: seller._id,
       businessName: seller.businessName,
-      email: seller.email
+      email: seller.email,
+      sellerToken: seller.sellerToken
     });
 
     res.status(201).json({
@@ -121,9 +103,10 @@ exports.register = async (req, res) => {
         email: seller.email,
         phone: seller.phone,
         address: seller.address,
-        couponToken: seller.couponToken,
+        sellerToken: seller.sellerToken,
         websiteLink: seller.websiteLink,
-        qrCode: seller.qrCode
+        totalOrders: seller.totalOrders,
+        totalCommission: seller.totalCommission
       }
     });
   } catch (error) {
@@ -203,7 +186,10 @@ exports.login = async (req, res) => {
         email: seller.email,
         phone: seller.phone,
         address: seller.address,
-        couponToken: seller.couponToken
+        sellerToken: seller.sellerToken,
+        websiteLink: seller.websiteLink,
+        totalOrders: seller.totalOrders,
+        totalCommission: seller.totalCommission
       }
     });
   } catch (error) {
@@ -228,9 +214,10 @@ exports.getProfile = async (req, res) => {
         email: seller.email,
         phone: seller.phone,
         address: seller.address,
-        couponToken: seller.couponToken,
+        sellerToken: seller.sellerToken,
         websiteLink: seller.websiteLink,
-        qrCode: seller.qrCode,
+        totalOrders: seller.totalOrders,
+        totalCommission: seller.totalCommission,
         createdAt: seller.createdAt
       }
     });
@@ -264,7 +251,10 @@ exports.updateProfile = async (req, res) => {
         email: seller.email,
         phone: seller.phone,
         address: seller.address,
-        couponToken: seller.couponToken
+        sellerToken: seller.sellerToken,
+        websiteLink: seller.websiteLink,
+        totalOrders: seller.totalOrders,
+        totalCommission: seller.totalCommission
       }
     });
   } catch (error) {
@@ -299,9 +289,10 @@ exports.getAllSellers = async (req, res) => {
       email: seller.email,
       phone: seller.phone,
       address: seller.address,
-      couponToken: seller.couponToken,
+      sellerToken: seller.sellerToken,
       websiteLink: seller.websiteLink,
-      qrCode: seller.qrCode,
+      totalOrders: seller.totalOrders,
+      totalCommission: seller.totalCommission,
       createdAt: seller.createdAt
     }));
 

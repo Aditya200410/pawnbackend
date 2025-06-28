@@ -27,7 +27,7 @@ const sellerSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Address is required']
   },
-  couponToken: {
+  sellerToken: {
     type: String,
     unique: true
   },
@@ -35,29 +35,27 @@ const sellerSchema = new mongoose.Schema({
     type: String,
     unique: true
   },
-  qrCode: {
-    type: String // Base64 encoded QR code image
+  totalOrders: {
+    type: Number,
+    default: 0
   },
-  documents: [{
-    type: String // URLs to business documents
-  }],
+  totalCommission: {
+    type: Number,
+    default: 0
+  },
   createdAt: {
     type: Date,
     default: Date.now
   }
 });
 
-// Generate coupon token and website link before saving
+// Generate seller token and website link before saving
 sellerSchema.pre('save', async function(next) {
   if (this.isNew) {
-    // Extract username from email
-    const username = this.email.split('@')[0];
-    // Get first three digits of phone
-    const phonePrefix = this.phone.replace(/\D/g, '').slice(0, 3);
-    // Generate coupon token
-    this.couponToken = `${username}@${phonePrefix}`;
+    // Generate unique seller token
+    this.sellerToken = `seller_${this._id.toString().slice(-8)}`;
     // Generate website link
-    this.websiteLink = `https://pawnshop.com/seller/${this.couponToken}`;
+    this.websiteLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/shop?seller=${this.sellerToken}`;
   }
   next();
 });
@@ -78,6 +76,15 @@ sellerSchema.pre('save', async function(next) {
 // Method to compare password
 sellerSchema.methods.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
+};
+
+// Method to add commission
+sellerSchema.methods.addCommission = async function(orderAmount) {
+  const commission = orderAmount * 0.10; // 10% commission
+  this.totalCommission += commission;
+  this.totalOrders += 1;
+  await this.save();
+  return commission;
 };
 
 module.exports = mongoose.model('Seller', sellerSchema); 
