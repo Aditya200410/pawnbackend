@@ -58,7 +58,7 @@ sellerSchema.pre('save', async function(next) {
     // Generate unique seller token
     this.sellerToken = `seller_${this._id.toString().slice(-8)}`;
     // Generate website link
-    this.websiteLink = `${process.env.FRONTEND_URL || 'https://pawn-shop-git-local-host-api-used-aditya200410s-projects.vercel.app'}/shop?seller=${this.sellerToken}`;
+    this.websiteLink = `${'https://pawn-shop-git-local-host-api-used-aditya200410s-projects.vercel.app'}/shop?seller=${this.sellerToken}`;
   }
   next();
 });
