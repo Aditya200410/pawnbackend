@@ -26,9 +26,37 @@ if (!process.env.JWT_SECRET_SELLER) {
   console.log('Generated random JWT_SECRET_SELLER');
 }
 
-// CORS configuration - Allow all origins
+// CORS configuration - Allow specific origins for production
+const allowedOrigins = [
+  
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'https://www.rikocraft.com',
+  'https://pawn-shop-admin.vercel.app',
+  'https://pawn-shop.vercel.app',
+  'https://pawn-shop-git-main-adityas-projects.vercel.app',
+  'https://pawn-shop-adityas-projects.vercel.app',
+  'https://pawn-shop-git-local-host-api-used-aditya200410s-projects.vercel.app',
+  'https://pawnadmin-thnt.vercel.app',
+  'https://pawnadmin-thnt-n414tz6mc-aditya200410s-projects.vercel.app',
+  'https://pawnadmin-thnt.vercel.app',
+  'https://pawnadmin-thnt-n414tz6mc-aditya200410s-projects.vercel.app'
+];
+
+function isVercelPreview(origin) {
+  return /^https:\/\/pawn-shop-git-.*-aditya200410s-projects\.vercel\.app$/.test(origin);
+}
+
 app.use(cors({
-  origin: true, // Allow all origins
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin) || isVercelPreview(origin)) {
+      callback(null, true);
+    } else {
+      console.log('CORS blocked origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'Access-Control-Allow-Origin', 'Content-Length'],
@@ -39,7 +67,10 @@ app.use(cors({
 
 // Additional CORS headers for all routes
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin) || isVercelPreview(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+  }
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Content-Length');
   res.header('Access-Control-Allow-Credentials', 'true');
