@@ -40,6 +40,7 @@ const allowedOrigins = [
   'https://pawnadmin-thnt.vercel.app',
   'https://pawnadmin-thnt-n414tz6mc-aditya200410s-projects.vercel.app',
   'https://pawnadmin-thnt.vercel.app',
+  'https://rikocraft.com',
   'https://pawnadmin-thnt-n414tz6mc-aditya200410s-projects.vercel.app'
 ];
 
