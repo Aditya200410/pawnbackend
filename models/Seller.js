@@ -35,6 +35,9 @@ const sellerSchema = new mongoose.Schema({
     type: String,
     unique: true
   },
+  qrCode: {
+    type: String // Base64 encoded QR code image
+  },
   totalOrders: {
     type: Number,
     default: 0

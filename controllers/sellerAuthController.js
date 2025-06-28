@@ -1,5 +1,6 @@
 const Seller = require('../models/Seller');
 const jwt = require('jsonwebtoken');
+const QRCode = require('qrcode');
 
 // Helper function to generate JWT token
 const generateToken = (seller) => {
@@ -8,6 +9,17 @@ const generateToken = (seller) => {
     process.env.JWT_SECRET_SELLER,
     { expiresIn: '30d' }
   );
+};
+
+// Helper function to generate QR code
+const generateQRCode = async (url) => {
+  try {
+    const qrCode = await QRCode.toDataURL(url);
+    return qrCode;
+  } catch (error) {
+    console.error('Error generating QR code:', error);
+    return null;
+  }
 };
 
 // Helper function to validate email format
@@ -83,6 +95,13 @@ exports.register = async (req, res) => {
       address
     });
 
+    // Generate QR code for the website link
+    const qrCode = await generateQRCode(seller.websiteLink);
+    if (qrCode) {
+      seller.qrCode = qrCode;
+      await seller.save();
+    }
+
     // Generate token
     const token = generateToken(seller);
 
@@ -105,6 +124,7 @@ exports.register = async (req, res) => {
         address: seller.address,
         sellerToken: seller.sellerToken,
         websiteLink: seller.websiteLink,
+        qrCode: seller.qrCode,
         totalOrders: seller.totalOrders,
         totalCommission: seller.totalCommission
       }
@@ -188,6 +208,7 @@ exports.login = async (req, res) => {
         address: seller.address,
         sellerToken: seller.sellerToken,
         websiteLink: seller.websiteLink,
+        qrCode: seller.qrCode,
         totalOrders: seller.totalOrders,
         totalCommission: seller.totalCommission
       }
@@ -216,6 +237,7 @@ exports.getProfile = async (req, res) => {
         address: seller.address,
         sellerToken: seller.sellerToken,
         websiteLink: seller.websiteLink,
+        qrCode: seller.qrCode,
         totalOrders: seller.totalOrders,
         totalCommission: seller.totalCommission,
         createdAt: seller.createdAt
@@ -253,6 +275,7 @@ exports.updateProfile = async (req, res) => {
         address: seller.address,
         sellerToken: seller.sellerToken,
         websiteLink: seller.websiteLink,
+        qrCode: seller.qrCode,
         totalOrders: seller.totalOrders,
         totalCommission: seller.totalCommission
       }
@@ -291,6 +314,7 @@ exports.getAllSellers = async (req, res) => {
       address: seller.address,
       sellerToken: seller.sellerToken,
       websiteLink: seller.websiteLink,
+      qrCode: seller.qrCode,
       totalOrders: seller.totalOrders,
       totalCommission: seller.totalCommission,
       createdAt: seller.createdAt
