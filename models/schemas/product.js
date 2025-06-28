@@ -61,14 +61,32 @@ const productSchema = new mongoose.Schema({
   images: [{
     type: String
   }],
+  imageIds: [{
+    type: String
+  }],
   inStock: {
     type: Boolean,
     default: true
+  },
+  slug: {
+    type: String,
+    unique: true,
+    lowercase: true
   },
   date: {
     type: Date,
     default: Date.now
   }
+}, {
+  timestamps: true
+});
+
+// Create slug from name before saving
+productSchema.pre('save', function(next) {
+  if (this.isModified('name')) {
+    this.slug = this.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  }
+  next();
 });
 
 module.exports = productSchema; 
