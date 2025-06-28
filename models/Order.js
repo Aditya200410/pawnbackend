@@ -25,8 +25,16 @@ const orderSchema = new mongoose.Schema({
   items: [orderItemSchema], // Use the correct schema for items
   totalAmount: { type: Number, required: true },
   paymentMethod: { type: String, required: true },
-  orderStatus: { type: String, default: 'Pending' },
-  paymentStatus: { type: String, required: true },
+  orderStatus: { 
+    type: String, 
+    default: 'processing',
+    enum: ['processing', 'confirmed', 'manufacturing', 'shipped', 'delivered']
+  },
+  paymentStatus: { 
+    type: String, 
+    required: true,
+    enum: ['pending', 'completed', 'failed']
+  },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Order', orderSchema);

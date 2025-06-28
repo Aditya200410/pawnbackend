@@ -97,21 +97,26 @@ router.put("/:id/status", async (req, res) => {
   }
 });
 
-// Update payment status
-router.put("/:id/payment", async (req, res) => {
+// General order update endpoint
+router.put("/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const { paymentStatus } = req.body;
+    const updateData = req.body;
 
-    // Validate payment status
-    if (!['pending', 'completed', 'failed'].includes(paymentStatus)) {
+    // Validate orderStatus if provided
+    if (updateData.orderStatus && !['processing', 'confirmed', 'manufacturing', 'shipped', 'delivered'].includes(updateData.orderStatus)) {
+      return res.status(400).json({ success: false, message: 'Invalid order status' });
+    }
+
+    // Validate paymentStatus if provided
+    if (updateData.paymentStatus && !['pending', 'completed', 'failed'].includes(updateData.paymentStatus)) {
       return res.status(400).json({ success: false, message: 'Invalid payment status' });
     }
 
     // Update in MongoDB
     const updatedOrder = await Order.findByIdAndUpdate(
       id,
-      { paymentStatus },
+      updateData,
       { new: true, runValidators: true }
     );
 
@@ -129,17 +134,17 @@ router.put("/:id/payment", async (req, res) => {
 
     res.json({ success: true, order: updatedOrder });
   } catch (error) {
-    console.error('Error updating payment status:', error);
+    console.error('Error updating order:', error);
     if (error.name === 'ValidationError') {
       return res.status(400).json({
         success: false,
-        message: 'Invalid payment status',
+        message: 'Invalid order data',
         errors: Object.values(error.errors).map(err => err.message)
       });
     }
     res.status(500).json({ 
       success: false,
-      message: 'Failed to update payment status',
+      message: 'Failed to update order',
       error: error.message 
     });
   }
