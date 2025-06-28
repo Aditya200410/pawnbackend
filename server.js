@@ -36,6 +36,7 @@ const allowedOrigins = [
   'https://pawn-shop.vercel.app',
   'https://pawn-shop-git-main-adityas-projects.vercel.app',
   'https://pawn-shop-adityas-projects.vercel.app',
+  'https://pawn-shop-git-local-host-api-used-aditya200410s-projects.vercel.app',
   'https://pawnadmin-thnt.vercel.app',
   'https://pawnadmin-thnt-n414tz6mc-aditya200410s-projects.vercel.app',
   'https://pawnadmin-thnt.vercel.app',
