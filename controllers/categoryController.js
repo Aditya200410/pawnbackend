@@ -1,59 +1,59 @@
-const Category = require('../models/cate');
-const { deleteFromCloudinary } = require('../middleware/upload');
+const fs = require('fs').promises;
+const path = require('path');
+
+const dataPath = path.join(__dirname, '../data/category.json');
+
+// Helper function to read categories
+const readCategories = async () => {
+  try {
+    const data = await fs.readFile(dataPath, 'utf8');
+    return JSON.parse(data).categories;
+  } catch (error) {
+    console.error('Error reading categories:', error);
+    return [];
+  }
+};
+
+// Helper function to write categories
+const writeCategories = async (categories) => {
+  try {
+    await fs.writeFile(dataPath, JSON.stringify({ categories }, null, 2));
+  } catch (error) {
+    console.error('Error writing categories:', error);
+    throw error;
+  }
+};
 
 // Get all categories
 exports.getAllCategories = async (req, res) => {
   try {
-    const categories = await Category.find({ isActive: true }).sort({ createdAt: -1 });
-    res.json({ 
-      success: true,
-      categories: categories.map(cat => ({
-        id: cat._id,
-        name: cat.name,
-        description: cat.description,
-        image: cat.image,
-        slug: cat.slug,
-        isActive: cat.isActive,
-        createdAt: cat.createdAt
-      }))
-    });
+    let categories = await readCategories();
+    // Ensure all fields are present and id is a string
+    categories = categories.map(cat => ({
+      id: String(cat.id),
+      name: cat.name || '',
+      description: cat.description || '',
+      image: cat.image || ''
+    }));
+    res.json({ categories });
   } catch (error) {
     console.error('Error in getAllCategories:', error);
-    res.status(500).json({ 
-      success: false,
-      message: 'Error fetching categories' 
-    });
+    res.status(500).json({ message: 'Error fetching categories' });
   }
 };
 
 // Get single category
 exports.getCategory = async (req, res) => {
   try {
-    const category = await Category.findById(req.params.id);
+    const categories = await readCategories();
+    const category = categories.find(c => c.id === parseInt(req.params.id));
     if (!category) {
-      return res.status(404).json({ 
-        success: false,
-        message: 'Category not found' 
-      });
+      return res.status(404).json({ message: 'Category not found' });
     }
-    res.json({ 
-      success: true,
-      category: {
-        id: category._id,
-        name: category.name,
-        description: category.description,
-        image: category.image,
-        slug: category.slug,
-        isActive: category.isActive,
-        createdAt: category.createdAt
-      }
-    });
+    res.json(category);
   } catch (error) {
     console.error('Error in getCategory:', error);
-    res.status(500).json({ 
-      success: false,
-      message: 'Error fetching category' 
-    });
+    res.status(500).json({ message: 'Error fetching category' });
   }
 };
 
@@ -61,194 +61,68 @@ exports.getCategory = async (req, res) => {
 exports.createCategory = async (req, res) => {
   try {
     if (!req.body.name || !req.body.description) {
-      return res.status(400).json({ 
-        success: false,
-        message: 'Name and description are required' 
-      });
+      return res.status(400).json({ message: 'Name and description are required' });
     }
 
-    // Check if category with same name already exists
-    const existingCategory = await Category.findOne({ name: req.body.name });
-    if (existingCategory) {
-      return res.status(400).json({ 
-        success: false,
-        message: 'Category with this name already exists' 
-      });
-    }
-
-    const categoryData = {
+    const categories = await readCategories();
+    const newCategory = {
+      id: categories.length > 0 ? Math.max(...categories.map(c => c.id)) + 1 : 1,
       name: req.body.name,
       description: req.body.description,
-      image: req.file ? req.file.path : '',
-      imageId: req.file ? req.file.filename : ''
+      image: req.file ? req.file.path : '' // Use Cloudinary URL from uploaded file
     };
 
-    const newCategory = new Category(categoryData);
-    await newCategory.save();
+    categories.push(newCategory);
+    await writeCategories(categories);
     
     console.log('New category created:', newCategory);
-    res.status(201).json({ 
-      success: true,
-      message: 'Category created successfully',
-      category: {
-        id: newCategory._id,
-        name: newCategory.name,
-        description: newCategory.description,
-        image: newCategory.image,
-        slug: newCategory.slug,
-        isActive: newCategory.isActive,
-        createdAt: newCategory.createdAt
-      }
-    });
+    res.status(201).json(newCategory);
   } catch (error) {
     console.error('Error in createCategory:', error);
-    res.status(500).json({ 
-      success: false,
-      message: 'Error creating category' 
-    });
+    res.status(500).json({ message: 'Error creating category' });
   }
 };
 
 // Update category with file upload
 exports.updateCategory = async (req, res) => {
   try {
-    const category = await Category.findById(req.params.id);
+    const categories = await readCategories();
+    const index = categories.findIndex(c => c.id === parseInt(req.params.id));
     
-    if (!category) {
-      return res.status(404).json({ 
-        success: false,
-        message: 'Category not found' 
-      });
+    if (index === -1) {
+      return res.status(404).json({ message: 'Category not found' });
     }
 
-    // Check if name is being changed and if it already exists
-    if (req.body.name && req.body.name !== category.name) {
-      const existingCategory = await Category.findOne({ 
-        name: req.body.name,
-        _id: { $ne: req.params.id }
-      });
-      if (existingCategory) {
-        return res.status(400).json({ 
-          success: false,
-          message: 'Category with this name already exists' 
-        });
-      }
-    }
-
-    // Delete old image from Cloudinary if new image is uploaded
-    if (req.file && category.imageId) {
-      try {
-        await deleteFromCloudinary(category.imageId);
-      } catch (error) {
-        console.error('Error deleting old image:', error);
-      }
-    }
-
-    // Update category data
-    const updateData = {
-      name: req.body.name || category.name,
-      description: req.body.description || category.description,
-      image: req.file ? req.file.path : category.image,
-      imageId: req.file ? req.file.filename : category.imageId
+    // Update category with new data
+    categories[index] = {
+      ...categories[index],
+      name: req.body.name || categories[index].name,
+      description: req.body.description || categories[index].description,
+      image: req.file ? req.file.path : (req.body.image || categories[index].image) // Use new Cloudinary URL or keep existing
     };
 
-    const updatedCategory = await Category.findByIdAndUpdate(
-      req.params.id,
-      updateData,
-      { new: true, runValidators: true }
-    );
-
-    res.json({ 
-      success: true,
-      message: 'Category updated successfully',
-      category: {
-        id: updatedCategory._id,
-        name: updatedCategory.name,
-        description: updatedCategory.description,
-        image: updatedCategory.image,
-        slug: updatedCategory.slug,
-        isActive: updatedCategory.isActive,
-        updatedAt: updatedCategory.updatedAt
-      }
-    });
+    await writeCategories(categories);
+    res.json(categories[index]);
   } catch (error) {
     console.error('Error in updateCategory:', error);
-    res.status(500).json({ 
-      success: false,
-      message: 'Error updating category' 
-    });
+    res.status(500).json({ message: 'Error updating category' });
   }
 };
 
 // Delete category
 exports.deleteCategory = async (req, res) => {
   try {
-    const category = await Category.findById(req.params.id);
+    const categories = await readCategories();
+    const filteredCategories = categories.filter(c => c.id !== parseInt(req.params.id));
     
-    if (!category) {
-      return res.status(404).json({ 
-        success: false,
-        message: 'Category not found' 
-      });
+    if (filteredCategories.length === categories.length) {
+      return res.status(404).json({ message: 'Category not found' });
     }
 
-    // Delete image from Cloudinary if exists
-    if (category.imageId) {
-      try {
-        await deleteFromCloudinary(category.imageId);
-      } catch (error) {
-        console.error('Error deleting image from Cloudinary:', error);
-      }
-    }
-
-    // Soft delete by setting isActive to false
-    await Category.findByIdAndUpdate(req.params.id, { isActive: false });
-
-    res.json({ 
-      success: true,
-      message: 'Category deleted successfully' 
-    });
+    await writeCategories(filteredCategories);
+    res.json({ message: 'Category deleted successfully' });
   } catch (error) {
     console.error('Error in deleteCategory:', error);
-    res.status(500).json({ 
-      success: false,
-      message: 'Error deleting category' 
-    });
-  }
-};
-
-// Get category by slug
-exports.getCategoryBySlug = async (req, res) => {
-  try {
-    const category = await Category.findOne({ 
-      slug: req.params.slug,
-      isActive: true 
-    });
-    
-    if (!category) {
-      return res.status(404).json({ 
-        success: false,
-        message: 'Category not found' 
-      });
-    }
-    
-    res.json({ 
-      success: true,
-      category: {
-        id: category._id,
-        name: category.name,
-        description: category.description,
-        image: category.image,
-        slug: category.slug,
-        isActive: category.isActive,
-        createdAt: category.createdAt
-      }
-    });
-  } catch (error) {
-    console.error('Error in getCategoryBySlug:', error);
-    res.status(500).json({ 
-      success: false,
-      message: 'Error fetching category' 
-    });
+    res.status(500).json({ message: 'Error deleting category' });
   }
 }; 
