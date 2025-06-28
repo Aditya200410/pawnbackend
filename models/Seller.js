@@ -46,6 +46,20 @@ const sellerSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  bankDetails: {
+    accountName: { type: String },
+    accountNumber: { type: String },
+    ifsc: { type: String },
+    bankName: { type: String }
+  },
+  withdrawals: [
+    {
+      amount: Number,
+      requestedAt: Date,
+      status: { type: String, enum: ['pending', 'completed', 'rejected'], default: 'pending' },
+      processedAt: Date
+    }
+  ],
   createdAt: {
     type: Date,
     default: Date.now

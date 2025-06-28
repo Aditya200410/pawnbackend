@@ -1,6 +1,8 @@
 const Seller = require('../models/Seller');
 const jwt = require('jsonwebtoken');
 const QRCode = require('qrcode');
+const Order = require('../models/Order');
+const mongoose = require('mongoose');
 
 // Helper function to generate JWT token
 const generateToken = (seller) => {
@@ -226,7 +228,21 @@ exports.login = async (req, res) => {
 exports.getProfile = async (req, res) => {
   try {
     const seller = req.seller;
-    console.log('Sending seller profile:', seller); // Debug log
+    // 7-day withdrawal logic
+    const now = new Date();
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    // Find eligible orders
+    const eligibleOrders = await Order.find({
+      sellerToken: seller.sellerToken,
+      orderStatus: 'delivered',
+      paymentStatus: 'completed',
+      updatedAt: { $lte: sevenDaysAgo }
+    });
+    // Find already withdrawn order IDs
+    const withdrawnOrderIds = seller.withdrawals.map(w => w.orderIds).flat();
+    // Only include orders not already withdrawn
+    const availableOrders = eligibleOrders.filter(o => !withdrawnOrderIds?.includes(o._id.toString()));
+    const availableCommission = availableOrders.reduce((sum, o) => sum + (o.commission || 0), 0);
     res.json({
       success: true,
       seller: {
@@ -240,6 +256,9 @@ exports.getProfile = async (req, res) => {
         qrCode: seller.qrCode,
         totalOrders: seller.totalOrders,
         totalCommission: seller.totalCommission,
+        availableCommission,
+        bankDetails: seller.bankDetails,
+        withdrawals: seller.withdrawals,
         createdAt: seller.createdAt
       }
     });
@@ -317,6 +336,8 @@ exports.getAllSellers = async (req, res) => {
       qrCode: seller.qrCode,
       totalOrders: seller.totalOrders,
       totalCommission: seller.totalCommission,
+      bankDetails: seller.bankDetails,
+      withdrawals: seller.withdrawals,
       createdAt: seller.createdAt
     }));
 
@@ -332,5 +353,46 @@ exports.getAllSellers = async (req, res) => {
       success: false,
       message: 'Error fetching sellers. Please try again later.'
     });
+  }
+};
+
+// Withdraw endpoint
+exports.withdraw = async (req, res) => {
+  try {
+    const seller = req.seller;
+    const { bankDetails, amount } = req.body;
+    if (!bankDetails || !amount || amount <= 0) {
+      return res.status(400).json({ success: false, message: 'Bank details and valid amount required' });
+    }
+    // 7-day withdrawal logic
+    const now = new Date();
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const eligibleOrders = await Order.find({
+      sellerToken: seller.sellerToken,
+      orderStatus: 'delivered',
+      paymentStatus: 'completed',
+      updatedAt: { $lte: sevenDaysAgo }
+    });
+    const withdrawnOrderIds = seller.withdrawals.map(w => w.orderIds).flat();
+    const availableOrders = eligibleOrders.filter(o => !withdrawnOrderIds?.includes(o._id.toString()));
+    const availableCommission = availableOrders.reduce((sum, o) => sum + (o.commission || 0), 0);
+    if (amount > availableCommission) {
+      return res.status(400).json({ success: false, message: 'Amount exceeds available commission' });
+    }
+    // Update bank details
+    seller.bankDetails = bankDetails;
+    // Mark these orders as withdrawn
+    const withdrawnOrderIdList = availableOrders.map(o => o._id.toString());
+    seller.withdrawals.push({
+      amount,
+      requestedAt: new Date(),
+      status: 'pending',
+      orderIds: withdrawnOrderIdList
+    });
+    await seller.save();
+    res.json({ success: true, message: 'Withdrawal request submitted', bankDetails: seller.bankDetails });
+  } catch (error) {
+    console.error('Withdraw error:', error);
+    res.status(500).json({ success: false, message: 'Error processing withdrawal' });
   }
 }; 
