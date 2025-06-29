@@ -33,6 +33,7 @@ const allowedOrigins = [
   'http://localhost:5174',
   'https://www.rikocraft.com',
   'https://riko-craft.vercel.app',
+  'https://riko-craft.vercel.app',
   'https://pawn-shop-admin.vercel.app',
   'https://pawn-shop.vercel.app',
   'https://pawn-shop-git-main-adityas-projects.vercel.app',
@@ -41,7 +42,7 @@ const allowedOrigins = [
   'https://pawnadmin-thnt.vercel.app',
   'https://pawnadmin-thnt-n414tz6mc-aditya200410s-projects.vercel.app',
   'https://pawnadmin-thnt.vercel.app',
-  'https://rikocraft.com',
+  
   'https://pawnadmin-thnt-n414tz6mc-aditya200410s-projects.vercel.app'
 ];
 

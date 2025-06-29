@@ -1,40 +1,9 @@
-const fs = require('fs').promises;
-const path = require('path');
-
-const dataPath = path.join(__dirname, '../data/category.json');
-
-// Helper function to read categories
-const readCategories = async () => {
-  try {
-    const data = await fs.readFile(dataPath, 'utf8');
-    return JSON.parse(data).categories;
-  } catch (error) {
-    console.error('Error reading categories:', error);
-    return [];
-  }
-};
-
-// Helper function to write categories
-const writeCategories = async (categories) => {
-  try {
-    await fs.writeFile(dataPath, JSON.stringify({ categories }, null, 2));
-  } catch (error) {
-    console.error('Error writing categories:', error);
-    throw error;
-  }
-};
+const Category = require('../models/cate');
 
 // Get all categories
 exports.getAllCategories = async (req, res) => {
   try {
-    let categories = await readCategories();
-    // Ensure all fields are present and id is a string
-    categories = categories.map(cat => ({
-      id: String(cat.id),
-      name: cat.name || '',
-      description: cat.description || '',
-      image: cat.image || ''
-    }));
+    const categories = await Category.find({ isActive: true }).sort({ sortOrder: 1, name: 1 });
     res.json({ categories });
   } catch (error) {
     console.error('Error in getAllCategories:', error);
@@ -45,12 +14,11 @@ exports.getAllCategories = async (req, res) => {
 // Get single category
 exports.getCategory = async (req, res) => {
   try {
-    const categories = await readCategories();
-    const category = categories.find(c => c.id === parseInt(req.params.id));
+    const category = await Category.findById(req.params.id);
     if (!category) {
       return res.status(404).json({ message: 'Category not found' });
     }
-    res.json(category);
+    res.json({ category });
   } catch (error) {
     console.error('Error in getCategory:', error);
     res.status(500).json({ message: 'Error fetching category' });
@@ -60,66 +28,110 @@ exports.getCategory = async (req, res) => {
 // Create new category with file upload
 exports.createCategory = async (req, res) => {
   try {
+    console.log('=== Starting Category Creation ===');
+    console.log('Files received:', req.files);
+    console.log('Body data:', req.body);
+
     if (!req.body.name || !req.body.description) {
       return res.status(400).json({ message: 'Name and description are required' });
     }
 
-    const categories = await readCategories();
-    const newCategory = {
-      id: categories.length > 0 ? Math.max(...categories.map(c => c.id)) + 1 : 1,
-      name: req.body.name,
-      description: req.body.description,
-      image: req.file ? req.file.path : '' // Use Cloudinary URL from uploaded file
-    };
+    const categoryData = req.body;
+    let imageUrl = '';
 
-    categories.push(newCategory);
-    await writeCategories(categories);
+    // Process uploaded file if present
+    if (req.files && req.files.image && req.files.image[0]) {
+      imageUrl = req.files.image[0].path; // Cloudinary URL
+      console.log('Added category image:', imageUrl);
+    }
+
+    const newCategory = new Category({
+      name: categoryData.name,
+      description: categoryData.description,
+      image: imageUrl,
+      sortOrder: parseInt(categoryData.sortOrder) || 0,
+      isActive: categoryData.isActive !== 'false'
+    });
+
+    console.log('Creating new category with data:', {
+      name: categoryData.name,
+      description: categoryData.description,
+      image: imageUrl
+    });
+
+    const savedCategory = await newCategory.save();
+    console.log('Category saved successfully:', savedCategory);
     
-    console.log('New category created:', newCategory);
-    res.status(201).json(newCategory);
+    res.status(201).json({ 
+      message: "Category created successfully", 
+      category: savedCategory,
+      uploadedFiles: req.files
+    });
   } catch (error) {
-    console.error('Error in createCategory:', error);
-    res.status(500).json({ message: 'Error creating category' });
+    console.error('=== Error creating category ===');
+    console.error('Error details:', error);
+    res.status(500).json({ 
+      message: "Error creating category", 
+      error: error.message
+    });
   }
 };
 
 // Update category with file upload
 exports.updateCategory = async (req, res) => {
   try {
-    const categories = await readCategories();
-    const index = categories.findIndex(c => c.id === parseInt(req.params.id));
+    console.log('Updating category with files:', req.files);
+    console.log('Update data:', req.body);
+
+    const id = req.params.id;
+    const categoryData = req.body;
     
-    if (index === -1) {
-      return res.status(404).json({ message: 'Category not found' });
+    const existingCategory = await Category.findById(id);
+    if (!existingCategory) {
+      return res.status(404).json({ message: "Category not found" });
     }
 
-    // Update category with new data
-    categories[index] = {
-      ...categories[index],
-      name: req.body.name || categories[index].name,
-      description: req.body.description || categories[index].description,
-      image: req.file ? req.file.path : (req.body.image || categories[index].image) // Use new Cloudinary URL or keep existing
+    // Handle image update
+    let imageUrl = existingCategory.image;
+    if (req.files && req.files.image && req.files.image[0]) {
+      imageUrl = req.files.image[0].path;
+    }
+
+    // Update category object
+    const updatedCategory = {
+      name: categoryData.name || existingCategory.name,
+      description: categoryData.description || existingCategory.description,
+      image: imageUrl,
+      sortOrder: categoryData.sortOrder ? parseInt(categoryData.sortOrder) : existingCategory.sortOrder,
+      isActive: categoryData.isActive !== undefined ? (categoryData.isActive === 'true') : existingCategory.isActive
     };
 
-    await writeCategories(categories);
-    res.json(categories[index]);
+    console.log('Updating category with data:', {
+      id,
+      imageUrl,
+      filesReceived: req.files ? Object.keys(req.files) : 'none'
+    });
+
+    const savedCategory = await Category.findByIdAndUpdate(id, updatedCategory, { new: true });
+
+    res.json({ 
+      message: "Category updated successfully", 
+      category: savedCategory,
+      uploadedFiles: req.files
+    });
   } catch (error) {
-    console.error('Error in updateCategory:', error);
-    res.status(500).json({ message: 'Error updating category' });
+    console.error('Error updating category:', error);
+    res.status(500).json({ message: "Error updating category", error: error.message });
   }
 };
 
 // Delete category
 exports.deleteCategory = async (req, res) => {
   try {
-    const categories = await readCategories();
-    const filteredCategories = categories.filter(c => c.id !== parseInt(req.params.id));
-    
-    if (filteredCategories.length === categories.length) {
+    const category = await Category.findByIdAndDelete(req.params.id);
+    if (!category) {
       return res.status(404).json({ message: 'Category not found' });
     }
-
-    await writeCategories(filteredCategories);
     res.json({ message: 'Category deleted successfully' });
   } catch (error) {
     console.error('Error in deleteCategory:', error);
