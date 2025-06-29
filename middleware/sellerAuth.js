@@ -14,7 +14,7 @@ const sellerAuth = async (req, res, next) => {
     }
 
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET_SELLER);
     
     // Check if it's a seller token
     if (decoded.type !== 'seller') {
