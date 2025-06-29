@@ -2,15 +2,24 @@ const multer = require('multer');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const cloudinary = require('cloudinary').v2;
 
-// Configure Cloudinary
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET
-});
+// Check if Cloudinary credentials are available
+const hasCloudinaryCredentials = process.env.CLOUDINARY_CLOUD_NAME && 
+                                process.env.CLOUDINARY_API_KEY && 
+                                process.env.CLOUDINARY_API_SECRET;
+
+if (hasCloudinaryCredentials) {
+  // Configure Cloudinary
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+  });
+} else {
+  console.warn('Cloudinary credentials not found. Image uploads will be disabled.');
+}
 
 // Configure storage for multiple images
-const storage = new CloudinaryStorage({
+const storage = hasCloudinaryCredentials ? new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: 'seller-images',
@@ -20,10 +29,10 @@ const storage = new CloudinaryStorage({
       { quality: 'auto' }
     ]
   }
-});
+}) : multer.memoryStorage();
 
 // Configure storage for profile image
-const profileStorage = new CloudinaryStorage({
+const profileStorage = hasCloudinaryCredentials ? new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: 'seller-profiles',
@@ -33,7 +42,7 @@ const profileStorage = new CloudinaryStorage({
       { quality: 'auto' }
     ]
   }
-});
+}) : multer.memoryStorage();
 
 // Multer configuration for multiple images
 const uploadMultipleImages = multer({
@@ -71,6 +80,12 @@ const uploadProfileImage = multer({
 
 // Middleware for handling multiple image uploads
 const handleMultipleImages = (req, res, next) => {
+  if (!hasCloudinaryCredentials) {
+    // Skip image upload if Cloudinary is not configured
+    req.files = [];
+    return next();
+  }
+
   uploadMultipleImages(req, res, (err) => {
     if (err instanceof multer.MulterError) {
       if (err.code === 'LIMIT_FILE_SIZE') {
@@ -101,6 +116,12 @@ const handleMultipleImages = (req, res, next) => {
 
 // Middleware for handling profile image upload
 const handleProfileImage = (req, res, next) => {
+  if (!hasCloudinaryCredentials) {
+    // Skip image upload if Cloudinary is not configured
+    req.file = null;
+    return next();
+  }
+
   uploadProfileImage(req, res, (err) => {
     if (err instanceof multer.MulterError) {
       if (err.code === 'LIMIT_FILE_SIZE') {
@@ -126,5 +147,5 @@ const handleProfileImage = (req, res, next) => {
 module.exports = {
   handleMultipleImages,
   handleProfileImage,
-  cloudinary
+  cloudinary: hasCloudinaryCredentials ? cloudinary : null
 }; 

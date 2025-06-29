@@ -38,11 +38,17 @@ exports.register = async (req, res) => {
     // Process uploaded images
     let images = [];
     if (req.files && req.files.length > 0) {
-      images = req.files.map(file => ({
-        public_id: file.filename,
-        url: file.path,
-        alt: `${businessName} image`
-      }));
+      images = req.files.map(file => {
+        // Handle both Cloudinary uploads and memory storage
+        const public_id = file.filename || file.originalname || `img_${Date.now()}`;
+        const url = file.path || (file.buffer ? `data:${file.mimetype};base64,${file.buffer.toString('base64')}` : '');
+        
+        return {
+          public_id,
+          url,
+          alt: `${businessName} image`
+        };
+      });
     }
 
     // Create new seller with bank details and images
@@ -77,6 +83,24 @@ exports.register = async (req, res) => {
         id: seller._id,
         businessName: seller.businessName,
         email: seller.email,
+        phone: seller.phone,
+        address: seller.address,
+        businessType: seller.businessType,
+        accountHolderName: seller.accountHolderName,
+        bankAccountNumber: seller.bankAccountNumber,
+        ifscCode: seller.ifscCode,
+        bankName: seller.bankName,
+        sellerToken: seller.sellerToken,
+        websiteLink: seller.websiteLink,
+        qrCode: seller.qrCode,
+        images: seller.images || [],
+        profileImage: seller.profileImage || null,
+        totalOrders: seller.totalOrders || 0,
+        totalCommission: seller.totalCommission || 0,
+        availableCommission: seller.availableCommission || 0,
+        bankDetails: seller.bankDetails || {},
+        withdrawals: seller.withdrawals || [],
+        createdAt: seller.createdAt,
         verified: seller.verified
       }
     });
@@ -122,6 +146,24 @@ exports.login = async (req, res) => {
         id: seller._id,
         businessName: seller.businessName,
         email: seller.email,
+        phone: seller.phone,
+        address: seller.address,
+        businessType: seller.businessType,
+        accountHolderName: seller.accountHolderName,
+        bankAccountNumber: seller.bankAccountNumber,
+        ifscCode: seller.ifscCode,
+        bankName: seller.bankName,
+        sellerToken: seller.sellerToken,
+        websiteLink: seller.websiteLink,
+        qrCode: seller.qrCode,
+        images: seller.images || [],
+        profileImage: seller.profileImage || null,
+        totalOrders: seller.totalOrders || 0,
+        totalCommission: seller.totalCommission || 0,
+        availableCommission: seller.availableCommission || 0,
+        bankDetails: seller.bankDetails || {},
+        withdrawals: seller.withdrawals || [],
+        createdAt: seller.createdAt,
         verified: seller.verified
       }
     });
@@ -276,12 +318,14 @@ exports.deleteImage = async (req, res) => {
       });
     }
 
-    // Delete from Cloudinary
-    try {
-      await cloudinary.uploader.destroy(image.public_id);
-    } catch (cloudinaryError) {
-      console.error('Cloudinary delete error:', cloudinaryError);
-      // Continue with database deletion even if Cloudinary fails
+    // Delete from Cloudinary if available
+    if (cloudinary) {
+      try {
+        await cloudinary.uploader.destroy(image.public_id);
+      } catch (cloudinaryError) {
+        console.error('Cloudinary delete error:', cloudinaryError);
+        // Continue with database deletion even if Cloudinary fails
+      }
     }
 
     // Remove from database
