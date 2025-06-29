@@ -2,6 +2,9 @@ const Cart = require('../models/Cart');
 const fs = require('fs');
 const path = require('path');
 const Product = require('../models/Product');
+const BestSeller = require('../models/bestSeller');
+const Loved = require('../models/loved');
+const FeaturedProduct = require('../models/featuredProduct');
 
 // Helper function to get products from shop.json
 const getProducts = () => {
@@ -13,6 +16,27 @@ const getProducts = () => {
     console.error('Error reading shop.json:', error);
     return [];
   }
+};
+
+// Helper function to find product across all collections
+const findProductById = async (productId) => {
+  // Try to find in regular products first
+  let product = await Product.findById(productId);
+  if (product) return product;
+
+  // Try to find in best sellers
+  product = await BestSeller.findById(productId);
+  if (product) return product;
+
+  // Try to find in loved products
+  product = await Loved.findById(productId);
+  if (product) return product;
+
+  // Try to find in featured products
+  product = await FeaturedProduct.findById(productId);
+  if (product) return product;
+
+  return null;
 };
 
 // Get user's cart
@@ -50,7 +74,7 @@ const addToCart = async (req, res) => {
     const { productId, quantity = 1 } = req.body;
     
     // Find product in MongoDB
-    const product = await Product.findById(productId);
+    const product = await findProductById(productId);
     if (!product) {
       return res.status(404).json({ success: false, message: 'Product not found' });
     }
@@ -107,6 +131,13 @@ const updateQuantity = async (req, res) => {
     if (quantity < 1) {
       return res.status(400).json({ success: false, message: 'Quantity must be at least 1' });
     }
+    
+    // Verify product exists across all collections
+    const product = await findProductById(productId);
+    if (!product) {
+      return res.status(404).json({ success: false, message: 'Product not found' });
+    }
+    
     const cart = await Cart.findOne({ userId });
     if (!cart) {
       return res.status(404).json({ success: false, message: 'Cart not found' });
