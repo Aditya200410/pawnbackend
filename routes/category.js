@@ -3,6 +3,7 @@ const router = express.Router();
 const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const { isAdmin, authenticateToken } = require('../middleware/auth');
 const categoryController = require('../controllers/categoryController');
 
 // Cloudinary config
@@ -22,15 +23,22 @@ const storage = new CloudinaryStorage({
   },
 });
 
-const upload = multer({ storage: storage });
+const upload = multer({ 
+  storage: storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB limit
+  }
+});
 
 // Public routes
 router.get('/', categoryController.getAllCategories);
 router.get('/:id', categoryController.getCategory);
 
 // Protected admin routes with file upload
-router.post('/upload', upload.single('image'), categoryController.createCategory);
-router.put('/:id/upload', upload.single('image'), categoryController.updateCategory);
-router.delete('/:id', categoryController.deleteCategory);
+router.post('/', authenticateToken, isAdmin, upload.single('image'), categoryController.createCategory);
+router.post('/upload', authenticateToken, isAdmin, upload.single('image'), categoryController.createCategory);
+router.put('/:id', authenticateToken, isAdmin, upload.single('image'), categoryController.updateCategory);
+router.put('/:id/upload', authenticateToken, isAdmin, upload.single('image'), categoryController.updateCategory);
+router.delete('/:id', authenticateToken, isAdmin, categoryController.deleteCategory);
 
 module.exports = router; 

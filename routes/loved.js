@@ -3,6 +3,7 @@ const router = express.Router();
 const multer = require("multer");
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const { isAdmin, authenticateToken } = require('../middleware/auth');
 const { 
   getAllLovedProducts, 
   getLovedProduct, 
@@ -22,13 +23,19 @@ cloudinary.config({
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: 'pawnshop-products',
+    folder: 'pawnshop-loved',
     allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
     transformation: [{ width: 800, height: 800, crop: 'limit' }],
+    resource_type: 'auto'
   },
 });
 
-const upload = multer({ storage: storage });
+const upload = multer({ 
+  storage: storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB limit
+  }
+});
 
 // Upload multiple images (main image + 3 additional images)
 const uploadImages = upload.fields([
@@ -50,19 +57,14 @@ const handleUpload = (req, res, next) => {
   });
 };
 
-// Get all loved products
+// Public routes
 router.get("/", getAllLovedProducts);
-
-// Get single loved product
 router.get("/:id", getLovedProduct);
 
-// Upload images and create loved product
-router.post("/upload", handleUpload, createLovedProductWithFiles);
-
-// Update loved product by id
-router.put("/:id", handleUpload, updateLovedProductWithFiles);
-
-// Delete loved product by id
-router.delete("/:id", deleteLovedProduct);
+// Admin routes
+router.post("/", authenticateToken, isAdmin, handleUpload, createLovedProductWithFiles);
+router.post("/upload", authenticateToken, isAdmin, handleUpload, createLovedProductWithFiles);
+router.put("/:id", authenticateToken, isAdmin, handleUpload, updateLovedProductWithFiles);
+router.delete("/:id", authenticateToken, isAdmin, deleteLovedProduct);
 
 module.exports = router;

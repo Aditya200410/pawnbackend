@@ -3,6 +3,7 @@ const router = express.Router();
 const multer = require("multer");
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const { isAdmin, authenticateToken } = require('../middleware/auth');
 const { 
   getAllFeaturedProducts, 
   getFeaturedProduct, 
@@ -25,10 +26,16 @@ const storage = new CloudinaryStorage({
     folder: 'pawnshop-featured',
     allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
     transformation: [{ width: 800, height: 800, crop: 'limit' }],
+    resource_type: 'auto'
   },
 });
 
-const upload = multer({ storage: storage });
+const upload = multer({ 
+  storage: storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB limit
+  }
+});
 
 // Upload multiple images (main image + 3 additional images)
 const uploadImages = upload.fields([
@@ -50,19 +57,14 @@ const handleUpload = (req, res, next) => {
   });
 };
 
-// Get all featured products
+// Public routes
 router.get("/", getAllFeaturedProducts);
-
-// Get single featured product
 router.get("/:id", getFeaturedProduct);
 
-// Upload images and create featured product
-router.post("/upload", handleUpload, createFeaturedProductWithFiles);
-
-// Update featured product by id
-router.put("/:id", handleUpload, updateFeaturedProductWithFiles);
-
-// Delete featured product by id
-router.delete("/:id", deleteFeaturedProduct);
+// Admin routes
+router.post("/", authenticateToken, isAdmin, handleUpload, createFeaturedProductWithFiles);
+router.post("/upload", authenticateToken, isAdmin, handleUpload, createFeaturedProductWithFiles);
+router.put("/:id", authenticateToken, isAdmin, handleUpload, updateFeaturedProductWithFiles);
+router.delete("/:id", authenticateToken, isAdmin, deleteFeaturedProduct);
 
 module.exports = router; 
