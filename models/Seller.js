@@ -27,6 +27,32 @@ const sellerSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Address is required']
   },
+  businessType: {
+    type: String,
+    required: [true, 'Business type is required']
+  },
+  // Bank Details - Required fields
+  bankAccountNumber: {
+    type: String,
+    required: [true, 'Bank account number is required'],
+    trim: true
+  },
+  ifscCode: {
+    type: String,
+    required: [true, 'IFSC code is required'],
+    trim: true,
+    uppercase: true
+  },
+  bankName: {
+    type: String,
+    required: [true, 'Bank name is required'],
+    trim: true
+  },
+  accountHolderName: {
+    type: String,
+    required: [true, 'Account holder name is required'],
+    trim: true
+  },
   sellerToken: {
     type: String,
     unique: true
@@ -43,6 +69,10 @@ const sellerSchema = new mongoose.Schema({
     default: 0
   },
   totalCommission: {
+    type: Number,
+    default: 0
+  },
+  availableCommission: {
     type: Number,
     default: 0
   },
@@ -66,15 +96,15 @@ const sellerSchema = new mongoose.Schema({
   }
 });
 
-// Generate seller token and website link after saving
-sellerSchema.post('save', async function(doc) {
-  if (doc.isNew && !doc.sellerToken) {
+// Generate seller token and website link before saving
+sellerSchema.pre('save', async function(next) {
+  if (this.isNew) {
     // Generate unique seller token
-    doc.sellerToken = `seller_${doc._id.toString().slice(-8)}`;
+    this.sellerToken = `seller_${this._id.toString().slice(-8)}`;
     // Generate website link
-    doc.websiteLink = `${'https://pawn-shop-git-local-host-api-used-aditya200410s-projects.vercel.app'}/shop?seller=${doc.sellerToken}`;
-    await doc.save();
+    this.websiteLink = `${'https://pawn-shop-git-local-host-api-used-aditya200410s-projects.vercel.app'}/shop?seller=${this.sellerToken}`;
   }
+  next();
 });
 
 // Hash password before saving

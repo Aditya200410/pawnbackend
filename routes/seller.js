@@ -10,9 +10,5 @@ router.post('/login', sellerAuthController.login);
 // Protected routes
 router.get('/profile', sellerAuth, sellerAuthController.getProfile);
 router.put('/profile', sellerAuth, sellerAuthController.updateProfile);
-router.post('/withdraw', sellerAuth, sellerAuthController.withdraw);
-
-// Admin routes
-router.get('/all', sellerAuthController.getAllSellers);
 
 module.exports = router; 

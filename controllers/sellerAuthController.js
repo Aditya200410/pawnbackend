@@ -1,8 +1,5 @@
 const Seller = require('../models/Seller');
 const jwt = require('jsonwebtoken');
-const QRCode = require('qrcode');
-const Order = require('../models/Order');
-const mongoose = require('mongoose');
 
 // Helper function to generate JWT token
 const generateToken = (seller) => {
@@ -13,29 +10,6 @@ const generateToken = (seller) => {
   );
 };
 
-// Helper function to generate QR code
-const generateQRCode = async (url) => {
-  try {
-    const qrCode = await QRCode.toDataURL(url);
-    return qrCode;
-  } catch (error) {
-    console.error('Error generating QR code:', error);
-    return null;
-  }
-};
-
-// Helper function to validate email format
-const isValidEmail = (email) => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-};
-
-// Helper function to validate phone number
-const isValidPhone = (phone) => {
-  const phoneRegex = /^\+?[\d\s-]{10,}$/;
-  return phoneRegex.test(phone);
-};
-
 // Register a new seller
 exports.register = async (req, res) => {
   try {
@@ -44,40 +18,13 @@ exports.register = async (req, res) => {
       email,
       password,
       phone,
-      address
+      address,
+      businessType,
+      bankAccountNumber,
+      ifscCode,
+      bankName,
+      accountHolderName
     } = req.body;
-
-    // Validate required fields
-    if (!businessName || !email || !password || !phone || !address) {
-      return res.status(400).json({
-        success: false,
-        message: 'All fields are required'
-      });
-    }
-
-    // Validate email format
-    if (!isValidEmail(email)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid email format'
-      });
-    }
-
-    // Validate phone number
-    if (!isValidPhone(phone)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid phone number format'
-      });
-    }
-
-    // Validate password length
-    if (password.length < 6) {
-      return res.status(400).json({
-        success: false,
-        message: 'Password must be at least 6 characters long'
-      });
-    }
 
     // Check if seller already exists
     const existingSeller = await Seller.findOne({ email });
@@ -88,32 +35,29 @@ exports.register = async (req, res) => {
       });
     }
 
-    // Create new seller
+    // Create new seller with bank details
     const seller = await Seller.create({
       businessName,
       email,
       password,
       phone,
-      address
+      address,
+      businessType,
+      bankAccountNumber,
+      ifscCode,
+      bankName,
+      accountHolderName,
+      // Populate bankDetails for backward compatibility
+      bankDetails: {
+        accountName: accountHolderName,
+        accountNumber: bankAccountNumber,
+        ifsc: ifscCode,
+        bankName: bankName
+      }
     });
-
-    // Generate QR code for the website link
-    const qrCode = await generateQRCode(seller.websiteLink);
-    if (qrCode) {
-      seller.qrCode = qrCode;
-      await seller.save();
-    }
 
     // Generate token
     const token = generateToken(seller);
-
-    // Log successful registration
-    console.log('New seller registered:', {
-      id: seller._id,
-      businessName: seller.businessName,
-      email: seller.email,
-      sellerToken: seller.sellerToken
-    });
 
     res.status(201).json({
       success: true,
@@ -122,39 +66,14 @@ exports.register = async (req, res) => {
         id: seller._id,
         businessName: seller.businessName,
         email: seller.email,
-        phone: seller.phone,
-        address: seller.address,
-        sellerToken: seller.sellerToken,
-        websiteLink: seller.websiteLink,
-        qrCode: seller.qrCode,
-        totalOrders: seller.totalOrders,
-        totalCommission: seller.totalCommission
+        verified: seller.verified
       }
     });
   } catch (error) {
     console.error('Seller registration error:', error);
-    
-    // Handle mongoose validation errors
-    if (error.name === 'ValidationError') {
-      const messages = Object.values(error.errors).map(err => err.message);
-      return res.status(400).json({
-        success: false,
-        message: 'Validation error',
-        errors: messages
-      });
-    }
-
-    // Handle duplicate key error
-    if (error.code === 11000) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email already registered'
-      });
-    }
-
     res.status(500).json({
       success: false,
-      message: 'Error registering seller. Please try again later.'
+      message: 'Error registering seller'
     });
   }
 };
@@ -163,14 +82,6 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
-
-    // Validate required fields
-    if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email and password are required'
-      });
-    }
 
     // Check if seller exists
     const seller = await Seller.findOne({ email });
@@ -193,12 +104,6 @@ exports.login = async (req, res) => {
     // Generate token
     const token = generateToken(seller);
 
-    // Log successful login
-    console.log('Seller logged in:', {
-      id: seller._id,
-      email: seller.email
-    });
-
     res.json({
       success: true,
       token,
@@ -206,20 +111,14 @@ exports.login = async (req, res) => {
         id: seller._id,
         businessName: seller.businessName,
         email: seller.email,
-        phone: seller.phone,
-        address: seller.address,
-        sellerToken: seller.sellerToken,
-        websiteLink: seller.websiteLink,
-        qrCode: seller.qrCode,
-        totalOrders: seller.totalOrders,
-        totalCommission: seller.totalCommission
+        verified: seller.verified
       }
     });
   } catch (error) {
     console.error('Seller login error:', error);
     res.status(500).json({
       success: false,
-      message: 'Error logging in. Please try again later.'
+      message: 'Error logging in'
     });
   }
 };
@@ -227,46 +126,23 @@ exports.login = async (req, res) => {
 // Get seller profile
 exports.getProfile = async (req, res) => {
   try {
-    const seller = req.seller;
-    // 7-day withdrawal logic
-    const now = new Date();
-    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    // Find eligible orders
-    const eligibleOrders = await Order.find({
-      sellerToken: seller.sellerToken,
-      orderStatus: 'delivered',
-      paymentStatus: 'completed',
-      updatedAt: { $lte: sevenDaysAgo }
-    });
-    // Find already withdrawn order IDs
-    const withdrawnOrderIds = seller.withdrawals.map(w => w.orderIds).flat();
-    // Only include orders not already withdrawn
-    const availableOrders = eligibleOrders.filter(o => !withdrawnOrderIds?.includes(o._id.toString()));
-    const availableCommission = availableOrders.reduce((sum, o) => sum + (o.commission || 0), 0);
+    const seller = await Seller.findById(req.seller.id).select('-password');
+    if (!seller) {
+      return res.status(404).json({
+        success: false,
+        message: 'Seller not found'
+      });
+    }
+
     res.json({
       success: true,
-      seller: {
-        id: seller._id,
-        businessName: seller.businessName,
-        email: seller.email,
-        phone: seller.phone,
-        address: seller.address,
-        sellerToken: seller.sellerToken,
-        websiteLink: seller.websiteLink,
-        qrCode: seller.qrCode,
-        totalOrders: seller.totalOrders,
-        totalCommission: seller.totalCommission,
-        availableCommission,
-        bankDetails: seller.bankDetails,
-        withdrawals: seller.withdrawals,
-        createdAt: seller.createdAt
-      }
+      seller
     });
   } catch (error) {
     console.error('Get seller profile error:', error);
     res.status(500).json({
       success: false,
-      message: 'Error fetching profile. Please try again later.'
+      message: 'Error fetching profile'
     });
   }
 };
@@ -274,125 +150,28 @@ exports.getProfile = async (req, res) => {
 // Update seller profile
 exports.updateProfile = async (req, res) => {
   try {
-    const seller = req.seller;
-    const { businessName, phone, address } = req.body;
+    const updates = {
+      businessName: req.body.businessName,
+      phone: req.body.phone,
+      address: req.body.address,
+      businessType: req.body.businessType
+    };
 
-    // Update fields if provided
-    if (businessName) seller.businessName = businessName;
-    if (phone) seller.phone = phone;
-    if (address) seller.address = address;
-
-    await seller.save();
+    const seller = await Seller.findByIdAndUpdate(
+      req.seller.id,
+      { $set: updates },
+      { new: true, runValidators: true }
+    ).select('-password');
 
     res.json({
       success: true,
-      seller: {
-        id: seller._id,
-        businessName: seller.businessName,
-        email: seller.email,
-        phone: seller.phone,
-        address: seller.address,
-        sellerToken: seller.sellerToken,
-        websiteLink: seller.websiteLink,
-        qrCode: seller.qrCode,
-        totalOrders: seller.totalOrders,
-        totalCommission: seller.totalCommission
-      }
+      seller
     });
   } catch (error) {
     console.error('Update seller profile error:', error);
-    
-    // Handle validation errors
-    if (error.name === 'ValidationError') {
-      const messages = Object.values(error.errors).map(err => err.message);
-      return res.status(400).json({
-        success: false,
-        message: 'Validation error',
-        errors: messages
-      });
-    }
-
     res.status(500).json({
       success: false,
-      message: 'Error updating profile. Please try again later.'
+      message: 'Error updating profile'
     });
-  }
-};
-
-// Get all sellers
-exports.getAllSellers = async (req, res) => {
-  try {
-    const sellers = await Seller.find({}).select('-password');
-    console.log('Fetched sellers:', sellers);
-    
-    const mappedSellers = sellers.map(seller => ({
-      _id: seller._id,
-      businessName: seller.businessName,
-      email: seller.email,
-      phone: seller.phone,
-      address: seller.address,
-      sellerToken: seller.sellerToken,
-      websiteLink: seller.websiteLink,
-      qrCode: seller.qrCode,
-      totalOrders: seller.totalOrders,
-      totalCommission: seller.totalCommission,
-      bankDetails: seller.bankDetails,
-      withdrawals: seller.withdrawals,
-      createdAt: seller.createdAt
-    }));
-
-    console.log('Mapped sellers:', mappedSellers);
-    
-    res.json({
-      success: true,
-      sellers: mappedSellers
-    });
-  } catch (error) {
-    console.error('Get all sellers error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching sellers. Please try again later.'
-    });
-  }
-};
-
-// Withdraw endpoint
-exports.withdraw = async (req, res) => {
-  try {
-    const seller = req.seller;
-    const { bankDetails, amount } = req.body;
-    if (!bankDetails || !amount || amount <= 0) {
-      return res.status(400).json({ success: false, message: 'Bank details and valid amount required' });
-    }
-    // 7-day withdrawal logic
-    const now = new Date();
-    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const eligibleOrders = await Order.find({
-      sellerToken: seller.sellerToken,
-      orderStatus: 'delivered',
-      paymentStatus: 'completed',
-      updatedAt: { $lte: sevenDaysAgo }
-    });
-    const withdrawnOrderIds = seller.withdrawals.map(w => w.orderIds).flat();
-    const availableOrders = eligibleOrders.filter(o => !withdrawnOrderIds?.includes(o._id.toString()));
-    const availableCommission = availableOrders.reduce((sum, o) => sum + (o.commission || 0), 0);
-    if (amount > availableCommission) {
-      return res.status(400).json({ success: false, message: 'Amount exceeds available commission' });
-    }
-    // Update bank details
-    seller.bankDetails = bankDetails;
-    // Mark these orders as withdrawn
-    const withdrawnOrderIdList = availableOrders.map(o => o._id.toString());
-    seller.withdrawals.push({
-      amount,
-      requestedAt: new Date(),
-      status: 'pending',
-      orderIds: withdrawnOrderIdList
-    });
-    await seller.save();
-    res.json({ success: true, message: 'Withdrawal request submitted', bankDetails: seller.bankDetails });
-  } catch (error) {
-    console.error('Withdraw error:', error);
-    res.status(500).json({ success: false, message: 'Error processing withdrawal' });
   }
 }; 
