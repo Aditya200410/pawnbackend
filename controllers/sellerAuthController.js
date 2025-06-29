@@ -35,7 +35,17 @@ exports.register = async (req, res) => {
       });
     }
 
-    // Create new seller with bank details
+    // Process uploaded images
+    let images = [];
+    if (req.files && req.files.length > 0) {
+      images = req.files.map(file => ({
+        public_id: file.filename,
+        url: file.path,
+        alt: `${businessName} image`
+      }));
+    }
+
+    // Create new seller with bank details and images
     const seller = await Seller.create({
       businessName,
       email,
@@ -47,6 +57,7 @@ exports.register = async (req, res) => {
       ifscCode,
       bankName,
       accountHolderName,
+      images,
       // Populate bankDetails for backward compatibility
       bankDetails: {
         accountName: accountHolderName,
@@ -172,6 +183,120 @@ exports.updateProfile = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error updating profile'
+    });
+  }
+};
+
+// Upload multiple images
+exports.uploadImages = async (req, res) => {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No images uploaded'
+      });
+    }
+
+    const images = req.files.map(file => ({
+      public_id: file.filename,
+      url: file.path,
+      alt: 'Seller image'
+    }));
+
+    const seller = await Seller.findByIdAndUpdate(
+      req.seller.id,
+      { $push: { images: { $each: images } } },
+      { new: true, runValidators: true }
+    ).select('-password');
+
+    res.json({
+      success: true,
+      message: 'Images uploaded successfully',
+      images: seller.images
+    });
+  } catch (error) {
+    console.error('Upload images error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error uploading images'
+    });
+  }
+};
+
+// Upload profile image
+exports.uploadProfileImage = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No profile image uploaded'
+      });
+    }
+
+    const profileImage = {
+      public_id: req.file.filename,
+      url: req.file.path,
+      alt: 'Profile image'
+    };
+
+    const seller = await Seller.findByIdAndUpdate(
+      req.seller.id,
+      { profileImage },
+      { new: true, runValidators: true }
+    ).select('-password');
+
+    res.json({
+      success: true,
+      message: 'Profile image uploaded successfully',
+      profileImage: seller.profileImage
+    });
+  } catch (error) {
+    console.error('Upload profile image error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error uploading profile image'
+    });
+  }
+};
+
+// Delete image
+exports.deleteImage = async (req, res) => {
+  try {
+    const { imageId } = req.params;
+    const { cloudinary } = require('../middleware/sellerUpload');
+
+    // Find the image in the seller's images array
+    const seller = await Seller.findById(req.seller.id);
+    const image = seller.images.id(imageId);
+
+    if (!image) {
+      return res.status(404).json({
+        success: false,
+        message: 'Image not found'
+      });
+    }
+
+    // Delete from Cloudinary
+    try {
+      await cloudinary.uploader.destroy(image.public_id);
+    } catch (cloudinaryError) {
+      console.error('Cloudinary delete error:', cloudinaryError);
+      // Continue with database deletion even if Cloudinary fails
+    }
+
+    // Remove from database
+    seller.images.pull(imageId);
+    await seller.save();
+
+    res.json({
+      success: true,
+      message: 'Image deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete image error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error deleting image'
     });
   }
 }; 

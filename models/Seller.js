@@ -64,6 +64,17 @@ const sellerSchema = new mongoose.Schema({
   qrCode: {
     type: String // Base64 encoded QR code image
   },
+  // Multiple images for seller profile
+  images: [{
+    public_id: { type: String, required: true },
+    url: { type: String, required: true },
+    alt: { type: String, default: 'Seller image' }
+  }],
+  profileImage: {
+    public_id: { type: String },
+    url: { type: String },
+    alt: { type: String, default: 'Profile image' }
+  },
   totalOrders: {
     type: Number,
     default: 0
