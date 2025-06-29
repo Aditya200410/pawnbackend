@@ -38,17 +38,28 @@ exports.createCategory = async (req, res) => {
 
     const categoryData = req.body;
     let imageUrl = '';
+    let videoUrl = '';
 
-    // Process uploaded file if present
-    if (req.files && req.files.image && req.files.image[0]) {
-      imageUrl = req.files.image[0].path; // Cloudinary URL
-      console.log('Added category image:', imageUrl);
+    // Process uploaded files if present
+    if (req.files) {
+      // Handle image upload
+      if (req.files.image && req.files.image[0]) {
+        imageUrl = req.files.image[0].path; // Cloudinary URL
+        console.log('Added category image:', imageUrl);
+      }
+
+      // Handle video upload
+      if (req.files.video && req.files.video[0]) {
+        videoUrl = req.files.video[0].path; // Cloudinary URL
+        console.log('Added category video:', videoUrl);
+      }
     }
 
     const newCategory = new Category({
       name: categoryData.name,
       description: categoryData.description,
       image: imageUrl,
+      video: videoUrl,
       sortOrder: parseInt(categoryData.sortOrder) || 0,
       isActive: categoryData.isActive !== 'false'
     });
@@ -56,7 +67,8 @@ exports.createCategory = async (req, res) => {
     console.log('Creating new category with data:', {
       name: categoryData.name,
       description: categoryData.description,
-      image: imageUrl
+      image: imageUrl,
+      video: videoUrl
     });
 
     const savedCategory = await newCategory.save();
@@ -91,10 +103,22 @@ exports.updateCategory = async (req, res) => {
       return res.status(404).json({ message: "Category not found" });
     }
 
-    // Handle image update
+    // Handle file updates
     let imageUrl = existingCategory.image;
-    if (req.files && req.files.image && req.files.image[0]) {
-      imageUrl = req.files.image[0].path;
+    let videoUrl = existingCategory.video;
+
+    if (req.files) {
+      // Handle image update
+      if (req.files.image && req.files.image[0]) {
+        imageUrl = req.files.image[0].path;
+        console.log('Updated category image:', imageUrl);
+      }
+
+      // Handle video update
+      if (req.files.video && req.files.video[0]) {
+        videoUrl = req.files.video[0].path;
+        console.log('Updated category video:', videoUrl);
+      }
     }
 
     // Update category object
@@ -102,6 +126,7 @@ exports.updateCategory = async (req, res) => {
       name: categoryData.name || existingCategory.name,
       description: categoryData.description || existingCategory.description,
       image: imageUrl,
+      video: videoUrl,
       sortOrder: categoryData.sortOrder ? parseInt(categoryData.sortOrder) : existingCategory.sortOrder,
       isActive: categoryData.isActive !== undefined ? (categoryData.isActive === 'true') : existingCategory.isActive
     };
@@ -109,6 +134,7 @@ exports.updateCategory = async (req, res) => {
     console.log('Updating category with data:', {
       id,
       imageUrl,
+      videoUrl,
       filesReceived: req.files ? Object.keys(req.files) : 'none'
     });
 

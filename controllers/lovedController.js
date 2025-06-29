@@ -1,4 +1,4 @@
-const Loved = require('../models/Loved');
+const Loved = require('../models/loved');
 const mongoose = require('mongoose');
 const fs = require('fs').promises;
 const path = require('path');

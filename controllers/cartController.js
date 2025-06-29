@@ -4,7 +4,7 @@ const path = require('path');
 const Product = require('../models/Product');
 const BestSeller = require('../models/bestSeller');
 const Loved = require('../models/loved');
-const FeaturedProduct = require('../models/featuredProduct');
+const FeaturedProduct = require('../models/FeaturedProduct');
 
 // Helper function to get products from shop.json
 const getProducts = () => {
