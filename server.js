@@ -8,6 +8,7 @@ const cookieParser = require("cookie-parser");
 const shopRoutes = require("./routes/shop");
 const orderRoutes = require("./routes/orders");
 const authRoutes = require('./routes/auth'); // Assuming your auth routes are here
+const adminAuthRoutes = require('./routes/adminAuth'); // Admin authentication routes
 const lovedRoutes = require('./routes/loved'); // Assuming your loved routes are here
 const categoryRoutes = require('./routes/category');
 const featuredProductRoutes = require('./routes/featuredProduct');
@@ -136,6 +137,7 @@ app.use("/api/shop", shopRoutes);
 app.use("/api/orders", orderRoutes);
 app.use('/api/bestseller', bestSellerRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/admin/auth', adminAuthRoutes); // Admin authentication routes
 app.use('/api/loved', lovedRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/featured-products', featuredProductRoutes);
