@@ -14,6 +14,34 @@ const getAllProducts = async (req, res) => {
   }
 };
 
+// Get products by section
+const getProductsBySection = async (req, res) => {
+  try {
+    const { section } = req.params;
+    let query = {};
+    
+    switch(section) {
+      case 'bestsellers':
+        query = { isBestSeller: true };
+        break;
+      case 'featured':
+        query = { isFeatured: true };
+        break;
+      case 'mostloved':
+        query = { isMostLoved: true };
+        break;
+      default:
+        return res.status(400).json({ message: "Invalid section" });
+    }
+    
+    const products = await Product.find(query);
+    res.json(products);
+  } catch (error) {
+    console.error(`Error fetching ${section} products:`, error);
+    res.status(500).json({ message: `Error fetching ${section} products`, error: error.message });
+  }
+};
+
 // Get single product
 const getProduct = async (req, res) => {
   try {
@@ -117,7 +145,10 @@ const createProductWithFiles = async (req, res) => {
       regularPrice: parseFloat(productData.regularPrice),
       image: imagePaths[0], // Main image Cloudinary URL
       images: imagePaths, // All Cloudinary URLs
-      inStock: productData.inStock === 'true' || productData.inStock === true
+      inStock: productData.inStock === 'true' || productData.inStock === true,
+      isBestSeller: productData.isBestSeller === 'true' || productData.isBestSeller === true,
+      isFeatured: productData.isFeatured === 'true' || productData.isFeatured === true,
+      isMostLoved: productData.isMostLoved === 'true' || productData.isMostLoved === true
     });
     
     console.log('Saving product to database...');
@@ -203,39 +234,63 @@ const updateProductWithFiles = async (req, res) => {
       care: productData.care || existingProduct.care,
       price: productData.price ? parseFloat(productData.price) : existingProduct.price,
       regularPrice: productData.regularPrice ? parseFloat(productData.regularPrice) : existingProduct.regularPrice,
-      image: imagePaths[0], // Always use first image as main image
+      image: imagePaths[0],
       images: imagePaths,
-      inStock: productData.inStock !== undefined ? (productData.inStock === 'true' || productData.inStock === true) : existingProduct.inStock
+      inStock: productData.inStock !== undefined ? (productData.inStock === 'true' || productData.inStock === true) : existingProduct.inStock,
+      isBestSeller: productData.isBestSeller !== undefined ? (productData.isBestSeller === 'true' || productData.isBestSeller === true) : existingProduct.isBestSeller,
+      isFeatured: productData.isFeatured !== undefined ? (productData.isFeatured === 'true' || productData.isFeatured === true) : existingProduct.isFeatured,
+      isMostLoved: productData.isMostLoved !== undefined ? (productData.isMostLoved === 'true' || productData.isMostLoved === true) : existingProduct.isMostLoved
     };
 
-    // Log the update operation
-    console.log('Updating product with data:', {
-      id,
-      imagePaths,
-      mainImage: updatedProduct.image,
-      filesReceived: Object.keys(files)
-    });
-
-    const savedProduct = await Product.findByIdAndUpdate(id, updatedProduct, { new: true });
-
-    res.json({ 
-      message: "Product updated successfully", 
-      product: savedProduct,
-      uploadedFiles: files
-    });
+    const result = await Product.findByIdAndUpdate(id, updatedProduct, { new: true });
+    res.json({ message: "Product updated successfully", product: result });
   } catch (error) {
     console.error('Error updating product:', error);
     res.status(500).json({ message: "Error updating product", error: error.message });
   }
 };
 
-// Delete product
-const deleteProduct = async (req, res) => {
+// Update product section flags
+const updateProductSections = async (req, res) => {
   try {
-    const product = await Product.findByIdAndDelete(req.params.id);
+    const { id } = req.params;
+    const { isBestSeller, isFeatured, isMostLoved } = req.body;
+
+    const product = await Product.findById(id);
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }
+
+    const updates = {};
+    if (isBestSeller !== undefined) updates.isBestSeller = isBestSeller;
+    if (isFeatured !== undefined) updates.isFeatured = isFeatured;
+    if (isMostLoved !== undefined) updates.isMostLoved = isMostLoved;
+
+    const updatedProduct = await Product.findByIdAndUpdate(
+      id,
+      { $set: updates },
+      { new: true }
+    );
+
+    res.json({
+      message: "Product sections updated successfully",
+      product: updatedProduct
+    });
+  } catch (error) {
+    console.error('Error updating product sections:', error);
+    res.status(500).json({ message: "Error updating product sections", error: error.message });
+  }
+};
+
+// Delete product
+const deleteProduct = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    await Product.findByIdAndDelete(req.params.id);
     res.json({ message: "Product deleted successfully" });
   } catch (error) {
     console.error('Error deleting product:', error);
@@ -245,8 +300,10 @@ const deleteProduct = async (req, res) => {
 
 module.exports = {
   getAllProducts,
+  getProductsBySection,
   getProduct,
   createProductWithFiles,
   updateProductWithFiles,
+  updateProductSections,
   deleteProduct
 }; 

@@ -10,7 +10,9 @@ const {
   getProduct,
   createProductWithFiles,
   updateProductWithFiles,
-  deleteProduct
+  updateProductSections,
+  deleteProduct,
+  getProductsBySection
 } = require('../controllers/productController');
 
 // Configure Cloudinary
@@ -61,11 +63,13 @@ const handleUpload = (req, res, next) => {
 
 // Public routes
 router.get("/", getAllProducts);
+router.get("/section/:section", getProductsBySection);
 router.get("/:id", getProduct);
 
 // Admin routes
 router.post("/", authenticateToken, isAdmin, handleUpload, createProductWithFiles);
 router.put("/:id", authenticateToken, isAdmin, handleUpload, updateProductWithFiles);
+router.patch("/:id/sections", authenticateToken, isAdmin, updateProductSections);
 router.delete("/:id", authenticateToken, isAdmin, deleteProduct);
 
 module.exports = router;
