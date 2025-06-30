@@ -3,6 +3,9 @@ const router = express.Router();
 const sellerAuthController = require('../controllers/sellerAuthController');
 const { handleMultipleImages, handleProfileImage } = require('../middleware/sellerUpload');
 
+// Test route
+router.get('/test', sellerAuthController.test);
+
 // Public routes
 router.post('/register', handleMultipleImages, sellerAuthController.register);
 router.post('/login', sellerAuthController.login);
@@ -16,5 +19,8 @@ router.put('/profile', sellerAuthController.updateProfile);
 router.post('/upload-images', handleMultipleImages, sellerAuthController.uploadImages);
 router.post('/upload-profile-image', handleProfileImage, sellerAuthController.uploadProfileImage);
 router.delete('/delete-image/:imageId', sellerAuthController.deleteImage);
+
+// Utility route to update unique fields
+router.put('/update-unique-fields', sellerAuthController.updateUniqueFields);
 
 module.exports = router; 

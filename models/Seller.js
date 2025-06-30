@@ -55,19 +55,23 @@ const sellerSchema = new mongoose.Schema({
   },
   sellerToken: {
     type: String,
-    unique: true
+    unique: true,
+    sparse: true,
+    required: false
   },
   websiteLink: {
     type: String,
-    unique: true
+    unique: true,
+    sparse: true,
+    required: false
   },
   qrCode: {
     type: String // Base64 encoded QR code image
   },
   // Multiple images for seller profile
   images: [{
-    public_id: { type: String, required: true },
-    url: { type: String, required: true },
+    public_id: { type: String },
+    url: { type: String },
     alt: { type: String, default: 'Seller image' }
   }],
   profileImage: {
@@ -104,6 +108,10 @@ const sellerSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now
+  },
+  verified: {
+    type: Boolean,
+    default: false
   }
 });
 

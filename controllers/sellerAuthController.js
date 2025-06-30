@@ -25,88 +25,133 @@ exports.register = async (req, res) => {
       });
     }
 
+    // Validate required fields
+    const requiredFields = ['businessName', 'email', 'password', 'phone', 'address', 'businessType', 'bankAccountNumber', 'ifscCode', 'bankName', 'accountHolderName'];
+    const missingFields = requiredFields.filter(field => !req.body[field]);
+    
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Missing required fields: ${missingFields.join(', ')}`
+      });
+    }
+
     // Process uploaded images
     let images = [];
     if (req.files && req.files.length > 0) {
       images = req.files.map(file => {
         // Handle both Cloudinary uploads and memory storage
-        const public_id = file.filename || file.originalname || `img_${Date.now()}`;
+        const public_id = file.filename || file.originalname || `img_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         const url = file.path || (file.buffer ? `data:${file.mimetype};base64,${file.buffer.toString('base64')}` : '');
         
-        return {
-          public_id,
-          url,
-          alt: `${businessName} image`
-        };
-      });
+        // Only include images with valid URLs and public_ids
+        if (url && public_id) {
+          return {
+            public_id,
+            url,
+            alt: `${businessName} image`
+          };
+        }
+        return null;
+      }).filter(img => img !== null); // Remove any null entries
     }
 
-    // Create new seller with bank details and images
-    const seller = await Seller.create({
-      businessName,
-      email,
-      password,
-      phone,
-      address,
-      businessType,
-      bankAccountNumber,
-      ifscCode,
-      bankName,
-      accountHolderName,
-      images,
-      // Populate bankDetails for backward compatibility
-      bankDetails: {
-        accountName: accountHolderName,
-        accountNumber: bankAccountNumber,
-        ifsc: ifscCode,
-        bankName: bankName
-      }
-    });
+    // Ensure images array is always defined
+    if (!images || images.length === 0) {
+      images = [];
+    }
 
-    // Generate seller token and website link after creation
-    const sellerToken = `seller_${seller._id.toString().slice(-8)}`;
-    const websiteLink = `${'https://pawn-shop-git-local-host-api-used-aditya200410s-projects.vercel.app'}/shop?seller=${sellerToken}`;
-    
-    // Update seller with token and website link
-    const updatedSeller = await Seller.findByIdAndUpdate(
-      seller._id,
-      { sellerToken, websiteLink },
-      { new: true }
-    );
+    // Create new seller with all required fields (without unique fields initially)
+    let seller;
+    try {
+      seller = await Seller.create({
+        businessName,
+        email,
+        password,
+        phone,
+        address,
+        businessType,
+        bankAccountNumber,
+        ifscCode,
+        bankName,
+        accountHolderName,
+        images,
+        // Populate bankDetails for backward compatibility
+        bankDetails: {
+          accountName: accountHolderName || '',
+          accountNumber: bankAccountNumber || '',
+          ifsc: ifscCode || '',
+          bankName: bankName || ''
+        }
+      });
+
+      // Generate unique seller token and website link after successful creation
+      const sellerToken = `seller_${seller._id.toString().slice(-8)}_${Date.now()}`;
+      const websiteLink = `${'https://pawn-shop-git-local-host-api-used-aditya200410s-projects.vercel.app'}/shop?seller=${sellerToken}`;
+      
+      // Update seller with unique fields
+      try {
+        const updatedSeller = await Seller.findByIdAndUpdate(
+          seller._id,
+          { sellerToken, websiteLink },
+          { new: true }
+        );
+        seller = updatedSeller;
+      } catch (updateError) {
+        console.error('Failed to update seller with unique fields:', updateError);
+        // Continue with the seller without unique fields - they can be updated later
+        console.log('Seller created successfully but unique fields update failed');
+      }
+    } catch (createError) {
+      console.error('Seller creation error:', createError);
+      console.error('Seller creation error details:', createError.message);
+      if (createError.code === 11000) {
+        return res.status(400).json({
+          success: false,
+          message: 'A seller with this email already exists'
+        });
+      }
+      throw createError;
+    }
 
     res.status(201).json({
       success: true,
       message: 'Seller registered successfully',
       seller: {
-        id: updatedSeller._id,
-        businessName: updatedSeller.businessName,
-        email: updatedSeller.email,
-        phone: updatedSeller.phone,
-        address: updatedSeller.address,
-        businessType: updatedSeller.businessType,
-        accountHolderName: updatedSeller.accountHolderName,
-        bankAccountNumber: updatedSeller.bankAccountNumber,
-        ifscCode: updatedSeller.ifscCode,
-        bankName: updatedSeller.bankName,
-        sellerToken: updatedSeller.sellerToken,
-        websiteLink: updatedSeller.websiteLink,
-        qrCode: updatedSeller.qrCode,
-        images: updatedSeller.images || [],
-        profileImage: updatedSeller.profileImage || null,
-        totalOrders: updatedSeller.totalOrders || 0,
-        totalCommission: updatedSeller.totalCommission || 0,
-        availableCommission: updatedSeller.availableCommission || 0,
-        bankDetails: updatedSeller.bankDetails || {},
-        withdrawals: updatedSeller.withdrawals || [],
-        createdAt: updatedSeller.createdAt,
-        verified: updatedSeller.verified
+        id: seller._id,
+        businessName: seller.businessName,
+        email: seller.email,
+        phone: seller.phone,
+        address: seller.address,
+        businessType: seller.businessType,
+        accountHolderName: seller.accountHolderName,
+        bankAccountNumber: seller.bankAccountNumber,
+        ifscCode: seller.ifscCode,
+        bankName: seller.bankName,
+        sellerToken: seller.sellerToken,
+        websiteLink: seller.websiteLink,
+        qrCode: seller.qrCode,
+        images: seller.images || [],
+        profileImage: seller.profileImage || null,
+        totalOrders: seller.totalOrders || 0,
+        totalCommission: seller.totalCommission || 0,
+        availableCommission: seller.availableCommission || 0,
+        bankDetails: seller.bankDetails || {},
+        withdrawals: seller.withdrawals || [],
+        createdAt: seller.createdAt,
+        verified: seller.verified
       }
     });
   } catch (error) {
     console.error('Seller registration error:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Request body:', req.body);
+    console.error('Request files:', req.files);
+    
     res.status(500).json({
       success: false,
-      message: 'Error registering seller'
+      message: 'Error registering seller',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };
@@ -378,6 +423,87 @@ exports.getAllSellers = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error fetching sellers'
+    });
+  }
+};
+
+// Update unique fields for existing sellers
+exports.updateUniqueFields = async (req, res) => {
+  try {
+    const { email } = req.query;
+    
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required'
+      });
+    }
+
+    const seller = await Seller.findOne({ email });
+    if (!seller) {
+      return res.status(404).json({
+        success: false,
+        message: 'Seller not found'
+      });
+    }
+
+    // Generate unique fields if they don't exist
+    if (!seller.sellerToken || !seller.websiteLink) {
+      const sellerToken = `seller_${seller._id.toString().slice(-8)}_${Date.now()}`;
+      const websiteLink = `${'https://pawn-shop-git-local-host-api-used-aditya200410s-projects.vercel.app'}/shop?seller=${sellerToken}`;
+      
+      const updatedSeller = await Seller.findByIdAndUpdate(
+        seller._id,
+        { sellerToken, websiteLink },
+        { new: true }
+      );
+
+      res.json({
+        success: true,
+        message: 'Unique fields updated successfully',
+        seller: updatedSeller
+      });
+    } else {
+      res.json({
+        success: true,
+        message: 'Seller already has unique fields',
+        seller
+      });
+    }
+  } catch (error) {
+    console.error('Update unique fields error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating unique fields'
+    });
+  }
+};
+
+// Test endpoint to verify seller controller is working
+exports.test = async (req, res) => {
+  try {
+    // Test database connection
+    const mongoose = require('mongoose');
+    const dbState = mongoose.connection.readyState;
+    const dbStates = {
+      0: 'disconnected',
+      1: 'connected',
+      2: 'connecting',
+      3: 'disconnecting'
+    };
+    
+    res.json({
+      success: true,
+      message: 'Seller controller is working',
+      database: dbStates[dbState] || 'unknown',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Test endpoint error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Test endpoint error',
+      error: error.message
     });
   }
 }; 
