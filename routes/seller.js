@@ -6,6 +6,9 @@ const { handleMultipleImages, handleProfileImage } = require('../middleware/sell
 // Test route
 router.get('/test', sellerAuthController.test);
 
+// Debug route to list all sellers
+router.get('/list-all', sellerAuthController.listAllSellers);
+
 // Public routes
 router.post('/register', handleMultipleImages, sellerAuthController.register);
 router.post('/login', sellerAuthController.login);

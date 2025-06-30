@@ -17,7 +17,10 @@ exports.register = async (req, res) => {
     } = req.body;
 
     // Check if seller already exists
-    const existingSeller = await Seller.findOne({ email });
+    const normalizedEmail = email.toLowerCase().trim();
+    console.log('Checking for existing seller with email:', normalizedEmail);
+    const existingSeller = await Seller.findOne({ email: normalizedEmail });
+    console.log('Existing seller found:', existingSeller ? 'Yes' : 'No');
     if (existingSeller) {
       return res.status(400).json({
         success: false,
@@ -66,7 +69,7 @@ exports.register = async (req, res) => {
     try {
       seller = await Seller.create({
         businessName,
-        email,
+        email: normalizedEmail,
         password,
         phone,
         address,
@@ -160,9 +163,10 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
+    const normalizedEmail = email.toLowerCase().trim();
 
     // Check if seller exists
-    const seller = await Seller.findOne({ email });
+    const seller = await Seller.findOne({ email: normalizedEmail });
     if (!seller) {
       return res.status(401).json({
         success: false,
@@ -228,7 +232,8 @@ exports.getProfile = async (req, res) => {
       });
     }
 
-    const seller = await Seller.findOne({ email }).select('-password');
+    const normalizedEmail = email.toLowerCase().trim();
+    const seller = await Seller.findOne({ email: normalizedEmail }).select('-password');
     if (!seller) {
       return res.status(404).json({
         success: false,
@@ -261,6 +266,7 @@ exports.updateProfile = async (req, res) => {
       });
     }
 
+    const normalizedEmail = email.toLowerCase().trim();
     const updates = {
       businessName: req.body.businessName,
       phone: req.body.phone,
@@ -269,7 +275,7 @@ exports.updateProfile = async (req, res) => {
     };
 
     const seller = await Seller.findOneAndUpdate(
-      { email },
+      { email: normalizedEmail },
       { $set: updates },
       { new: true, runValidators: true }
     ).select('-password');
@@ -439,7 +445,8 @@ exports.updateUniqueFields = async (req, res) => {
       });
     }
 
-    const seller = await Seller.findOne({ email });
+    const normalizedEmail = email.toLowerCase().trim();
+    const seller = await Seller.findOne({ email: normalizedEmail });
     if (!seller) {
       return res.status(404).json({
         success: false,
@@ -475,6 +482,29 @@ exports.updateUniqueFields = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error updating unique fields'
+    });
+  }
+};
+
+// Test endpoint to list all sellers (for debugging)
+exports.listAllSellers = async (req, res) => {
+  try {
+    const sellers = await Seller.find({}, 'email businessName createdAt');
+    res.json({
+      success: true,
+      count: sellers.length,
+      sellers: sellers.map(s => ({
+        email: s.email,
+        businessName: s.businessName,
+        createdAt: s.createdAt
+      }))
+    });
+  } catch (error) {
+    console.error('List all sellers error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error listing sellers',
+      error: error.message
     });
   }
 };
