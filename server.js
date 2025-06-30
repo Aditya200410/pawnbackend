@@ -145,6 +145,7 @@ app.use('/api/seller', sellerRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/data-page', require('./routes/dataPage'));
 app.use('/api/payment', require('./routes/payment'));
+app.use('/api/products', require('./routes/products')); // Add products route
 
 // Health check endpoint
 app.get('/health', (req, res) => {
