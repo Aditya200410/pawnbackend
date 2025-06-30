@@ -8,7 +8,9 @@ const {
   getProduct, 
   createProductWithFiles, 
   updateProductWithFiles, 
-  deleteProduct 
+  deleteProduct,
+  getProductsBySection,
+  updateProductSections
 } = require('../controllers/productController');
 
 // Cloudinary config
@@ -53,6 +55,9 @@ const handleUpload = (req, res, next) => {
 // Get all products
 router.get("/", getAllProducts);
 
+// Get products by section
+router.get("/section/:section", getProductsBySection);
+
 // Get single product
 router.get("/:id", getProduct);
 
@@ -61,6 +66,9 @@ router.post("/upload", handleUpload, createProductWithFiles);
 
 // Update product by id
 router.put("/:id", handleUpload, updateProductWithFiles);
+
+// Update product sections
+router.patch("/:id/sections", updateProductSections);
 
 // Delete product by id
 router.delete("/:id", deleteProduct);
