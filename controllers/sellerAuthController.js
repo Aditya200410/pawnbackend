@@ -1,14 +1,4 @@
 const Seller = require('../models/Seller');
-const jwt = require('jsonwebtoken');
-
-// Helper function to generate JWT token
-const generateToken = (seller) => {
-  return jwt.sign(
-    { id: seller._id, email: seller.email, type: 'seller' },
-    process.env.JWT_SECRET_SELLER,
-    { expiresIn: '30d' }
-  );
-};
 
 // Register a new seller
 exports.register = async (req, res) => {
@@ -73,12 +63,9 @@ exports.register = async (req, res) => {
       }
     });
 
-    // Generate token
-    const token = generateToken(seller);
-
     res.status(201).json({
       success: true,
-      token,
+      message: 'Seller registered successfully',
       seller: {
         id: seller._id,
         businessName: seller.businessName,
@@ -136,12 +123,9 @@ exports.login = async (req, res) => {
       });
     }
 
-    // Generate token
-    const token = generateToken(seller);
-
     res.json({
       success: true,
-      token,
+      message: 'Login successful',
       seller: {
         id: seller._id,
         businessName: seller.businessName,
@@ -176,10 +160,19 @@ exports.login = async (req, res) => {
   }
 };
 
-// Get seller profile
+// Get seller profile by email (for simple authentication)
 exports.getProfile = async (req, res) => {
   try {
-    const seller = await Seller.findById(req.seller.id).select('-password');
+    const { email } = req.query;
+    
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required'
+      });
+    }
+
+    const seller = await Seller.findOne({ email }).select('-password');
     if (!seller) {
       return res.status(404).json({
         success: false,
@@ -200,9 +193,18 @@ exports.getProfile = async (req, res) => {
   }
 };
 
-// Update seller profile
+// Update seller profile by email
 exports.updateProfile = async (req, res) => {
   try {
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required'
+      });
+    }
+
     const updates = {
       businessName: req.body.businessName,
       phone: req.body.phone,
@@ -210,11 +212,18 @@ exports.updateProfile = async (req, res) => {
       businessType: req.body.businessType
     };
 
-    const seller = await Seller.findByIdAndUpdate(
-      req.seller.id,
+    const seller = await Seller.findOneAndUpdate(
+      { email },
       { $set: updates },
       { new: true, runValidators: true }
     ).select('-password');
+
+    if (!seller) {
+      return res.status(404).json({
+        success: false,
+        message: 'Seller not found'
+      });
+    }
 
     res.json({
       success: true,
