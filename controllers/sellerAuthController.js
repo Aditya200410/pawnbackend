@@ -63,32 +63,43 @@ exports.register = async (req, res) => {
       }
     });
 
+    // Generate seller token and website link after creation
+    const sellerToken = `seller_${seller._id.toString().slice(-8)}`;
+    const websiteLink = `${'https://pawn-shop-git-local-host-api-used-aditya200410s-projects.vercel.app'}/shop?seller=${sellerToken}`;
+    
+    // Update seller with token and website link
+    const updatedSeller = await Seller.findByIdAndUpdate(
+      seller._id,
+      { sellerToken, websiteLink },
+      { new: true }
+    );
+
     res.status(201).json({
       success: true,
       message: 'Seller registered successfully',
       seller: {
-        id: seller._id,
-        businessName: seller.businessName,
-        email: seller.email,
-        phone: seller.phone,
-        address: seller.address,
-        businessType: seller.businessType,
-        accountHolderName: seller.accountHolderName,
-        bankAccountNumber: seller.bankAccountNumber,
-        ifscCode: seller.ifscCode,
-        bankName: seller.bankName,
-        sellerToken: seller.sellerToken,
-        websiteLink: seller.websiteLink,
-        qrCode: seller.qrCode,
-        images: seller.images || [],
-        profileImage: seller.profileImage || null,
-        totalOrders: seller.totalOrders || 0,
-        totalCommission: seller.totalCommission || 0,
-        availableCommission: seller.availableCommission || 0,
-        bankDetails: seller.bankDetails || {},
-        withdrawals: seller.withdrawals || [],
-        createdAt: seller.createdAt,
-        verified: seller.verified
+        id: updatedSeller._id,
+        businessName: updatedSeller.businessName,
+        email: updatedSeller.email,
+        phone: updatedSeller.phone,
+        address: updatedSeller.address,
+        businessType: updatedSeller.businessType,
+        accountHolderName: updatedSeller.accountHolderName,
+        bankAccountNumber: updatedSeller.bankAccountNumber,
+        ifscCode: updatedSeller.ifscCode,
+        bankName: updatedSeller.bankName,
+        sellerToken: updatedSeller.sellerToken,
+        websiteLink: updatedSeller.websiteLink,
+        qrCode: updatedSeller.qrCode,
+        images: updatedSeller.images || [],
+        profileImage: updatedSeller.profileImage || null,
+        totalOrders: updatedSeller.totalOrders || 0,
+        totalCommission: updatedSeller.totalCommission || 0,
+        availableCommission: updatedSeller.availableCommission || 0,
+        bankDetails: updatedSeller.bankDetails || {},
+        withdrawals: updatedSeller.withdrawals || [],
+        createdAt: updatedSeller.createdAt,
+        verified: updatedSeller.verified
       }
     });
   } catch (error) {

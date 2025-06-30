@@ -107,17 +107,6 @@ const sellerSchema = new mongoose.Schema({
   }
 });
 
-// Generate seller token and website link before saving
-sellerSchema.pre('save', async function(next) {
-  if (this.isNew) {
-    // Generate unique seller token
-    this.sellerToken = `seller_${this._id.toString().slice(-8)}`;
-    // Generate website link
-    this.websiteLink = `${'https://pawn-shop-git-local-host-api-used-aditya200410s-projects.vercel.app'}/shop?seller=${this.sellerToken}`;
-  }
-  next();
-});
-
 // Hash password before saving
 sellerSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
