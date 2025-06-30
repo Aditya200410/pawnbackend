@@ -343,4 +343,21 @@ exports.deleteImage = async (req, res) => {
       message: 'Error deleting image'
     });
   }
+};
+
+// Get all sellers (for admin panel)
+exports.getAllSellers = async (req, res) => {
+  try {
+    const sellers = await Seller.find({}, '-password');
+    res.json({
+      success: true,
+      sellers
+    });
+  } catch (error) {
+    console.error('Error fetching all sellers:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching sellers'
+    });
+  }
 }; 

@@ -8,6 +8,9 @@ const { handleMultipleImages, handleProfileImage } = require('../middleware/sell
 router.post('/register', handleMultipleImages, sellerAuthController.register);
 router.post('/login', sellerAuthController.login);
 
+// Admin route to get all sellers
+router.get('/all', sellerAuthController.getAllSellers);
+
 // Protected routes
 router.get('/profile', sellerAuth, sellerAuthController.getProfile);
 router.put('/profile', sellerAuth, sellerAuthController.updateProfile);
