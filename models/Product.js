@@ -48,13 +48,11 @@ const productSchema = new mongoose.Schema({
   },
   price: {
     type: Number,
-    required: true,
-    min: 0
+    required: true
   },
   regularPrice: {
     type: Number,
-    required: true,
-    min: 0
+    required: true
   },
   image: {
     type: String,
@@ -67,24 +65,30 @@ const productSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  isBestSeller: {
+    type: Boolean,
+    default: false
+  },
+  isFeatured: {
+    type: Boolean,
+    default: false
+  },
+  isMostLoved: {
+    type: Boolean,
+    default: false
+  },
+  rating: {
+    type: Number,
+    default: 0
+  },
+  reviews: {
+    type: Number,
+    default: 0
+  },
   date: {
     type: Date,
     default: Date.now
   }
-}, {
-  timestamps: true // Add timestamps
 });
 
-// Add index for faster lookups
-productSchema.index({ category: 1 });
-productSchema.index({ name: 'text', description: 'text' });
-
-// Add pre-save middleware to ensure price validation
-productSchema.pre('save', function(next) {
-  if (this.price > this.regularPrice) {
-    next(new Error('Price cannot be greater than regular price'));
-  }
-  next();
-});
-
-module.exports = mongoose.model('Product', productSchema); 
+module.exports = productSchema; 
