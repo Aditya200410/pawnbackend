@@ -253,32 +253,66 @@ const updateProductWithFiles = async (req, res) => {
 // Update product section flags
 const updateProductSections = async (req, res) => {
   try {
+    console.log('=== Starting Section Update ===');
+    console.log('Product ID:', req.params.id);
+    console.log('Update data:', req.body);
+
     const { id } = req.params;
     const { isBestSeller, isFeatured, isMostLoved } = req.body;
 
+    // Validate that at least one section flag is provided
+    if (isBestSeller === undefined && isFeatured === undefined && isMostLoved === undefined) {
+      console.log('Error: No section flags provided');
+      return res.status(400).json({ message: "At least one section flag must be provided" });
+    }
+
+    // Find the product
     const product = await Product.findById(id);
     if (!product) {
+      console.log('Error: Product not found');
       return res.status(404).json({ message: "Product not found" });
     }
 
+    console.log('Current product sections:', {
+      isBestSeller: product.isBestSeller,
+      isFeatured: product.isFeatured,
+      isMostLoved: product.isMostLoved
+    });
+
+    // Build update object with only the provided flags
     const updates = {};
     if (isBestSeller !== undefined) updates.isBestSeller = isBestSeller;
     if (isFeatured !== undefined) updates.isFeatured = isFeatured;
     if (isMostLoved !== undefined) updates.isMostLoved = isMostLoved;
 
+    console.log('Applying updates:', updates);
+
+    // Update the product with new section flags
     const updatedProduct = await Product.findByIdAndUpdate(
       id,
       { $set: updates },
-      { new: true }
+      { new: true, runValidators: true }
     );
+
+    console.log('Updated product sections:', {
+      isBestSeller: updatedProduct.isBestSeller,
+      isFeatured: updatedProduct.isFeatured,
+      isMostLoved: updatedProduct.isMostLoved
+    });
 
     res.json({
       message: "Product sections updated successfully",
       product: updatedProduct
     });
   } catch (error) {
-    console.error('Error updating product sections:', error);
-    res.status(500).json({ message: "Error updating product sections", error: error.message });
+    console.error('=== Error Updating Sections ===');
+    console.error('Error details:', error);
+    console.error('Stack trace:', error.stack);
+    res.status(500).json({ 
+      message: "Error updating product sections", 
+      error: error.message,
+      details: error.stack
+    });
   }
 };
 
