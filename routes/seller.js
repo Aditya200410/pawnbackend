@@ -1,17 +1,19 @@
 const express = require('express');
 const router = express.Router();
 const sellerAuthController = require('../controllers/sellerAuthController');
-const sellerAuth = require('../middleware/sellerAuth');
+const { authenticateToken } = require('../middleware/auth');
+const multer = require('multer');
 
-// Public routes
+// Simple multer setup for image upload
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
+
 router.post('/register', sellerAuthController.register);
 router.post('/login', sellerAuthController.login);
-
-// Protected routes
-router.get('/profile', sellerAuth, sellerAuthController.getProfile);
-router.put('/profile', sellerAuth, sellerAuthController.updateProfile);
-
-// Admin routes
-router.get('/all', sellerAuthController.getAllSellers);
+router.get('/profile', authenticateToken, sellerAuthController.getProfile);
+router.put('/profile', authenticateToken, sellerAuthController.updateProfile);
+router.post('/upload-images', authenticateToken, sellerAuthController.uploadImages);
+router.post('/upload-profile-image', authenticateToken, sellerAuthController.uploadProfileImage);
+// Image upload endpoints can be added here as needed
 
 module.exports = router; 
