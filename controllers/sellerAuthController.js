@@ -615,4 +615,7 @@ exports.deleteSeller = async (req, res) => {
     console.error('Delete seller error:', error);
     res.status(500).json({ success: false, message: 'Error deleting seller' });
   }
-}; 
+};
+
+// In the order placement logic (createOrder or addCommission), before adding commission:
+// if (seller.blocked) { /* do not add commission, optionally log or return */ return; } 
