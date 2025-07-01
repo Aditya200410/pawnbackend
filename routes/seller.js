@@ -1,19 +1,29 @@
 const express = require('express');
 const router = express.Router();
 const sellerAuthController = require('../controllers/sellerAuthController');
-const { authenticateToken } = require('../middleware/auth');
-const multer = require('multer');
+const { handleMultipleImages, handleProfileImage } = require('../middleware/sellerUpload');
 
-// Simple multer setup for image upload
-const storage = multer.memoryStorage();
-const upload = multer({ storage });
+// Test route
+router.get('/test', sellerAuthController.test);
 
-router.post('/register', sellerAuthController.register);
+// Debug route to list all sellers
+router.get('/list-all', sellerAuthController.listAllSellers);
+
+// Public routes
+router.post('/register', handleMultipleImages, sellerAuthController.register);
 router.post('/login', sellerAuthController.login);
-router.get('/profile', authenticateToken, sellerAuthController.getProfile);
-router.put('/profile', authenticateToken, sellerAuthController.updateProfile);
-router.post('/upload-images', authenticateToken, sellerAuthController.uploadImages);
-router.post('/upload-profile-image', authenticateToken, sellerAuthController.uploadProfileImage);
-// Image upload endpoints can be added here as needed
+
+// Admin route to get all sellers
+router.get('/all', sellerAuthController.getAllSellers);
+
+// Profile routes (using email-based authentication)
+router.get('/profile', sellerAuthController.getProfile);
+router.put('/profile', sellerAuthController.updateProfile);
+router.post('/upload-images', handleMultipleImages, sellerAuthController.uploadImages);
+router.post('/upload-profile-image', handleProfileImage, sellerAuthController.uploadProfileImage);
+router.delete('/delete-image/:imageId', sellerAuthController.deleteImage);
+
+// Utility route to update unique fields
+router.put('/update-unique-fields', sellerAuthController.updateUniqueFields);
 
 module.exports = router; 
