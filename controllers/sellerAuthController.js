@@ -3,6 +3,10 @@ const Seller = require('../models/Seller');
 // Register a new seller
 exports.register = async (req, res) => {
   try {
+    // Debug logging to see what backend receives
+    console.log('REGISTER BODY:', req.body);
+    console.log('REGISTER FILES:', req.files);
+
     const {
       businessName,
       email,
@@ -17,10 +21,14 @@ exports.register = async (req, res) => {
     } = req.body;
 
     // Check if seller already exists
-    const normalizedEmail = email.toLowerCase().trim();
-    console.log('Checking for existing seller with email:', normalizedEmail);
+    const normalizedEmail = email && email.toLowerCase().trim();
+    if (!normalizedEmail) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required'
+      });
+    }
     const existingSeller = await Seller.findOne({ email: normalizedEmail });
-    console.log('Existing seller found:', existingSeller ? 'Yes' : 'No');
     if (existingSeller) {
       return res.status(400).json({
         success: false,
@@ -28,9 +36,9 @@ exports.register = async (req, res) => {
       });
     }
 
-    // MVP: Only require businessName, email, and password
+    // Improved required fields check (handle undefined and empty string)
     const requiredFields = ['businessName', 'email', 'password'];
-    const missingFields = requiredFields.filter(field => !req.body[field]);
+    const missingFields = requiredFields.filter(field => !req.body[field] || req.body[field].toString().trim() === '');
     if (missingFields.length > 0) {
       return res.status(400).json({
         success: false,
