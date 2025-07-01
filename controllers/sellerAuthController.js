@@ -28,10 +28,9 @@ exports.register = async (req, res) => {
       });
     }
 
-    // Validate required fields
-    const requiredFields = ['businessName', 'email', 'password', 'phone', 'address', 'businessType', 'bankAccountNumber', 'ifscCode', 'bankName', 'accountHolderName'];
+    // MVP: Only require businessName, email, and password
+    const requiredFields = ['businessName', 'email', 'password'];
     const missingFields = requiredFields.filter(field => !req.body[field]);
-    
     if (missingFields.length > 0) {
       return res.status(400).json({
         success: false,
@@ -71,6 +70,7 @@ exports.register = async (req, res) => {
         businessName,
         email: normalizedEmail,
         password,
+        // Optional fields for MVP
         phone,
         address,
         businessType,
@@ -79,7 +79,6 @@ exports.register = async (req, res) => {
         bankName,
         accountHolderName,
         images,
-        // Populate bankDetails for backward compatibility
         bankDetails: {
           accountName: accountHolderName || '',
           accountNumber: bankAccountNumber || '',
@@ -111,7 +110,7 @@ exports.register = async (req, res) => {
       if (createError.code === 11000) {
         return res.status(400).json({
           success: false,
-          message: 'A seller with this email already exists'
+          message: 'Email already registered'
         });
       }
       throw createError;
