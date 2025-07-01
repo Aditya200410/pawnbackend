@@ -135,7 +135,7 @@ sellerSchema.methods.comparePassword = async function(candidatePassword) {
 
 // Method to add commission
 sellerSchema.methods.addCommission = async function(orderAmount) {
-  const commission = orderAmount * 0.10; // 10% commission
+    const commission = orderAmount * 0.30; // 30% commission
   this.totalCommission += commission;
   this.totalOrders += 1;
   await this.save();
