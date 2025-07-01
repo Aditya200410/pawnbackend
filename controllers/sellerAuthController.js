@@ -228,7 +228,8 @@ exports.login = async (req, res) => {
         bankDetails: seller.bankDetails || {},
         withdrawals: seller.withdrawals || [],
         createdAt: seller.createdAt,
-        verified: seller.verified
+        verified: seller.verified,
+        blocked: seller.blocked
       }
     });
   } catch (error) {
@@ -263,7 +264,31 @@ exports.getProfile = async (req, res) => {
 
     res.json({
       success: true,
-      seller
+      seller: {
+        id: seller._id,
+        businessName: seller.businessName,
+        email: seller.email,
+        phone: seller.phone,
+        address: seller.address,
+        businessType: seller.businessType,
+        accountHolderName: seller.accountHolderName,
+        bankAccountNumber: seller.bankAccountNumber,
+        ifscCode: seller.ifscCode,
+        bankName: seller.bankName,
+        sellerToken: seller.sellerToken,
+        websiteLink: seller.websiteLink,
+        qrCode: seller.qrCode,
+        images: seller.images || [],
+        profileImage: seller.profileImage || null,
+        totalOrders: seller.totalOrders || 0,
+        totalCommission: seller.totalCommission || 0,
+        availableCommission: seller.availableCommission || 0,
+        bankDetails: seller.bankDetails || {},
+        withdrawals: seller.withdrawals || [],
+        createdAt: seller.createdAt,
+        verified: seller.verified,
+        blocked: seller.blocked
+      }
     });
   } catch (error) {
     console.error('Get seller profile error:', error);
@@ -555,5 +580,39 @@ exports.test = async (req, res) => {
       message: 'Test endpoint error',
       error: error.message
     });
+  }
+};
+
+// Block or unblock a seller (admin only)
+exports.setBlockedStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { blocked } = req.body;
+    if (typeof blocked !== 'boolean') {
+      return res.status(400).json({ success: false, message: 'Blocked status must be boolean' });
+    }
+    const seller = await Seller.findByIdAndUpdate(id, { blocked }, { new: true });
+    if (!seller) {
+      return res.status(404).json({ success: false, message: 'Seller not found' });
+    }
+    res.json({ success: true, message: `Seller ${blocked ? 'blocked' : 'unblocked'} successfully`, seller });
+  } catch (error) {
+    console.error('Set blocked status error:', error);
+    res.status(500).json({ success: false, message: 'Error updating blocked status' });
+  }
+};
+
+// Delete a seller (admin only)
+exports.deleteSeller = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const seller = await Seller.findByIdAndDelete(id);
+    if (!seller) {
+      return res.status(404).json({ success: false, message: 'Seller not found' });
+    }
+    res.json({ success: true, message: 'Seller deleted successfully' });
+  } catch (error) {
+    console.error('Delete seller error:', error);
+    res.status(500).json({ success: false, message: 'Error deleting seller' });
   }
 }; 

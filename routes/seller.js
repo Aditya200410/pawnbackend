@@ -26,4 +26,10 @@ router.delete('/delete-image/:imageId', sellerAuthController.deleteImage);
 // Utility route to update unique fields
 router.put('/update-unique-fields', sellerAuthController.updateUniqueFields);
 
+// Delete seller (admin only)
+router.delete('/:id', sellerAuthController.deleteSeller);
+
+// Block/unblock seller (admin only)
+router.patch('/:id/block', sellerAuthController.setBlockedStatus);
+
 module.exports = router; 
