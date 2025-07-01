@@ -21,36 +21,36 @@ const sellerSchema = new mongoose.Schema({
   },
   phone: {
     type: String,
-    required: [true, 'Phone number is required']
+    required: false
   },
   address: {
     type: String,
-    required: [true, 'Address is required']
+    required: false
   },
   businessType: {
     type: String,
-    required: [true, 'Business type is required']
+    required: false
   },
   // Bank Details - Required fields
   bankAccountNumber: {
     type: String,
-    required: [true, 'Bank account number is required'],
+    required: false,
     trim: true
   },
   ifscCode: {
     type: String,
-    required: [true, 'IFSC code is required'],
+    required: false,
     trim: true,
     uppercase: true
   },
   bankName: {
     type: String,
-    required: [true, 'Bank name is required'],
+    required: false,
     trim: true
   },
   accountHolderName: {
     type: String,
-    required: [true, 'Account holder name is required'],
+    required: false,
     trim: true
   },
   sellerToken: {
