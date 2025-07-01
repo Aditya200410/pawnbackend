@@ -1,4 +1,5 @@
 const Seller = require('../models/Seller');
+const QRCode = require('qrcode');
 
 // Register a new seller
 exports.register = async (req, res) => {
@@ -112,6 +113,18 @@ exports.register = async (req, res) => {
         // Continue with the seller without unique fields - they can be updated later
         console.log('Seller created successfully but unique fields update failed');
       }
+
+      // Generate QR code for the seller's shop link
+      let qrCode = '';
+      if (seller && seller.websiteLink) {
+        try {
+          qrCode = await QRCode.toDataURL(seller.websiteLink);
+          seller.qrCode = qrCode;
+          await seller.save();
+        } catch (qrErr) {
+          console.error('QR code generation error:', qrErr);
+        }
+      }
     } catch (createError) {
       console.error('Seller creation error:', createError);
       console.error('Seller creation error details:', createError.message);
@@ -140,7 +153,7 @@ exports.register = async (req, res) => {
         bankName: seller.bankName,
         sellerToken: seller.sellerToken,
         websiteLink: seller.websiteLink,
-        qrCode: seller.qrCode,
+        qrCode: seller.qrCode || qrCode || '',
         images: seller.images || [],
         profileImage: seller.profileImage || null,
         totalOrders: seller.totalOrders || 0,
