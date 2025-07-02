@@ -147,7 +147,7 @@ async function appendOrderToJson(order) {
       // If file doesn't exist, start with empty array
       orders = [];
     }
-    orders.push(order);
+    orders.push(order.toObject ? order.toObject({ virtuals: true }) : order);
     await fs.writeFile(ordersJsonPath, JSON.stringify(orders, null, 2));
   } catch (err) {
     console.error('Failed to append order to orders.json:', err);
