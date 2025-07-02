@@ -148,7 +148,8 @@ const createProductWithFiles = async (req, res) => {
       inStock: productData.inStock === 'true' || productData.inStock === true,
       isBestSeller: productData.isBestSeller === 'true' || productData.isBestSeller === true,
       isFeatured: productData.isFeatured === 'true' || productData.isFeatured === true,
-      isMostLoved: productData.isMostLoved === 'true' || productData.isMostLoved === true
+      isMostLoved: productData.isMostLoved === 'true' || productData.isMostLoved === true,
+      codAvailable: productData.codAvailable === 'false' ? false : true
     });
     
     console.log('Saving product to database...');
@@ -239,7 +240,8 @@ const updateProductWithFiles = async (req, res) => {
       inStock: productData.inStock !== undefined ? (productData.inStock === 'true' || productData.inStock === true) : existingProduct.inStock,
       isBestSeller: productData.isBestSeller !== undefined ? (productData.isBestSeller === 'true' || productData.isBestSeller === true) : existingProduct.isBestSeller,
       isFeatured: productData.isFeatured !== undefined ? (productData.isFeatured === 'true' || productData.isFeatured === true) : existingProduct.isFeatured,
-      isMostLoved: productData.isMostLoved !== undefined ? (productData.isMostLoved === 'true' || productData.isMostLoved === true) : existingProduct.isMostLoved
+      isMostLoved: productData.isMostLoved !== undefined ? (productData.isMostLoved === 'true' || productData.isMostLoved === true) : existingProduct.isMostLoved,
+      codAvailable: productData.codAvailable === 'false' ? false : true
     };
 
     const result = await Product.findByIdAndUpdate(id, updatedProduct, { new: true });
