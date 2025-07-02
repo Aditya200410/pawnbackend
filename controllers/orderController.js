@@ -3,6 +3,7 @@ const Seller = require('../models/Seller');
 const fs = require('fs').promises;
 const path = require('path');
 const ordersJsonPath = path.join(__dirname, '../data/orders.json');
+const Product = require('../models/Product');
 
 // Create a new order
 const createOrder = async (req, res) => {
@@ -113,6 +114,21 @@ const createOrder = async (req, res) => {
     });
 
     const savedOrder = await newOrder.save();
+
+    // Decrement stock for each product in the order
+    for (const item of items) {
+      if (item.productId) {
+        const product = await Product.findById(item.productId);
+        if (product) {
+          product.stock = Math.max(0, (product.stock || 0) - (item.quantity || 1));
+          if (product.stock === 0) {
+            product.inStock = false;
+          }
+          await product.save();
+        }
+      }
+    }
+
     // Save to orders.json for admin
     await appendOrderToJson(savedOrder);
     

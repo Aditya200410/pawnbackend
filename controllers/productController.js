@@ -149,7 +149,8 @@ const createProductWithFiles = async (req, res) => {
       isBestSeller: productData.isBestSeller === 'true' || productData.isBestSeller === true,
       isFeatured: productData.isFeatured === 'true' || productData.isFeatured === true,
       isMostLoved: productData.isMostLoved === 'true' || productData.isMostLoved === true,
-      codAvailable: productData.codAvailable === 'false' ? false : true
+      codAvailable: productData.codAvailable === 'false' ? false : true,
+      stock: typeof productData.stock !== 'undefined' ? Number(productData.stock) : 0
     });
     
     console.log('Saving product to database...');
@@ -241,7 +242,8 @@ const updateProductWithFiles = async (req, res) => {
       isBestSeller: productData.isBestSeller !== undefined ? (productData.isBestSeller === 'true' || productData.isBestSeller === true) : existingProduct.isBestSeller,
       isFeatured: productData.isFeatured !== undefined ? (productData.isFeatured === 'true' || productData.isFeatured === true) : existingProduct.isFeatured,
       isMostLoved: productData.isMostLoved !== undefined ? (productData.isMostLoved === 'true' || productData.isMostLoved === true) : existingProduct.isMostLoved,
-      codAvailable: productData.codAvailable === 'false' ? false : true
+      codAvailable: productData.codAvailable === 'false' ? false : true,
+      stock: typeof productData.stock !== 'undefined' ? Number(productData.stock) : existingProduct.stock
     };
 
     const result = await Product.findByIdAndUpdate(id, updatedProduct, { new: true });
