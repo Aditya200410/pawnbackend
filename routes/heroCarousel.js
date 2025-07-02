@@ -34,12 +34,12 @@ const handleUpload = (req, res, next) => {
 
 // Public routes
 router.get('/active', getActiveCarouselItems);
+router.get('/', getAllCarouselItems);
 
 // Protected routes
 router.use(authenticateToken);
 router.use(isAdmin);
 
-router.get('/', getAllCarouselItems);
 router.get('/:id', getCarouselItem);
 router.post('/', handleUpload, createCarouselItemWithFiles);
 router.put('/:id', handleUpload, updateCarouselItemWithFiles);
