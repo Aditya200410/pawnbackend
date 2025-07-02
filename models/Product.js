@@ -67,7 +67,7 @@ const productSchema = new mongoose.Schema({
   },
   stock: {
     type: Number,
-    default: 0
+    default: 10
   },
   isBestSeller: {
     type: Boolean,
