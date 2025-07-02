@@ -70,21 +70,44 @@ const createOrder = async (req, res) => {
       }
     }
 
+    // Map paymentStatus to valid enum values
+    let mappedPaymentStatus = paymentStatus;
+    if (paymentStatus === 'partial' || paymentStatus === 'processing') {
+      mappedPaymentStatus = 'pending';
+    }
+    if (!['pending', 'completed', 'failed'].includes(mappedPaymentStatus)) {
+      mappedPaymentStatus = 'pending';
+    }
+
+    // Support both address as string (street) and as object
+    let addressObj;
+    if (typeof address === 'object' && address !== null) {
+      addressObj = {
+        street: address.street || '',
+        city: address.city || city || '',
+        state: address.state || state || '',
+        pincode: address.pincode || pincode || '',
+        country: address.country || country || '',
+      };
+    } else {
+      addressObj = {
+        street: address || '',
+        city: city || '',
+        state: state || '',
+        pincode: pincode || '',
+        country: country || '',
+      };
+    }
+
     const newOrder = new Order({
       customerName,
       email,
       phone,
-      address: {
-        street: address,
-        city,
-        state,
-        pincode,
-        country,
-      },
+      address: addressObj,
       items,
       totalAmount,
       paymentMethod,
-      paymentStatus,
+      paymentStatus: mappedPaymentStatus,
       sellerToken,
       commission,
     });
