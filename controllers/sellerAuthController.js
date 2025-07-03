@@ -1,5 +1,6 @@
 const Seller = require('../models/Seller');
 const QRCode = require('qrcode');
+const jwt = require('jsonwebtoken');
 
 // Register a new seller
 exports.register = async (req, res) => {
@@ -27,9 +28,21 @@ exports.register = async (req, res) => {
       address,
       businessType
     });
+    // Create JWT token for seller
+    const token = jwt.sign(
+      {
+        id: seller._id,
+        email: seller.email,
+        businessName: seller.businessName,
+        isSeller: true
+      },
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: '24h' }
+    );
     res.status(201).json({
       success: true,
       message: 'Seller registered successfully',
+      token,
       seller: {
         id: seller._id,
         businessName: seller.businessName,
@@ -52,7 +65,6 @@ exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
     const normalizedEmail = email.toLowerCase().trim();
-
     // Check if seller exists
     const seller = await Seller.findOne({ email: normalizedEmail });
     if (!seller) {
@@ -61,7 +73,6 @@ exports.login = async (req, res) => {
         message: 'Invalid credentials'
       });
     }
-
     // Check password
     const isMatch = await seller.comparePassword(password);
     if (!isMatch) {
@@ -70,10 +81,21 @@ exports.login = async (req, res) => {
         message: 'Invalid credentials'
       });
     }
-
+    // Create JWT token for seller
+    const token = jwt.sign(
+      {
+        id: seller._id,
+        email: seller.email,
+        businessName: seller.businessName,
+        isSeller: true
+      },
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: '24h' }
+    );
     res.json({
       success: true,
       message: 'Login successful',
+      token,
       seller: {
         id: seller._id,
         businessName: seller.businessName,
