@@ -3,8 +3,7 @@ const mongoose = require('mongoose');
 const tempUserSchema = new mongoose.Schema({
   username: {
     type: String,
-    required: true,
-    unique: true
+    required: false // Not required for password reset
   },
   email: {
     type: String,
@@ -13,11 +12,15 @@ const tempUserSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: true
+    required: false // Not required for password reset
   },
   otp: {
     type: String,
-    required: true
+    required: false // Not required for all cases
+  },
+  otpExpires: {
+    type: Date,
+    required: false
   },
   createdAt: {
     type: Date,

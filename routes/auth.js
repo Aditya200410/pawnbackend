@@ -163,7 +163,7 @@ router.post('/forgot-password', async (req, res) => {
     }
     // Generate OTP and expiry
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = Date.now() + 10 * 60 * 1000; // 10 min
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 min
     // Save OTP and expiry in TempUser (or create if not exists)
     let temp = await TempUser.findOne({ email });
     if (!temp) {
@@ -196,7 +196,7 @@ router.post('/verify-forgot-otp', async (req, res) => {
   }
   try {
     const temp = await TempUser.findOne({ email });
-    if (!temp || temp.otp !== otp || temp.otpExpires < Date.now()) {
+    if (!temp || temp.otp !== otp || !temp.otpExpires || temp.otpExpires < new Date()) {
       return res.status(400).json({ message: 'Invalid or expired OTP' });
     }
     const user = await User.findOne({ email });
