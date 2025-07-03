@@ -6,6 +6,7 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const User = require('../models/User');
 const TempUser = require('../models/TempUser');
+const axios = require('axios');
 const nodemailer = require('nodemailer');
 
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
@@ -65,11 +66,36 @@ router.get('/validate-token', auth, async (req, res) => {
   }
 });
 
+// Helper to send OTP via MSG91
+async function sendOtpViaMsg91(phone, otp) {
+  const apiKey = process.env.MSG91_API_KEY;
+  const senderId = process.env.MSG91_SENDER_ID;
+  const templateId = process.env.MSG91_TEMPLATE_ID; // Optional, if using templates
+  const url = `https://api.msg91.com/api/v5/otp`;
+  const payload = {
+    mobile: phone,
+    otp: otp,
+    sender: senderId,
+    template_id: templateId
+  };
+  const headers = {
+    'authkey': apiKey,
+    'Content-Type': 'application/json'
+  };
+  try {
+    const response = await axios.post(url, payload, { headers });
+    return response.data;
+  } catch (err) {
+    console.error('MSG91 OTP send error:', err.response?.data || err.message);
+    throw new Error('Failed to send OTP via SMS');
+  }
+}
+
 // POST /register (alias for /signup)
 router.post('/register', async (req, res) => {
-  const { name, email, password } = req.body;
-  if (!name || !email || !password) {
-    return res.status(400).json({ message: 'Name, email, and password are required' });
+  const { name, email, password, phone } = req.body;
+  if (!name || !email || !password || !phone) {
+    return res.status(400).json({ message: 'Name, email, password, and phone are required' });
   }
   try {
     const existingUser = await User.findOne({ email });
@@ -82,21 +108,15 @@ router.post('/register', async (req, res) => {
     }
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     await TempUser.create({ username: name, email, password, otp });
-    console.log(`OTP for ${email}: ${otp}`);
-    // Send OTP via email
+    console.log(`OTP for ${email} (${phone}): ${otp}`);
+    // Send OTP via MSG91
     try {
-      await transporter.sendMail({
-        from: "rikoenterprises25@gmail.com" ,
-        to: email,
-        subject: 'Your OTP Code',
-        text: `Your OTP code is: ${otp}`,
-        html: `<p>Your OTP code is: <b>${otp}</b></p>`
-      });
-      console.log(`OTP email sent to ${email}`);
-    } catch (mailErr) {
-      console.error('Error sending OTP email:', mailErr);
+      await sendOtpViaMsg91(phone, otp);
+      console.log(`OTP SMS sent to ${phone}`);
+    } catch (smsErr) {
+      console.error('Error sending OTP SMS:', smsErr);
     }
-    return res.json({ message: 'OTP sent to your email', email });
+    return res.json({ message: 'OTP sent to your phone', phone });
   } catch (err) {
     console.error('Register error:', err);
     res.status(500).json({ message: 'Server error' });
@@ -173,7 +193,7 @@ router.post('/forgot-password', async (req, res) => {
       temp.otpExpires = expiresAt;
       await temp.save();
     }
-    // Send OTP via email
+    // Send OTP via email (nodemailer)
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: email,
