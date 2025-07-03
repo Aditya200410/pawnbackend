@@ -14,8 +14,8 @@ const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('he
 const transporter = nodemailer.createTransport({
   service: 'gmail', // or leave blank for auto
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
+    user: "rikoenterprises25@gmail.com",
+    pass: "Riko!@#123",
   },
 });
 
@@ -86,7 +86,7 @@ router.post('/register', async (req, res) => {
     // Send OTP via email
     try {
       await transporter.sendMail({
-        from: process.env.EMAIL_USER,
+        from: "rikoenterprises25@gmail.com" ,
         to: email,
         subject: 'Your OTP Code',
         text: `Your OTP code is: ${otp}`,
