@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
+const phonepeController = require('../controllers/phonepeController');
 
 // Initialize Razorpay
 const razorpay = new Razorpay({
@@ -105,5 +106,11 @@ router.get('/payment/:payment_id', async (req, res) => {
     });
   }
 });
+
+// Add PhonePe payment route
+router.post('/phonepe', phonepeController.createPhonePeOrder);
+
+// Get PhonePe payment status
+router.get('/phonepe/status/:transactionId', phonepeController.getPhonePeStatus);
 
 module.exports = router; 
