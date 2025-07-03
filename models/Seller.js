@@ -55,14 +55,10 @@ const sellerSchema = new mongoose.Schema({
   },
   sellerToken: {
     type: String,
-    unique: true,
-    sparse: true,
     required: false
   },
   websiteLink: {
     type: String,
-    unique: true,
-    sparse: true,
     required: false
   },
   qrCode: {
