@@ -44,9 +44,10 @@ exports.register = async (req, res) => {
         id: seller._id,
         email: seller.email,
         businessName: seller.businessName,
+        type: 'seller',
         isSeller: true
       },
-      process.env.JWT_SECRET || 'your-secret-key',
+      process.env.JWT_SECRET_SELLER || 'your-secret-key',
       { expiresIn: '24h' }
     );
     res.status(201).json({
@@ -100,9 +101,10 @@ exports.login = async (req, res) => {
         id: seller._id,
         email: seller.email,
         businessName: seller.businessName,
+        type: 'seller',
         isSeller: true
       },
-      process.env.JWT_SECRET || 'your-secret-key',
+      process.env.JWT_SECRET_SELLER || 'your-secret-key',
       { expiresIn: '24h' }
     );
     res.json({
