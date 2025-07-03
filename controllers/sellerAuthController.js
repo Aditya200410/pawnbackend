@@ -4,139 +4,29 @@ const QRCode = require('qrcode');
 // Register a new seller
 exports.register = async (req, res) => {
   try {
-    // Debug logging to see what backend receives
-    console.log('REGISTER BODY:', req.body);
-    console.log('REGISTER FILES:', req.files);
-
-    const {
-      businessName,
-      email,
-      password,
-      phone,
-      address,
-      businessType,
-      bankAccountNumber,
-      ifscCode,
-      bankName,
-      accountHolderName
-    } = req.body;
-
-    // Check if seller already exists
+    const { businessName, email, password, phone, address, businessType } = req.body;
     const normalizedEmail = email && email.toLowerCase().trim();
     if (!normalizedEmail) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email is required'
-      });
+      return res.status(400).json({ success: false, message: 'Email is required' });
     }
     const existingSeller = await Seller.findOne({ email: normalizedEmail });
     if (existingSeller) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email already registered'
-      });
+      return res.status(400).json({ success: false, message: 'Email already registered' });
     }
-
-    // Improved required fields check (handle undefined and empty string)
     const requiredFields = ['businessName', 'email', 'password'];
     const missingFields = requiredFields.filter(field => !req.body[field] || req.body[field].toString().trim() === '');
     if (missingFields.length > 0) {
-      return res.status(400).json({
-        success: false,
-        message: `Missing required fields: ${missingFields.join(', ')}`
-      });
+      return res.status(400).json({ success: false, message: `Missing required fields: ${missingFields.join(', ')}` });
     }
-
-    // Process uploaded images
-    let images = [];
-    if (req.files && req.files.length > 0) {
-      images = req.files.map(file => {
-        // Handle both Cloudinary uploads and memory storage
-        const public_id = file.filename || file.originalname || `img_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        const url = file.path || (file.buffer ? `data:${file.mimetype};base64,${file.buffer.toString('base64')}` : '');
-        
-        // Only include images with valid URLs and public_ids
-        if (url && public_id) {
-          return {
-            public_id,
-            url,
-            alt: `${businessName} image`
-          };
-        }
-        return null;
-      }).filter(img => img !== null); // Remove any null entries
-    }
-
-    // Ensure images array is always defined
-    if (!images || images.length === 0) {
-      images = [];
-    }
-
-    // Create new seller with all required fields (without unique fields initially)
-    let seller;
-    try {
-      seller = await Seller.create({
-        businessName,
-        email: normalizedEmail,
-        password,
-        // Optional fields for MVP
-        phone,
-        address,
-        businessType,
-        bankAccountNumber,
-        ifscCode,
-        bankName,
-        accountHolderName,
-        images,
-        bankDetails: {
-          accountName: accountHolderName || '',
-          accountNumber: bankAccountNumber || '',
-          ifsc: ifscCode || '',
-          bankName: bankName || ''
-        }
-      });
-
-      // Generate unique seller token and website link after successful creation
-      const sellerToken = `seller_${seller._id.toString().slice(-8)}_${Date.now()}`;
-      const websiteLink = `${'https://pawn-shop-git-local-host-api-used-aditya200410s-projects.vercel.app'}/shop?seller=${sellerToken}`;
-      
-      // Update seller with unique fields
-      try {
-        const updatedSeller = await Seller.findByIdAndUpdate(
-          seller._id,
-          { sellerToken, websiteLink },
-          { new: true }
-        );
-        seller = updatedSeller;
-      } catch (updateError) {
-        console.error('Failed to update seller with unique fields:', updateError);
-        // Continue with the seller without unique fields - they can be updated later
-        console.log('Seller created successfully but unique fields update failed');
-      }
-
-      // Generate QR code for the seller's shop link
-      let qrCode = '';
-      if (seller && seller.websiteLink) {
-        try {
-          qrCode = await QRCode.toDataURL(seller.websiteLink);
-          seller.qrCode = qrCode;
-          await seller.save();
-        } catch (qrErr) {
-          console.error('QR code generation error:', qrErr);
-        }
-      }
-    } catch (createError) {
-      console.error('Seller creation error:', createError);
-      console.error('Seller creation error details:', createError.message);
-      if (createError.code === 11000) {
-        return res.status(400).json({
-          success: false,
-          message: 'Email already registered'
-        });
-      }
-      throw createError;
-    }
-
+    // Only create seller with basic info
+    const seller = await Seller.create({
+      businessName,
+      email: normalizedEmail,
+      password,
+      phone,
+      address,
+      businessType
+    });
     res.status(201).json({
       success: true,
       message: 'Seller registered successfully',
@@ -147,35 +37,13 @@ exports.register = async (req, res) => {
         phone: seller.phone,
         address: seller.address,
         businessType: seller.businessType,
-        accountHolderName: seller.accountHolderName,
-        bankAccountNumber: seller.bankAccountNumber,
-        ifscCode: seller.ifscCode,
-        bankName: seller.bankName,
-        sellerToken: seller.sellerToken,
-        websiteLink: seller.websiteLink,
-        qrCode: seller.qrCode || qrCode || '',
-        images: seller.images || [],
-        profileImage: seller.profileImage || null,
-        totalOrders: seller.totalOrders || 0,
-        totalCommission: seller.totalCommission || 0,
-        availableCommission: seller.availableCommission || 0,
-        bankDetails: seller.bankDetails || {},
-        withdrawals: seller.withdrawals || [],
         createdAt: seller.createdAt,
         verified: seller.verified
       }
     });
   } catch (error) {
     console.error('Seller registration error:', error);
-    console.error('Error stack:', error.stack);
-    console.error('Request body:', req.body);
-    console.error('Request files:', req.files);
-    
-    res.status(500).json({
-      success: false,
-      message: 'Error registering seller',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
+    res.status(500).json({ success: false, message: 'Error registering seller' });
   }
 };
 
