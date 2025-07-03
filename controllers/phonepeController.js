@@ -21,10 +21,18 @@ function generateStatusXVerify(apiEndpoint, clientSecret) {
 exports.createPhonePeOrder = async (req, res) => {
   try {
     const { amount, customerName, email, phone } = req.body;
+    // Validate required fields
+    if (!amount || (!email && !phone)) {
+      return res.status(400).json({ success: false, message: 'Missing required fields: amount and either email or phone are required.' });
+    }
+    // Check environment variables
     const clientId = process.env.PHONEPE_CLIENT_ID;
     const clientSecret = process.env.PHONEPE_CLIENT_SECRET;
     const env = process.env.PHONEPE_ENV || 'sandbox';
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    if (!clientId || !clientSecret || !frontendUrl) {
+      return res.status(500).json({ success: false, message: 'PhonePe environment variables are not set properly.' });
+    }
 
     // PhonePe API endpoint
     const apiEndpoint = '/pg/v1/pay';
@@ -69,11 +77,13 @@ exports.createPhonePeOrder = async (req, res) => {
       const redirectUrl = response.data.data.instrumentResponse.redirectInfo.url;
       return res.json({ success: true, redirectUrl });
     } else {
+      // Return full PhonePe response for debugging
       return res.status(500).json({ success: false, message: 'Failed to get PhonePe redirect URL', data: response.data });
     }
   } catch (error) {
+    // Return detailed error for debugging (remove in production)
     console.error('PhonePe order error:', error.response?.data || error.message);
-    res.status(500).json({ success: false, message: 'Failed to create PhonePe order', error: error.response?.data || error.message });
+    res.status(500).json({ success: false, message: 'Failed to create PhonePe order', error: error.response?.data || error.message, stack: error.stack });
   }
 };
 
