@@ -44,7 +44,8 @@ exports.register = async (req, res) => {
         id: seller._id,
         email: seller.email,
         businessName: seller.businessName,
-        isSeller: true
+        isSeller: true,
+        type: 'seller'
       },
       process.env.JWT_SECRET || 'your-secret-key',
       { expiresIn: '24h' }
@@ -100,7 +101,8 @@ exports.login = async (req, res) => {
         id: seller._id,
         email: seller.email,
         businessName: seller.businessName,
-        isSeller: true
+        isSeller: true,
+        type: 'seller'
       },
       process.env.JWT_SECRET || 'your-secret-key',
       { expiresIn: '24h' }
@@ -144,27 +146,13 @@ exports.login = async (req, res) => {
   }
 };
 
-// Get seller profile by email (for simple authentication)
-exports.getProfile = async (req, res) => {
+// Get seller profile by JWT
+exports.getProfileByJWT = async (req, res) => {
   try {
-    const { email } = req.query;
-    
-    if (!email) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email is required'
-      });
-    }
-
-    const normalizedEmail = email.toLowerCase().trim();
-    const seller = await Seller.findOne({ email: normalizedEmail }).select('-password');
+    const seller = req.seller;
     if (!seller) {
-      return res.status(404).json({
-        success: false,
-        message: 'Seller not found'
-      });
+      return res.status(404).json({ success: false, message: 'Seller not found' });
     }
-
     res.json({
       success: true,
       seller: {
@@ -194,75 +182,52 @@ exports.getProfile = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Get seller profile error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching profile'
-    });
+    console.error('Get seller profile by JWT error:', error);
+    res.status(500).json({ success: false, message: 'Error fetching profile' });
   }
 };
 
-// Update seller profile by email
-exports.updateProfile = async (req, res) => {
+// Update seller profile by JWT
+exports.updateProfileByJWT = async (req, res) => {
   try {
-    const { email } = req.body;
-    
-    if (!email) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email is required'
-      });
-    }
-
-    const normalizedEmail = email.toLowerCase().trim();
-    const updates = {
-      businessName: req.body.businessName,
-      phone: req.body.phone,
-      address: req.body.address,
-      businessType: req.body.businessType,
-    };
-    if (req.body.accountHolderName !== undefined) updates.accountHolderName = req.body.accountHolderName;
-    if (req.body.bankAccountNumber !== undefined) updates.bankAccountNumber = req.body.bankAccountNumber;
-    if (req.body.ifscCode !== undefined) updates.ifscCode = req.body.ifscCode;
-    if (req.body.bankName !== undefined) updates.bankName = req.body.bankName;
-    // Also update the bankDetails object for consistency
-    if (
-      req.body.accountHolderName !== undefined ||
-      req.body.bankAccountNumber !== undefined ||
-      req.body.ifscCode !== undefined ||
-      req.body.bankName !== undefined
-    ) {
-      updates.bankDetails = {
-        accountName: req.body.accountHolderName || '',
-        accountNumber: req.body.bankAccountNumber || '',
-        ifsc: req.body.ifscCode || '',
-        bankName: req.body.bankName || ''
-      };
-    }
-
-    const seller = await Seller.findOneAndUpdate(
-      { email: normalizedEmail },
-      { $set: updates },
-      { new: true, runValidators: true }
-    ).select('-password');
-
+    const seller = req.seller;
     if (!seller) {
-      return res.status(404).json({
-        success: false,
-        message: 'Seller not found'
-      });
+      return res.status(404).json({ success: false, message: 'Seller not found' });
     }
-
+    const updates = req.body;
+    Object.assign(seller, updates);
+    await seller.save();
     res.json({
       success: true,
-      seller
+      seller: {
+        id: seller._id,
+        businessName: seller.businessName,
+        email: seller.email,
+        phone: seller.phone,
+        address: seller.address,
+        businessType: seller.businessType,
+        accountHolderName: seller.accountHolderName,
+        bankAccountNumber: seller.bankAccountNumber,
+        ifscCode: seller.ifscCode,
+        bankName: seller.bankName,
+        sellerToken: seller.sellerToken,
+        websiteLink: seller.websiteLink,
+        qrCode: seller.qrCode,
+        images: seller.images || [],
+        profileImage: seller.profileImage || null,
+        totalOrders: seller.totalOrders || 0,
+        totalCommission: seller.totalCommission || 0,
+        availableCommission: seller.availableCommission || 0,
+        bankDetails: seller.bankDetails || {},
+        withdrawals: seller.withdrawals || [],
+        createdAt: seller.createdAt,
+        verified: seller.verified,
+        blocked: seller.blocked
+      }
     });
   } catch (error) {
-    console.error('Update seller profile error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error updating profile'
-    });
+    console.error('Update seller profile by JWT error:', error);
+    res.status(500).json({ success: false, message: 'Error updating profile' });
   }
 };
 
