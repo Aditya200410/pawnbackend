@@ -144,54 +144,19 @@ exports.login = async (req, res) => {
   }
 };
 
-// Get seller profile by email (for simple authentication)
+// Get seller profile (JWT protected)
 exports.getProfile = async (req, res) => {
   try {
-    const { email } = req.query;
-    
-    if (!email) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email is required'
-      });
-    }
-
-    const normalizedEmail = email.toLowerCase().trim();
-    const seller = await Seller.findOne({ email: normalizedEmail }).select('-password');
+    const seller = await Seller.findById(req.seller._id).select('-password');
     if (!seller) {
       return res.status(404).json({
         success: false,
         message: 'Seller not found'
       });
     }
-
     res.json({
       success: true,
-      seller: {
-        id: seller._id,
-        businessName: seller.businessName,
-        email: seller.email,
-        phone: seller.phone,
-        address: seller.address,
-        businessType: seller.businessType,
-        accountHolderName: seller.accountHolderName,
-        bankAccountNumber: seller.bankAccountNumber,
-        ifscCode: seller.ifscCode,
-        bankName: seller.bankName,
-        sellerToken: seller.sellerToken,
-        websiteLink: seller.websiteLink,
-        qrCode: seller.qrCode,
-        images: seller.images || [],
-        profileImage: seller.profileImage || null,
-        totalOrders: seller.totalOrders || 0,
-        totalCommission: seller.totalCommission || 0,
-        availableCommission: seller.availableCommission || 0,
-        bankDetails: seller.bankDetails || {},
-        withdrawals: seller.withdrawals || [],
-        createdAt: seller.createdAt,
-        verified: seller.verified,
-        blocked: seller.blocked
-      }
+      seller
     });
   } catch (error) {
     console.error('Get seller profile error:', error);
@@ -202,19 +167,9 @@ exports.getProfile = async (req, res) => {
   }
 };
 
-// Update seller profile by email
+// Update seller profile (JWT protected)
 exports.updateProfile = async (req, res) => {
   try {
-    const { email } = req.body;
-    
-    if (!email) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email is required'
-      });
-    }
-
-    const normalizedEmail = email.toLowerCase().trim();
     const updates = {
       businessName: req.body.businessName,
       phone: req.body.phone,
@@ -239,20 +194,17 @@ exports.updateProfile = async (req, res) => {
         bankName: req.body.bankName || ''
       };
     }
-
-    const seller = await Seller.findOneAndUpdate(
-      { email: normalizedEmail },
+    const seller = await Seller.findByIdAndUpdate(
+      req.seller._id,
       { $set: updates },
       { new: true, runValidators: true }
     ).select('-password');
-
     if (!seller) {
       return res.status(404).json({
         success: false,
         message: 'Seller not found'
       });
     }
-
     res.json({
       success: true,
       seller
