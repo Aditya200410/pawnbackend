@@ -1,18 +1,20 @@
 const axios = require('axios');
 const crypto = require('crypto');
 
+// NOTE: PhonePe uses merchantId (your business identifier) for all payment requests. clientId is not required for UPI integration.
+// Use process.env.PHONEPE_MERCHANT_ID everywhere.
+
 // Helper to generate X-VERIFY header for PhonePe
-function generateXVerify(payload, apiEndpoint, clientSecret) {
-  // PhonePe: base64(payload) + "/pg/v1/pay" + clientSecret, then SHA256, then append '###1'
+function generateXVerify(payload, apiEndpoint, merchantSecret) {
   const base64Payload = Buffer.from(JSON.stringify(payload)).toString('base64');
-  const stringToHash = base64Payload + apiEndpoint + clientSecret;
+  const stringToHash = base64Payload + apiEndpoint + merchantSecret;
   const sha256 = crypto.createHash('sha256').update(stringToHash).digest('hex');
   return sha256 + '###1';
 }
 
 // Helper for X-VERIFY for status check
-function generateStatusXVerify(apiEndpoint, clientSecret) {
-  const stringToHash = apiEndpoint + clientSecret;
+function generateStatusXVerify(apiEndpoint, merchantSecret) {
+  const stringToHash = apiEndpoint + merchantSecret;
   const sha256 = crypto.createHash('sha256').update(stringToHash).digest('hex');
   return sha256 + '###1';
 }
@@ -21,29 +23,19 @@ function generateStatusXVerify(apiEndpoint, clientSecret) {
 exports.createPhonePeOrder = async (req, res) => {
   try {
     const { amount, customerName, email, phone } = req.body;
-    // Validate required fields
-    if (!amount || (!email && !phone)) {
-      return res.status(400).json({ success: false, message: 'Missing required fields: amount and either email or phone are required.' });
-    }
-    // Check environment variables
-    const clientId = process.env.PHONEPE_CLIENT_ID;
-    const clientSecret = process.env.PHONEPE_CLIENT_SECRET;
+    const merchantId = process.env.PHONEPE_MERCHANT_ID;
+    const merchantSecret = process.env.PHONEPE_CLIENT_SECRET;
     const env = process.env.PHONEPE_ENV || 'sandbox';
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-    if (!clientId || !clientSecret || !frontendUrl) {
-      return res.status(500).json({ success: false, message: 'PhonePe environment variables are not set properly.' });
-    }
 
-    // PhonePe API endpoint
     const apiEndpoint = '/pg/v1/pay';
     const phonepeBaseUrl = env === 'production'
-      ? 'https://api.phonepe.com/apis/hermes'
-      : 'https://api-preprod.phonepe.com/apis/pg-sandbox';
+      ? 'https://api.phonepe.com'
+      : 'https://api-preprod.phonepe.com';
 
-    // Prepare payload as per PhonePe docs
     const merchantTransactionId = `txn_${Date.now()}`;
     const payload = {
-      merchantId: clientId,
+      merchantId, // Use merchantId from env
       merchantTransactionId,
       merchantUserId: email || phone,
       amount: Math.round(amount * 100), // paise
@@ -55,11 +47,9 @@ exports.createPhonePeOrder = async (req, res) => {
       },
     };
 
-    // Generate X-VERIFY header
-    const xVerify = generateXVerify(payload, apiEndpoint, clientSecret);
+    const xVerify = generateXVerify(payload, apiEndpoint, merchantSecret);
     const base64Payload = Buffer.from(JSON.stringify(payload)).toString('base64');
 
-    // Make PhonePe API call
     const response = await axios.post(
       phonepeBaseUrl + apiEndpoint,
       { request: base64Payload },
@@ -67,23 +57,20 @@ exports.createPhonePeOrder = async (req, res) => {
         headers: {
           'Content-Type': 'application/json',
           'X-VERIFY': xVerify,
-          'X-MERCHANT-ID': clientId,
+          'X-MERCHANT-ID': merchantId, // Use merchantId in header
         },
       }
     );
 
-    // Handle PhonePe response
     if (response.data && response.data.success && response.data.data && response.data.data.instrumentResponse && response.data.data.instrumentResponse.redirectInfo && response.data.data.instrumentResponse.redirectInfo.url) {
       const redirectUrl = response.data.data.instrumentResponse.redirectInfo.url;
       return res.json({ success: true, redirectUrl });
     } else {
-      // Return full PhonePe response for debugging
       return res.status(500).json({ success: false, message: 'Failed to get PhonePe redirect URL', data: response.data });
     }
   } catch (error) {
-    // Return detailed error for debugging (remove in production)
     console.error('PhonePe order error:', error.response?.data || error.message);
-    res.status(500).json({ success: false, message: 'Failed to create PhonePe order', error: error.response?.data || error.message, stack: error.stack });
+    res.status(500).json({ success: false, message: 'Failed to create PhonePe order', error: error.response?.data || error.message });
   }
 };
 
@@ -91,16 +78,16 @@ exports.createPhonePeOrder = async (req, res) => {
 exports.getPhonePeStatus = async (req, res) => {
   try {
     const { transactionId } = req.params;
-    const clientId = process.env.PHONEPE_CLIENT_ID;
-    const clientSecret = process.env.PHONEPE_CLIENT_SECRET;
+    const merchantId = process.env.PHONEPE_MERCHANT_ID;
+    const merchantSecret = process.env.PHONEPE_CLIENT_SECRET;
     const env = process.env.PHONEPE_ENV || 'sandbox';
 
-    const apiEndpoint = `/pg/v1/status/${clientId}/${transactionId}`;
+    const apiEndpoint = `/pg/v1/status/${merchantId}/${transactionId}`;
     const phonepeBaseUrl = env === 'production'
       ? 'https://api.phonepe.com'
       : 'https://api-preprod.phonepe.com';
 
-    const xVerify = generateStatusXVerify(apiEndpoint, clientSecret);
+    const xVerify = generateStatusXVerify(apiEndpoint, merchantSecret);
 
     const response = await axios.get(
       phonepeBaseUrl + apiEndpoint,
@@ -108,7 +95,7 @@ exports.getPhonePeStatus = async (req, res) => {
         headers: {
           'Content-Type': 'application/json',
           'X-VERIFY': xVerify,
-          'X-MERCHANT-ID': clientId,
+          'X-MERCHANT-ID': merchantId, // Use merchantId in header
         },
       }
     );
@@ -121,7 +108,7 @@ exports.getPhonePeStatus = async (req, res) => {
 };
 
 // .env variables to add:
-// PHONEPE_CLIENT_ID=your_client_id
+// PHONEPE_MERCHANT_ID=your_merchant_id
 // PHONEPE_CLIENT_SECRET=your_client_secret
 // PHONEPE_ENV=sandbox
 // FRONTEND_URL=http://localhost:3000 (or your deployed frontend) 
