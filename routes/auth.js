@@ -150,71 +150,65 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// POST /forgot-password
+// POST /forgot-password (send OTP for password reset)
 router.post('/forgot-password', async (req, res) => {
   const { email } = req.body;
-  
   if (!email) {
     return res.status(400).json({ message: 'Email is required' });
   }
-  
   try {
-    console.log('Forgot password request for email:', email);
-    
     const user = await User.findOne({ email });
-    if (user) {
-      const resetToken = crypto.randomBytes(32).toString('hex');
-      user.resetPasswordToken = await bcrypt.hash(resetToken, 10);
-      user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
-      await user.save();
-      
-      console.log('Reset token generated for user:', user.email);
-      
-      // In a real application, you would send an email here
-      // For now, we'll just return a success message
-      return res.json({ 
-        message: 'If an account with this email exists, a password reset link has been sent.',
-        resetToken: resetToken // Remove this in production - only for testing
-      });
-    } else {
-      console.log('No user found with email:', email);
-      // For security reasons, don't reveal if the email exists or not
-      return res.json({ 
-        message: 'If an account with this email exists, a password reset link has been sent.' 
-      });
+    if (!user) {
+      return res.status(400).json({ message: 'No user found with this email' });
     }
+    // Generate OTP and expiry
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = Date.now() + 10 * 60 * 1000; // 10 min
+    // Save OTP and expiry in TempUser (or create if not exists)
+    let temp = await TempUser.findOne({ email });
+    if (!temp) {
+      temp = await TempUser.create({ email, otp, otpExpires: expiresAt });
+    } else {
+      temp.otp = otp;
+      temp.otpExpires = expiresAt;
+      await temp.save();
+    }
+    // Send OTP via email
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'Your Password Reset OTP',
+      text: `Your OTP for password reset is: ${otp}`,
+      html: `<p>Your OTP for password reset is: <b>${otp}</b></p>`
+    });
+    return res.json({ message: 'OTP sent to your email' });
   } catch (err) {
     console.error('Forgot password error:', err);
     res.status(500).json({ message: 'Error processing password reset request' });
   }
 });
 
-// POST /reset-password/:token
-router.post('/reset-password/:token', async (req, res) => {
-  const { password } = req.body;
-  const { token } = req.params;
-
-  if (!password) return res.status(400).json({ message: 'New password required' });
-
+// POST /verify-forgot-otp (verify OTP and set new password)
+router.post('/verify-forgot-otp', async (req, res) => {
+  const { email, otp, newPassword } = req.body;
+  if (!email || !otp || !newPassword) {
+    return res.status(400).json({ message: 'Email, OTP, and new password are required' });
+  }
   try {
-    const users = await User.find({ resetPasswordExpires: { $gt: Date.now() } });
-    let matchedUser = null;
-    for (let user of users) {
-      if (await bcrypt.compare(token, user.resetPasswordToken || '')) {
-        matchedUser = user;
-        break;
-      }
+    const temp = await TempUser.findOne({ email });
+    if (!temp || temp.otp !== otp || temp.otpExpires < Date.now()) {
+      return res.status(400).json({ message: 'Invalid or expired OTP' });
     }
-    if (!matchedUser) return res.status(400).json({ message: 'Invalid or expired token' });
-
-    matchedUser.password = password;
-    matchedUser.resetPasswordToken = undefined;
-    matchedUser.resetPasswordExpires = undefined;
-    await matchedUser.save();
-
-    return res.json({ message: 'Password reset successful' });
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ message: 'No user found with this email' });
+    }
+    user.password = newPassword;
+    await user.save();
+    await TempUser.deleteOne({ email });
+    return res.json({ message: 'Password reset successful. You can now log in with your new password.' });
   } catch (err) {
-    console.error(err);
+    console.error('Verify forgot OTP error:', err);
     res.status(500).json({ message: 'Error resetting password' });
   }
 });
