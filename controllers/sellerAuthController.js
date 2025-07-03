@@ -1,6 +1,7 @@
 const Seller = require('../models/Seller');
 const QRCode = require('qrcode');
 const jwt = require('jsonwebtoken');
+const { v4: uuidv4 } = require('uuid');
 
 // Register a new seller
 exports.register = async (req, res) => {
@@ -19,14 +20,23 @@ exports.register = async (req, res) => {
     if (missingFields.length > 0) {
       return res.status(400).json({ success: false, message: `Missing required fields: ${missingFields.join(', ')}` });
     }
-    // Only create seller with basic info
+    // Generate unique sellerToken
+    const sellerToken = uuidv4();
+    // Create websiteLink with sellerToken
+    const websiteLink = `${process.env.FRONTEND_URL || 'https://pawn-shop-git-local-host-api-used-aditya200410s-projects.vercel.app'}/shop?sellerToken=${sellerToken}`;
+    // Generate QR code for websiteLink
+    const qrCode = await QRCode.toDataURL(websiteLink);
+    // Create seller with all info
     const seller = await Seller.create({
       businessName,
       email: normalizedEmail,
       password,
       phone,
       address,
-      businessType
+      businessType,
+      sellerToken,
+      websiteLink,
+      qrCode
     });
     // Create JWT token for seller
     const token = jwt.sign(
@@ -50,6 +60,9 @@ exports.register = async (req, res) => {
         phone: seller.phone,
         address: seller.address,
         businessType: seller.businessType,
+        sellerToken: seller.sellerToken,
+        websiteLink: seller.websiteLink,
+        qrCode: seller.qrCode,
         createdAt: seller.createdAt,
         verified: seller.verified
       }
