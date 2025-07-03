@@ -252,17 +252,28 @@ router.post('/logout', async (req, res) => {
 
 // PUT /update-profile (Protected)
 router.put('/update-profile', auth, async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, phone, address, currentPassword, newPassword } = req.body;
   try {
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     if (name) user.name = name;
     if (email) user.email = email;
-    if (password) user.password = password;
+    if (phone) user.phone = phone;
+    if (address) user.address = address;
+
+    // Handle password change securely
+    if (currentPassword && newPassword) {
+      const isMatch = await user.comparePassword(currentPassword);
+      if (!isMatch) {
+        return res.status(400).json({ message: 'Current password is incorrect' });
+      }
+      user.password = newPassword; // Will be hashed by pre-save hook
+    }
+
     await user.save();
 
-    return res.json({ message: 'Profile updated', user: { id: user._id, name: user.name, email } });
+    return res.json({ message: 'Profile updated', user: { id: user._id, name: user.name, email: user.email, phone: user.phone, address: user.address } });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Error updating profile' });
