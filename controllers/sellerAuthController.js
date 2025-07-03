@@ -184,8 +184,26 @@ exports.updateProfile = async (req, res) => {
       businessName: req.body.businessName,
       phone: req.body.phone,
       address: req.body.address,
-      businessType: req.body.businessType
+      businessType: req.body.businessType,
     };
+    if (req.body.accountHolderName !== undefined) updates.accountHolderName = req.body.accountHolderName;
+    if (req.body.bankAccountNumber !== undefined) updates.bankAccountNumber = req.body.bankAccountNumber;
+    if (req.body.ifscCode !== undefined) updates.ifscCode = req.body.ifscCode;
+    if (req.body.bankName !== undefined) updates.bankName = req.body.bankName;
+    // Also update the bankDetails object for consistency
+    if (
+      req.body.accountHolderName !== undefined ||
+      req.body.bankAccountNumber !== undefined ||
+      req.body.ifscCode !== undefined ||
+      req.body.bankName !== undefined
+    ) {
+      updates.bankDetails = {
+        accountName: req.body.accountHolderName || '',
+        accountNumber: req.body.bankAccountNumber || '',
+        ifsc: req.body.ifscCode || '',
+        bankName: req.body.bankName || ''
+      };
+    }
 
     const seller = await Seller.findOneAndUpdate(
       { email: normalizedEmail },
