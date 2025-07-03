@@ -14,8 +14,8 @@ const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('he
 const transporter = nodemailer.createTransport({
   service: 'gmail', // or leave blank for auto
   auth: {
-    user: "rikoenterprises25@gmail.com",
-    pass: "Riko!@#123",
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
   },
 });
 

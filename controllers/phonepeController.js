@@ -30,8 +30,8 @@ exports.createPhonePeOrder = async (req, res) => {
 
     const apiEndpoint = '/pg/v1/pay';
     const phonepeBaseUrl = env === 'production'
-      ? 'https://api.phonepe.com'
-      : 'https://api-preprod.phonepe.com';
+      ? 'https://api.phonepe.com/apis/hermes'
+      : 'https://api-preprod.phonepe.com/apis/pg-sandbox';
 
     const merchantTransactionId = `txn_${Date.now()}`;
     const payload = {
