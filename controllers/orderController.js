@@ -64,7 +64,7 @@ const createOrder = async (req, res) => {
     if (sellerToken) {
       seller = await Seller.findOne({ sellerToken });
       if (seller) {
-        commission = totalAmount * 0.10; // 10% commission
+        commission = totalAmount * 0.30; // 30% commission
         // Add commission to seller's account
         await seller.addCommission(totalAmount);
         console.log(`Commission added for seller ${seller.businessName}: ₹${commission}`);
