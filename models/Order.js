@@ -37,6 +37,8 @@ const orderSchema = new mongoose.Schema({
   },
   sellerToken: { type: String, required: false }, // Track which seller referred this order
   commission: { type: Number, default: 0 }, // Commission amount for this order
+  transactionId: { type: String, required: false }, // PhonePe transaction ID
+  couponCode: { type: String, required: false }, // Coupon code if applied
 }, { timestamps: true });
 
 module.exports = mongoose.model('Order', orderSchema);

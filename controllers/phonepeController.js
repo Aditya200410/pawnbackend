@@ -25,11 +25,26 @@ exports.createPhonePeOrder = async (req, res) => {
     const frontendUrl = process.env.FRONTEND_URL;
     const backendUrl = process.env.BACKEND_URL;
 
-    // Basic validation
-    if (!merchantId || !merchantSecret || !frontendUrl || !backendUrl) {
+    // Enhanced validation
+    if (!merchantId || !merchantSecret) {
+      console.error('PhonePe configuration missing:', { 
+        merchantId: !!merchantId, 
+        merchantSecret: !!merchantSecret 
+      });
       return res.status(500).json({
         success: false,
-        message: 'Payment gateway configuration missing in environment variables',
+        message: 'Payment gateway configuration missing. Please contact support.',
+      });
+    }
+
+    if (!frontendUrl || !backendUrl) {
+      console.error('URL configuration missing:', { 
+        frontendUrl: !!frontendUrl, 
+        backendUrl: !!backendUrl 
+      });
+      return res.status(500).json({
+        success: false,
+        message: 'Application configuration missing. Please contact support.',
       });
     }
 
@@ -37,6 +52,13 @@ exports.createPhonePeOrder = async (req, res) => {
       return res.status(400).json({ 
         success: false, 
         message: 'Invalid amount provided' 
+      });
+    }
+
+    if (!customerName || !email || !phone) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Customer details are required' 
       });
     }
 
@@ -69,6 +91,12 @@ exports.createPhonePeOrder = async (req, res) => {
       email: email
     };
 
+    console.log('PhonePe payload:', {
+      ...payload,
+      amount: payload.amount,
+      merchantSecret: '***HIDDEN***'
+    });
+
     // Generate base64 payload
     const base64Payload = Buffer.from(JSON.stringify(payload)).toString('base64');
 
@@ -90,6 +118,8 @@ exports.createPhonePeOrder = async (req, res) => {
         timeout: 30000
       }
     );
+
+    console.log('PhonePe API response:', response.data);
 
     // Success response from PhonePe
     if (response.data && response.data.success) {
@@ -122,6 +152,11 @@ exports.createPhonePeOrder = async (req, res) => {
           createdAt: new Date()
         };
 
+        console.log('PhonePe order created successfully:', {
+          transactionId: merchantTransactionId,
+          redirectUrl: redirectUrl.substring(0, 100) + '...'
+        });
+
         return res.json({ 
           success: true, 
           redirectUrl,
@@ -129,6 +164,7 @@ exports.createPhonePeOrder = async (req, res) => {
           orderData 
         });
       } else {
+        console.error('PhonePe did not return redirect URL:', response.data);
         return res.status(500).json({ 
           success: false, 
           message: 'PhonePe did not return a redirect URL.',
@@ -136,6 +172,7 @@ exports.createPhonePeOrder = async (req, res) => {
         });
       }
     } else {
+      console.error('PhonePe payment initiation failed:', response.data);
       return res.status(500).json({
         success: false,
         message: response.data.message || 'PhonePe payment initiation failed',
@@ -152,6 +189,12 @@ exports.createPhonePeOrder = async (req, res) => {
       errorMessage = error.response.data.message;
     } else if (error.code === 'ECONNABORTED') {
       errorMessage = 'Payment gateway timeout. Please try again.';
+    } else if (error.code === 'ENOTFOUND') {
+      errorMessage = 'Payment gateway not reachable. Please try again.';
+    } else if (error.response?.status === 500) {
+      errorMessage = 'Payment gateway error. Please try again later.';
+    } else if (error.response?.status === 400) {
+      errorMessage = 'Invalid payment request. Please check your details.';
     }
 
     return res.status(500).json({

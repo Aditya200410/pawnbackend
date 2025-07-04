@@ -22,6 +22,8 @@ const createOrder = async (req, res) => {
       paymentMethod,
       paymentStatus,
       sellerToken, // Get seller token from request
+      transactionId, // PhonePe transaction ID
+      couponCode, // Coupon code if applied
     } = req.body;
 
     // Comprehensive validation
@@ -119,6 +121,8 @@ const createOrder = async (req, res) => {
       paymentStatus: mappedPaymentStatus,
       sellerToken,
       commission,
+      transactionId,
+      couponCode,
     });
 
     const savedOrder = await newOrder.save();
