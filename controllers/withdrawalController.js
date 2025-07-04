@@ -257,19 +257,30 @@ exports.getAllWithdrawals = async (req, res) => {
 exports.approveWithdrawal = async (req, res) => {
   try {
     const { withdrawalId } = req.params;
-    const adminId = req.admin.id;
+    const adminId = req.user.id;
 
     console.log('Approving withdrawal:', withdrawalId);
+    console.log('Admin ID:', adminId);
+    console.log('Request user:', req.user);
 
     const withdrawal = await Withdrawal.findById(withdrawalId);
     if (!withdrawal) {
+      console.log('Withdrawal not found:', withdrawalId);
       return res.status(404).json({
         success: false,
         message: 'Withdrawal not found'
       });
     }
 
+    console.log('Found withdrawal:', {
+      id: withdrawal._id,
+      status: withdrawal.status,
+      amount: withdrawal.amount,
+      sellerId: withdrawal.sellerId
+    });
+
     if (withdrawal.status !== 'pending') {
+      console.log('Withdrawal cannot be approved - current status:', withdrawal.status);
       return res.status(400).json({
         success: false,
         message: 'Withdrawal cannot be approved in current status'
@@ -283,11 +294,15 @@ exports.approveWithdrawal = async (req, res) => {
     withdrawal.adminNotes = 'Approved - Amount will be credited in 3-5 business days';
     await withdrawal.save();
 
+    console.log('Withdrawal saved with new status:', withdrawal.status);
+
     // Update commission history
     await CommissionHistory.findOneAndUpdate(
       { withdrawalId: withdrawal._id },
       { status: 'confirmed' }
     );
+
+    console.log('Commission history updated');
 
     console.log('Withdrawal approved successfully');
 
@@ -310,7 +325,7 @@ exports.rejectWithdrawal = async (req, res) => {
   try {
     const { withdrawalId } = req.params;
     const { rejectionReason } = req.body;
-    const adminId = req.admin.id;
+    const adminId = req.user.id;
 
     console.log('Rejecting withdrawal:', withdrawalId);
 
@@ -370,7 +385,7 @@ exports.rejectWithdrawal = async (req, res) => {
 exports.completeWithdrawal = async (req, res) => {
   try {
     const { withdrawalId } = req.params;
-    const adminId = req.admin.id;
+    const adminId = req.user.id;
 
     console.log('Completing withdrawal:', withdrawalId);
 

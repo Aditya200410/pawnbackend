@@ -344,9 +344,25 @@ exports.deleteImage = async (req, res) => {
 exports.getAllSellers = async (req, res) => {
   try {
     const sellers = await Seller.find({}, '-password');
+    
+    // Get withdrawal data for each seller
+    const Withdrawal = require('../models/Withdrawal');
+    const sellersWithWithdrawals = await Promise.all(
+      sellers.map(async (seller) => {
+        const withdrawals = await Withdrawal.find({ sellerId: seller._id })
+          .sort({ createdAt: -1 })
+          .select('amount status requestedAt processedDate adminNotes rejectionReason bankDetails');
+        
+        return {
+          ...seller.toObject(),
+          withdrawals: withdrawals
+        };
+      })
+    );
+
     res.json({
       success: true,
-      sellers
+      sellers: sellersWithWithdrawals
     });
   } catch (error) {
     console.error('Error fetching all sellers:', error);

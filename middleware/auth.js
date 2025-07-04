@@ -30,14 +30,16 @@ const isAdmin = (req, res, next) => {
   console.log('Admin check called');
   console.log('User:', req.user);
   console.log('Is admin:', req.user?.isAdmin);
+  console.log('User role:', req.user?.role);
   
-  if (req.user && req.user.isAdmin === true) {
+  if (req.user && (req.user.isAdmin === true || req.user.role === 'admin')) {
     console.log('Admin check passed');
     next();
   } else {
     console.error('Admin check failed:', {
       user: req.user,
-      isAdmin: req.user?.isAdmin
+      isAdmin: req.user?.isAdmin,
+      role: req.user?.role
     });
     res.status(403).json({ message: 'Access denied. Admin privileges required.' });
   }
