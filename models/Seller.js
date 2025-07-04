@@ -91,7 +91,8 @@ const sellerSchema = new mongoose.Schema({
     accountName: { type: String },
     accountNumber: { type: String },
     ifsc: { type: String },
-    bankName: { type: String }
+    bankName: { type: String },
+    upi: { type: String }
   },
   withdrawals: [
     {
@@ -112,6 +113,11 @@ const sellerSchema = new mongoose.Schema({
   blocked: {
     type: Boolean,
     default: false
+  },
+  upi: {
+    type: String,
+    required: false,
+    trim: true
   }
 });
 

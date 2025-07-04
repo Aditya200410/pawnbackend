@@ -33,4 +33,7 @@ router.delete('/:id', sellerAuthController.deleteSeller);
 // Block/unblock seller (admin only)
 router.patch('/:id/block', sellerAuthController.setBlockedStatus);
 
+// New route for withdrawing money
+router.post('/withdraw', sellerAuth, sellerAuthController.requestWithdraw);
+
 module.exports = router; 

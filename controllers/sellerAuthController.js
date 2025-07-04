@@ -134,7 +134,8 @@ exports.login = async (req, res) => {
         withdrawals: seller.withdrawals || [],
         createdAt: seller.createdAt,
         verified: seller.verified,
-        blocked: seller.blocked
+        blocked: seller.blocked,
+        upi: seller.upi
       }
     });
   } catch (error) {
@@ -182,18 +183,21 @@ exports.updateProfile = async (req, res) => {
     if (req.body.bankAccountNumber !== undefined) updates.bankAccountNumber = req.body.bankAccountNumber;
     if (req.body.ifscCode !== undefined) updates.ifscCode = req.body.ifscCode;
     if (req.body.bankName !== undefined) updates.bankName = req.body.bankName;
+    if (req.body.upi !== undefined) updates.upi = req.body.upi;
     // Also update the bankDetails object for consistency
     if (
       req.body.accountHolderName !== undefined ||
       req.body.bankAccountNumber !== undefined ||
       req.body.ifscCode !== undefined ||
-      req.body.bankName !== undefined
+      req.body.bankName !== undefined ||
+      req.body.upi !== undefined
     ) {
       updates.bankDetails = {
         accountName: req.body.accountHolderName || '',
         accountNumber: req.body.bankAccountNumber || '',
         ifsc: req.body.ifscCode || '',
-        bankName: req.body.bankName || ''
+        bankName: req.body.bankName || '',
+        upi: req.body.upi || ''
       };
     }
     const seller = await Seller.findByIdAndUpdate(
@@ -489,6 +493,48 @@ exports.deleteSeller = async (req, res) => {
   } catch (error) {
     console.error('Delete seller error:', error);
     res.status(500).json({ success: false, message: 'Error deleting seller' });
+  }
+};
+
+// Handle seller withdrawal request
+exports.requestWithdraw = async (req, res) => {
+  try {
+    const sellerId = req.seller._id;
+    const { bankDetails, amount } = req.body;
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ success: false, message: 'Invalid withdrawal amount' });
+    }
+    // Fetch seller
+    const seller = await Seller.findById(sellerId);
+    if (!seller) {
+      return res.status(404).json({ success: false, message: 'Seller not found' });
+    }
+    // Create Withdraw record
+    const Withdraw = require('../models/Withdraw');
+    const withdraw = await Withdraw.create({
+      seller: sellerId,
+      amount,
+      bankDetails: {
+        accountName: bankDetails.accountName || seller.accountHolderName || seller.bankDetails?.accountName || '',
+        accountNumber: bankDetails.accountNumber || seller.bankAccountNumber || seller.bankDetails?.accountNumber || '',
+        ifsc: bankDetails.ifsc || seller.ifscCode || seller.bankDetails?.ifsc || '',
+        bankName: bankDetails.bankName || seller.bankName || seller.bankDetails?.bankName || '',
+        upi: bankDetails.upi || seller.upi || seller.bankDetails?.upi || ''
+      }
+    });
+    // Add to seller's withdrawals array
+    seller.withdrawals.push({
+      amount,
+      requestedAt: withdraw.requestedAt,
+      status: withdraw.status,
+      processedAt: withdraw.processedAt
+    });
+    seller.availableCommission = Math.max(0, (seller.availableCommission || 0) - amount);
+    await seller.save();
+    res.json({ success: true, message: 'Withdrawal request submitted', withdraw });
+  } catch (error) {
+    console.error('Withdraw request error:', error);
+    res.status(500).json({ success: false, message: 'Error processing withdrawal request' });
   }
 };
 
