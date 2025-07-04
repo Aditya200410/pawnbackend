@@ -107,7 +107,7 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ message: 'OTP already sent to this email. Please verify OTP or wait 10 min.' });
     }
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    await TempUser.create({ username: name, email, password, otp });
+    await TempUser.create({ username: name, email, password, phone, otp });
     console.log(`OTP for ${email} (${phone}): ${otp}`);
     // Send OTP via MSG91
     try {
@@ -137,7 +137,7 @@ router.post('/verify-otp', async (req, res) => {
     if (tempUser.otp !== otp) {
       return res.status(400).json({ message: 'Invalid OTP' });
     }
-    const user = new User({ name: tempUser.username, email: tempUser.email, password: tempUser.password });
+    const user = new User({ name: tempUser.username, email: tempUser.email, password: tempUser.password, phone: tempUser.phone });
     await user.save();
     await TempUser.deleteOne({ _id: tempUser._id });
     return res.json({ message: 'OTP verified, registration complete. Please login.' });

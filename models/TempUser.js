@@ -14,6 +14,10 @@ const tempUserSchema = new mongoose.Schema({
     type: String,
     required: false // Not required for password reset
   },
+  phone: {
+    type: String,
+    required: false // Not required for password reset
+  },
   otp: {
     type: String,
     required: false // Not required for all cases

@@ -5,6 +5,7 @@ const router = express.Router();
 const fs = require('fs');
 const path = require('path');
 const { createOrder, getOrdersByEmail, getOrderById } = require('../controllers/orderController');
+const { authenticateToken, isAdmin } = require('../middleware/auth');
 
 const ordersFilePath = path.join(__dirname, '../data/orders.json');
 
@@ -36,8 +37,8 @@ const writeOrders = (orders) => {
   }
 };
 
-// Admin: Get all orders from MongoDB (not orders.json)
-router.get('/json', async (req, res) => {
+// Admin: Get all orders from MongoDB (not orders.json) - PROTECTED
+router.get('/json', authenticateToken, isAdmin, async (req, res) => {
   try {
     const orders = await Order.find().sort({ createdAt: -1 });
     res.json({ success: true, orders });
@@ -49,8 +50,8 @@ router.get('/json', async (req, res) => {
 // Create order
 router.post("/", createOrder);
 
-// Update order status
-router.put("/:id/status", async (req, res) => {
+// Update order status - PROTECTED
+router.put("/:id/status", authenticateToken, isAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { orderStatus } = req.body;
@@ -97,8 +98,8 @@ router.put("/:id/status", async (req, res) => {
   }
 });
 
-// General order update endpoint
-router.put("/:id", async (req, res) => {
+// General order update endpoint - PROTECTED
+router.put("/:id", authenticateToken, isAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = req.body;

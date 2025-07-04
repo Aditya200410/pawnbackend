@@ -478,7 +478,7 @@ exports.updateUniqueFields = async (req, res) => {
     // Generate unique fields if they don't exist
     if (!seller.sellerToken || !seller.websiteLink) {
       const sellerToken = `seller_${seller._id.toString().slice(-8)}_${Date.now()}`;
-      const websiteLink = `${process.env.FRONTEND_URL || 'https://pawn-shop-git-local-host-api-used-aditya200410s-projects.vercel.app'}/shop?seller=${sellerToken}`;
+      const websiteLink = `${'https://rikocraft.com'}?seller=${sellerToken}`;
       
       const updatedSeller = await Seller.findByIdAndUpdate(
         seller._id,

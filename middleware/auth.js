@@ -16,8 +16,16 @@ const authenticateToken = (req, res, next) => {
   }
 
   try {
-    const verified = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    const jwtSecret = process.env.JWT_SECRET || 'your-secret-key';
+    const verified = jwt.verify(token, jwtSecret);
     console.log('Token verified:', verified);
+    
+    // Check if token has required admin properties
+    if (!verified.isAdmin && !verified.role) {
+      console.log('Token missing admin properties');
+      return res.status(403).json({ message: 'Invalid token type. Admin token required.' });
+    }
+    
     req.user = verified;
     next();
   } catch (error) {

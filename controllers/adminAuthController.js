@@ -41,7 +41,11 @@ const adminLogin = async (req, res) => {
     if (!isMatch) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
-    // Generate JWT
+    
+    // Use a consistent JWT secret - ensure it's the same as in middleware
+    const jwtSecret = process.env.JWT_SECRET || 'your-secret-key';
+    
+    // Generate JWT with admin-specific claims
     const token = jwt.sign(
       {
         id: admin._id,
@@ -49,10 +53,14 @@ const adminLogin = async (req, res) => {
         email: admin.email,
         isAdmin: true,
         role: 'admin',
+        type: 'admin' // Add type to distinguish from other tokens
       },
-      process.env.JWT_SECRET || 'your-secret-key',
+      jwtSecret,
       { expiresIn: '24h' }
     );
+    
+    console.log('Admin login successful:', { id: admin._id, email: admin.email });
+    
     res.json({
       success: true,
       token,
@@ -65,11 +73,47 @@ const adminLogin = async (req, res) => {
       },
     });
   } catch (error) {
+    console.error('Admin login error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// Admin token verification endpoint
+const verifyAdminToken = async (req, res) => {
+  try {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) {
+      return res.status(401).json({ message: 'No token provided' });
+    }
+
+    const jwtSecret = process.env.JWT_SECRET || 'your-secret-key';
+    const decoded = jwt.verify(token, jwtSecret);
+    
+    // Check if it's an admin token
+    if (!decoded.isAdmin || decoded.role !== 'admin') {
+      return res.status(403).json({ message: 'Not an admin token' });
+    }
+
+    res.json({
+      valid: true,
+      user: {
+        id: decoded.id,
+        username: decoded.username,
+        email: decoded.email,
+        isAdmin: decoded.isAdmin,
+        role: decoded.role
+      }
+    });
+  } catch (error) {
+    console.error('Token verification error:', error);
+    res.status(401).json({ message: 'Invalid token' });
   }
 };
 
 module.exports = {
   adminLogin,
   adminSignup,
+  verifyAdminToken
 }; 
