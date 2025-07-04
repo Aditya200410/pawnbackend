@@ -12,10 +12,21 @@ cloudinary.config({
 // Configure storage
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
-  params: {
-    folder: 'hero-carousel',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'mp4'],
-    resource_type: 'auto'
+  params: async (req, file) => {
+    let transformation = [];
+    if (file.fieldname === 'mobileImage') {
+      // Portrait for mobile
+      transformation = [{ width: 720, height: 1280, crop: 'limit' }];
+    } else if (file.fieldname === 'desktopImage') {
+      // Landscape for desktop
+      transformation = [{ width: 1920, height: 1080, crop: 'limit' }];
+    }
+    return {
+      folder: 'hero-carousel',
+      allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'mp4'],
+      resource_type: 'auto',
+      transformation
+    };
   }
 });
 
