@@ -45,7 +45,7 @@ exports.getCommissionHistory = async (req, res) => {
 
     // Get summary statistics
     const summary = await CommissionHistory.aggregate([
-      { $match: { sellerId: require('mongoose').Types.ObjectId(sellerId) } },
+      { $match: { sellerId: sellerId } },
       {
         $group: {
           _id: null,
@@ -160,8 +160,54 @@ exports.getCommissionSummary = async (req, res) => {
   try {
     const sellerId = req.seller.id;
 
+    // Get summary statistics (same as in getCommissionHistory)
     const summary = await CommissionHistory.aggregate([
-      { $match: { sellerId: require('mongoose').Types.ObjectId(sellerId) } },
+      { $match: { sellerId: sellerId } },
+      {
+        $group: {
+          _id: null,
+          totalEarned: {
+            $sum: {
+              $cond: [
+                { $in: ['$type', ['earned', 'bonus']] },
+                '$amount',
+                0
+              ]
+            }
+          },
+          totalDeducted: {
+            $sum: {
+              $cond: [
+                { $in: ['$type', ['deducted', 'withdrawn']] },
+                '$amount',
+                0
+              ]
+            }
+          },
+          pendingAmount: {
+            $sum: {
+              $cond: [
+                { $eq: ['$status', 'pending'] },
+                '$amount',
+                0
+              ]
+            }
+          },
+          confirmedAmount: {
+            $sum: {
+              $cond: [
+                { $eq: ['$status', 'confirmed'] },
+                '$amount',
+                0
+              ]
+            }
+          }
+        }
+      }
+    ]);
+
+    const typeSummary = await CommissionHistory.aggregate([
+      { $match: { sellerId: sellerId } },
       {
         $group: {
           _id: '$type',
@@ -173,7 +219,7 @@ exports.getCommissionSummary = async (req, res) => {
     ]);
 
     const statusSummary = await CommissionHistory.aggregate([
-      { $match: { sellerId: require('mongoose').Types.ObjectId(sellerId) } },
+      { $match: { sellerId: sellerId } },
       {
         $group: {
           _id: '$status',
@@ -187,7 +233,7 @@ exports.getCommissionSummary = async (req, res) => {
     const monthlyEarnings = await CommissionHistory.aggregate([
       { 
         $match: { 
-          sellerId: require('mongoose').Types.ObjectId(sellerId),
+          sellerId: sellerId,
           type: 'earned',
           status: 'confirmed'
         } 
@@ -208,7 +254,13 @@ exports.getCommissionSummary = async (req, res) => {
 
     res.json({
       success: true,
-      summary,
+      summary: summary[0] || {
+        totalEarned: 0,
+        totalDeducted: 0,
+        pendingAmount: 0,
+        confirmedAmount: 0
+      },
+      typeSummary,
       statusSummary,
       monthlyEarnings
     });
@@ -225,12 +277,15 @@ exports.getCommissionSummary = async (req, res) => {
 // Create commission entry (called when order is completed)
 exports.createCommissionEntry = async (orderId, sellerId, orderAmount, commissionRate = 0.05) => {
   try {
-    const order = await Order.findById(orderId).populate('items.productId');
+    console.log('Creating commission entry:', { orderId, sellerId, orderAmount, commissionRate });
+    
+    const order = await Order.findById(orderId);
     if (!order) {
       throw new Error('Order not found');
     }
 
     const commissionAmount = orderAmount * commissionRate;
+    console.log('Commission amount calculated:', commissionAmount);
     
     const commissionEntry = new CommissionHistory({
       sellerId,
@@ -239,27 +294,40 @@ exports.createCommissionEntry = async (orderId, sellerId, orderAmount, commissio
       amount: commissionAmount,
       commissionRate,
       orderAmount,
-      description: `Commission earned from order #${order.orderNumber}`,
+      description: `Commission earned from order #${order.orderNumber || orderId}`,
       status: 'pending',
       orderDetails: {
-        orderNumber: order.orderNumber,
-        customerName: order.customerName,
-        items: order.items.map(item => ({
-          productId: item.productId._id,
-          productName: item.productId.name,
-          quantity: item.quantity,
-          price: item.price
-        }))
+        orderNumber: order.orderNumber || `Order-${orderId}`,
+        customerName: order.customerName || 'Unknown Customer',
+        items: order.items ? order.items.map(item => ({
+          productId: item.productId || null,
+          productName: item.name || 'Unknown Product',
+          quantity: item.quantity || 1,
+          price: item.price || 0
+        })) : []
       }
     });
 
+    console.log('Saving commission entry...');
     await commissionEntry.save();
+    console.log('Commission entry saved successfully');
 
     // Update seller's commission totals
     const seller = await Seller.findById(sellerId);
-    seller.totalCommission += commissionAmount;
-    seller.availableCommission += commissionAmount;
-    await seller.save();
+    if (seller) {
+      console.log('Updating seller commission totals...');
+      console.log('Before update - Total:', seller.totalCommission, 'Available:', seller.availableCommission);
+      
+      seller.totalCommission += commissionAmount;
+      seller.availableCommission += commissionAmount;
+      seller.totalOrders += 1;
+      
+      await seller.save();
+      
+      console.log('After update - Total:', seller.totalCommission, 'Available:', seller.availableCommission);
+    } else {
+      console.error('Seller not found for ID:', sellerId);
+    }
 
     return commissionEntry;
 

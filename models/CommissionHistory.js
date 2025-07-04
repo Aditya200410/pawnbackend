@@ -128,7 +128,7 @@ commissionHistorySchema.methods.refund = function(adminId, reason) {
 // Static method to get seller's total earnings
 commissionHistorySchema.statics.getTotalEarnings = function(sellerId) {
   return this.aggregate([
-    { $match: { sellerId: mongoose.Types.ObjectId(sellerId), status: 'confirmed' } },
+    { $match: { sellerId: sellerId, status: 'confirmed' } },
     {
       $group: {
         _id: null,
@@ -158,7 +158,7 @@ commissionHistorySchema.statics.getTotalEarnings = function(sellerId) {
 // Static method to get seller's commission summary
 commissionHistorySchema.statics.getCommissionSummary = function(sellerId) {
   return this.aggregate([
-    { $match: { sellerId: mongoose.Types.ObjectId(sellerId) } },
+    { $match: { sellerId: sellerId } },
     {
       $group: {
         _id: '$status',

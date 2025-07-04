@@ -256,22 +256,12 @@ exports.getAllWithdrawals = async (req, res) => {
 // Admin: Approve withdrawal
 exports.approveWithdrawal = async (req, res) => {
   try {
-    console.log('Approve withdrawal called');
-    console.log('Request params:', req.params);
-    console.log('Request body:', req.body);
-    console.log('Request user:', req.user);
-    
     const { withdrawalId } = req.params;
-    const { transactionId, adminNotes } = req.body;
-    const adminId = req.user.id;
+    const adminId = req.admin.id;
 
-    console.log('Withdrawal ID:', withdrawalId);
-    console.log('Admin ID:', adminId);
-    console.log('Transaction ID:', transactionId);
+    console.log('Approving withdrawal:', withdrawalId);
 
     const withdrawal = await Withdrawal.findById(withdrawalId);
-    console.log('Found withdrawal:', withdrawal);
-    
     if (!withdrawal) {
       return res.status(404).json({
         success: false,
@@ -286,13 +276,12 @@ exports.approveWithdrawal = async (req, res) => {
       });
     }
 
-    console.log('Approving withdrawal...');
-    // Approve withdrawal
-    await withdrawal.approve(adminId, transactionId);
-    if (adminNotes) {
-      withdrawal.adminNotes = adminNotes;
-      await withdrawal.save();
-    }
+    // Simple approval - just update status to approved
+    withdrawal.status = 'approved';
+    withdrawal.processedBy = adminId;
+    withdrawal.processedDate = new Date();
+    withdrawal.adminNotes = 'Approved - Amount will be credited in 3-5 business days';
+    await withdrawal.save();
 
     // Update commission history
     await CommissionHistory.findOneAndUpdate(
@@ -301,9 +290,10 @@ exports.approveWithdrawal = async (req, res) => {
     );
 
     console.log('Withdrawal approved successfully');
+
     res.json({
       success: true,
-      message: 'Withdrawal approved successfully'
+      message: 'Withdrawal approved successfully. Amount will be credited in 3-5 business days.'
     });
 
   } catch (error) {
@@ -319,8 +309,10 @@ exports.approveWithdrawal = async (req, res) => {
 exports.rejectWithdrawal = async (req, res) => {
   try {
     const { withdrawalId } = req.params;
-    const { rejectionReason, adminNotes } = req.body;
-    const adminId = req.user.id;
+    const { rejectionReason } = req.body;
+    const adminId = req.admin.id;
+
+    console.log('Rejecting withdrawal:', withdrawalId);
 
     const withdrawal = await Withdrawal.findById(withdrawalId);
     if (!withdrawal) {
@@ -337,23 +329,28 @@ exports.rejectWithdrawal = async (req, res) => {
       });
     }
 
-    // Reject withdrawal
-    await withdrawal.reject(adminId, rejectionReason);
-    if (adminNotes) {
-      withdrawal.adminNotes = adminNotes;
-      await withdrawal.save();
-    }
+    // Simple rejection
+    withdrawal.status = 'rejected';
+    withdrawal.processedBy = adminId;
+    withdrawal.rejectionReason = rejectionReason || 'Withdrawal request rejected';
+    withdrawal.processedDate = new Date();
+    await withdrawal.save();
 
     // Refund the amount to seller's available commission
     const seller = await Seller.findById(withdrawal.sellerId);
-    seller.availableCommission += withdrawal.amount;
-    await seller.save();
+    if (seller) {
+      seller.availableCommission += withdrawal.amount;
+      await seller.save();
+      console.log('Amount refunded to seller');
+    }
 
     // Update commission history
     await CommissionHistory.findOneAndUpdate(
       { withdrawalId: withdrawal._id },
       { status: 'cancelled' }
     );
+
+    console.log('Withdrawal rejected successfully');
 
     res.json({
       success: true,
@@ -369,11 +366,13 @@ exports.rejectWithdrawal = async (req, res) => {
   }
 };
 
-// Admin: Complete withdrawal
+// Admin: Complete withdrawal (optional - for when payment is actually made)
 exports.completeWithdrawal = async (req, res) => {
   try {
     const { withdrawalId } = req.params;
-    const { transactionId } = req.body;
+    const adminId = req.admin.id;
+
+    console.log('Completing withdrawal:', withdrawalId);
 
     const withdrawal = await Withdrawal.findById(withdrawalId);
     if (!withdrawal) {
@@ -390,8 +389,10 @@ exports.completeWithdrawal = async (req, res) => {
       });
     }
 
-    // Complete withdrawal
-    await withdrawal.complete(transactionId);
+    // Mark as completed
+    withdrawal.status = 'completed';
+    withdrawal.processedDate = new Date();
+    await withdrawal.save();
 
     // Update commission history
     await CommissionHistory.findOneAndUpdate(
@@ -399,9 +400,11 @@ exports.completeWithdrawal = async (req, res) => {
       { status: 'confirmed' }
     );
 
+    console.log('Withdrawal completed successfully');
+
     res.json({
       success: true,
-      message: 'Withdrawal completed successfully'
+      message: 'Withdrawal marked as completed'
     });
 
   } catch (error) {
