@@ -1,8 +1,8 @@
 const axios = require('axios');
 const crypto = require('crypto');
 
-// NOTE: PhonePe uses merchantId (your business identifier) for all payment requests. clientId is not required for UPI integration.
-// Use process.env.PHONEPE_MERCHANT_ID everywhere.
+// Latest PhonePe API Integration (2024)
+// Based on current PhonePe API documentation
 
 // Helper to generate X-VERIFY header for PhonePe
 function generateXVerify(payload, apiEndpoint, merchantSecret) {
@@ -70,46 +70,63 @@ exports.createPhonePeOrder = async (req, res) => {
       });
     }
 
-    // Try multiple PhonePe API endpoints
+    // Latest PhonePe API endpoints (2024)
     const endpoints = [
       {
-        name: 'Primary',
-        baseUrl: env === 'production' ? 'https://api.phonepe.com/apis/hermes' : 'https://api-preprod.phonepe.com/apis/pg-sandbox',
-        endpoint: '/pg/v1/pay'
+        name: 'Latest Production',
+        baseUrl: 'https://api.phonepe.com/apis/hermes',
+        endpoint: '/pg/v1/pay',
+        env: 'production'
       },
       {
-        name: 'Alternative 1',
-        baseUrl: env === 'production' ? 'https://api.phonepe.com' : 'https://api-preprod.phonepe.com',
-        endpoint: '/pg/v1/pay'
+        name: 'Latest Sandbox',
+        baseUrl: 'https://api-preprod.phonepe.com/apis/pg-sandbox',
+        endpoint: '/pg/v1/pay',
+        env: 'sandbox'
       },
       {
-        name: 'Alternative 2',
-        baseUrl: env === 'production' ? 'https://api.phonepe.com/apis/hermes' : 'https://api-preprod.phonepe.com/apis/pg-sandbox',
-        endpoint: '/pg/v3/charge'
+        name: 'Alternative Production',
+        baseUrl: 'https://api.phonepe.com/apis/hermes',
+        endpoint: '/pg/v2/pay',
+        env: 'production'
       },
       {
-        name: 'Alternative 3',
-        baseUrl: env === 'production' ? 'https://api.phonepe.com' : 'https://api-preprod.phonepe.com',
-        endpoint: '/pg/v3/charge'
+        name: 'Alternative Sandbox',
+        baseUrl: 'https://api-preprod.phonepe.com/apis/pg-sandbox',
+        endpoint: '/pg/v2/pay',
+        env: 'sandbox'
       }
     ];
 
     const merchantTransactionId = `TXN_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
-    // Create order data for PhonePe
+    // Latest PhonePe payload structure (2024)
     const payload = {
-      merchantId,
-      merchantTransactionId,
+      merchantId: merchantId,
+      merchantTransactionId: merchantTransactionId,
       merchantUserId: email || phone || `user_${Date.now()}`,
       amount: Math.round(amount * 100), // Convert to paise
       redirectUrl: `${frontendUrl.replace(/\/+$/, '')}/payment/success?transactionId=${merchantTransactionId}`,
       redirectMode: 'POST',
       callbackUrl: `${(process.env.BACKEND_URL || 'https://pawnbackend-xmqa.onrender.com').replace(/\/+$/, '')}/api/payment/phonepe/callback`,
       paymentInstrument: {
-        type: 'PAY_PAGE',
+        type: 'PAY_PAGE'
       },
       merchantOrderId: merchantTransactionId,
       message: `Payment for order ${merchantTransactionId}`,
+      // Additional fields for better tracking
+      mobileNumber: phone,
+      email: email,
+      shortName: customerName,
+      name: customerName,
+      // UPI specific fields
+      upiIntent: true,
+      enablePayMode: {
+        upi: true,
+        card: true,
+        netbanking: true,
+        wallet: true
+      }
     };
 
     const base64Payload = Buffer.from(JSON.stringify(payload)).toString('base64');
@@ -124,6 +141,9 @@ exports.createPhonePeOrder = async (req, res) => {
     let lastError;
     
     for (const endpoint of endpoints) {
+      // Only try endpoints for the current environment
+      if (endpoint.env !== env) continue;
+      
       try {
         console.log(`Trying ${endpoint.name} endpoint: ${endpoint.baseUrl}${endpoint.endpoint}`);
         
@@ -163,9 +183,23 @@ exports.createPhonePeOrder = async (req, res) => {
 
     console.log('PhonePe API Response:', JSON.stringify(response.data, null, 2));
 
-    if (response.data && response.data.success && response.data.data && response.data.data.instrumentResponse && response.data.data.instrumentResponse.redirectInfo && response.data.data.instrumentResponse.redirectInfo.url) {
-      const redirectUrl = response.data.data.instrumentResponse.redirectInfo.url;
-      
+    // Handle different response structures
+    let redirectUrl = null;
+    
+    if (response.data && response.data.success) {
+      // New response structure (2024)
+      if (response.data.data && response.data.data.instrumentResponse && response.data.data.instrumentResponse.redirectInfo) {
+        redirectUrl = response.data.data.instrumentResponse.redirectInfo.url;
+      } else if (response.data.data && response.data.data.paymentUrl) {
+        // Alternative response structure
+        redirectUrl = response.data.data.paymentUrl;
+      } else if (response.data.data && response.data.data.redirectUrl) {
+        // Another alternative structure
+        redirectUrl = response.data.data.redirectUrl;
+      }
+    }
+    
+    if (redirectUrl) {
       // Store order data temporarily (you might want to save this to database)
       const orderData = {
         merchantTransactionId,
@@ -208,6 +242,8 @@ exports.createPhonePeOrder = async (req, res) => {
     let errorMessage = 'Failed to create PhonePe order';
     if (error.response?.data?.message) {
       errorMessage = error.response.data.message;
+    } else if (error.response?.data?.error?.message) {
+      errorMessage = error.response.data.error.message;
     } else if (error.code === 'ECONNABORTED') {
       errorMessage = 'Payment gateway timeout. Please try again.';
     } else if (error.code === 'ENOTFOUND') {
@@ -234,7 +270,9 @@ exports.phonePeCallback = async (req, res) => {
       amount, 
       state, 
       responseCode, 
-      paymentInstrument 
+      paymentInstrument,
+      code,
+      message
     } = req.body;
 
     // Verify the callback
@@ -255,10 +293,10 @@ exports.phonePeCallback = async (req, res) => {
 
     console.log('PhonePe Callback - Transaction ID:', merchantTransactionId);
     console.log('PhonePe Callback - State:', state);
-    console.log('PhonePe Callback - Response Code:', responseCode);
+    console.log('PhonePe Callback - Response Code:', responseCode || code);
 
-    // Handle different payment states
-    if (state === 'COMPLETED' && responseCode === 'SUCCESS') {
+    // Handle different payment states (updated for 2024)
+    if ((state === 'COMPLETED' || state === 'SUCCESS') && (responseCode === 'SUCCESS' || code === 'SUCCESS')) {
       // Payment successful - create order
       console.log('PhonePe Callback - Payment successful, creating order');
       
@@ -269,7 +307,7 @@ exports.phonePeCallback = async (req, res) => {
       // 4. Update inventory
       
       return res.json({ success: true, message: 'Payment processed successfully' });
-    } else if (state === 'FAILED') {
+    } else if (state === 'FAILED' || state === 'ERROR') {
       console.log('PhonePe Callback - Payment failed');
       return res.json({ success: false, message: 'Payment failed' });
     } else {
@@ -293,27 +331,58 @@ exports.getPhonePeStatus = async (req, res) => {
     console.log('PhonePe Status Check - Transaction ID:', transactionId);
     console.log('PhonePe Status Check - Environment:', env);
 
-    const apiEndpoint = `/pg/v1/status/${merchantId}/${transactionId}`;
-    const phonepeBaseUrl = env === 'production'
-      ? 'https://api.phonepe.com'
-      : 'https://api-preprod.phonepe.com';
-
-    const xVerify = generateStatusXVerify(apiEndpoint, merchantSecret);
-
-    console.log('PhonePe Status Check - URL:', phonepeBaseUrl + apiEndpoint);
-    console.log('PhonePe Status Check - X-VERIFY:', xVerify);
-
-    const response = await axios.get(
-      phonepeBaseUrl + apiEndpoint,
+    // Latest status check endpoints (2024)
+    const statusEndpoints = [
       {
-        headers: {
-          'Content-Type': 'application/json',
-          'X-VERIFY': xVerify,
-          'X-MERCHANT-ID': merchantId,
-        },
-        timeout: 30000,
+        name: 'Latest v1',
+        baseUrl: env === 'production' ? 'https://api.phonepe.com' : 'https://api-preprod.phonepe.com',
+        endpoint: `/pg/v1/status/${merchantId}/${transactionId}`
+      },
+      {
+        name: 'Latest v2',
+        baseUrl: env === 'production' ? 'https://api.phonepe.com' : 'https://api-preprod.phonepe.com',
+        endpoint: `/pg/v2/status/${merchantId}/${transactionId}`
       }
-    );
+    ];
+
+    let response;
+    let lastError;
+
+    for (const statusEndpoint of statusEndpoints) {
+      try {
+        console.log(`Trying ${statusEndpoint.name} status endpoint: ${statusEndpoint.baseUrl}${statusEndpoint.endpoint}`);
+        
+        const xVerify = generateStatusXVerify(statusEndpoint.endpoint, merchantSecret);
+        console.log(`PhonePe ${statusEndpoint.name} Status - X-VERIFY:`, xVerify);
+
+        response = await axios.get(
+          statusEndpoint.baseUrl + statusEndpoint.endpoint,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'X-VERIFY': xVerify,
+              'X-MERCHANT-ID': merchantId,
+            },
+            timeout: 15000,
+          }
+        );
+
+        console.log(`✅ ${statusEndpoint.name} status endpoint successful!`);
+        break;
+      } catch (error) {
+        lastError = error;
+        console.log(`❌ ${statusEndpoint.name} status endpoint failed: ${error.response?.status || 'Network Error'}`);
+        if (error.response?.data) {
+          console.log(`   Error details: ${JSON.stringify(error.response.data)}`);
+        }
+        continue;
+      }
+    }
+
+    if (!response) {
+      console.error('All PhonePe status endpoints failed');
+      throw lastError;
+    }
 
     console.log('PhonePe Status Response:', JSON.stringify(response.data, null, 2));
     res.json(response.data);
@@ -324,8 +393,8 @@ exports.getPhonePeStatus = async (req, res) => {
     let errorMessage = 'Failed to verify PhonePe payment';
     if (error.response?.data?.message) {
       errorMessage = error.response.data.message;
-    } else if (error.code === 'ECONNABORTED') {
-      errorMessage = 'Payment verification timeout. Please try again.';
+    } else if (error.response?.data?.error?.message) {
+      errorMessage = error.response.data.error.message;
     }
     
     res.status(500).json({ 
