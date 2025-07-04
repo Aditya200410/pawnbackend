@@ -61,14 +61,22 @@ const createOrder = async (req, res) => {
     let commission = 0;
     let seller = null;
     
+    console.log('Order creation - sellerToken received:', sellerToken);
+    
     if (sellerToken) {
       seller = await Seller.findOne({ sellerToken });
+      console.log('Seller found:', seller ? seller.businessName : 'Not found');
+      
       if (seller) {
         commission = totalAmount * 0.30; // 30% commission
         // Add commission to seller's account
         await seller.addCommission(totalAmount);
         console.log(`Commission added for seller ${seller.businessName}: ₹${commission}`);
+      } else {
+        console.log('No seller found with token:', sellerToken);
       }
+    } else {
+      console.log('No sellerToken provided in order');
     }
 
     // Map paymentStatus to valid enum values
