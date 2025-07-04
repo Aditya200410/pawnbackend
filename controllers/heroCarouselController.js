@@ -126,6 +126,18 @@ const createCarouselItemWithFiles = async (req, res) => {
       return res.status(400).json({ error: `Missing required fields: ${missingFields.join(', ')}` });
     }
 
+    // Require the correct image type based on showOn
+    if (itemData.showOn === 'desktop' && (!req.files || !req.files.desktopImage)) {
+      return res.status(400).json({ 
+        error: 'Desktop image is required. Make sure you are uploading as multipart/form-data and the file field is named "desktopImage".' 
+      });
+    }
+    if (itemData.showOn === 'mobile' && (!req.files || !req.files.mobileImage)) {
+      return res.status(400).json({ 
+        error: 'Mobile image is required. Make sure you are uploading as multipart/form-data and the file field is named "mobileImage".' 
+      });
+    }
+
     // Process uploaded files
     let desktopImageUrl = null;
     let mobileImageUrl = null;
