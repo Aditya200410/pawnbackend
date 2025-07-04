@@ -24,11 +24,6 @@ const heroCarouselSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
-  showOn: {
-    type: String,
-    enum: ['desktop', 'mobile'],
-    required: true
-  },
   buttonText: {
     type: String,
     trim: true,
