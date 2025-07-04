@@ -107,6 +107,25 @@ exports.login = async (req, res) => {
       process.env.JWT_SECRET_SELLER || 'your-secret-key',
       { expiresIn: '24h' }
     );
+
+    // Get withdrawal data from Withdrawal model
+    const Withdrawal = require('../models/Withdrawal');
+    const withdrawals = await Withdrawal.find({ sellerId: seller._id })
+      .sort({ createdAt: -1 })
+      .select('amount status requestDate processedDate adminNotes rejectionReason bankDetails');
+
+    // Map withdrawal data to match expected format
+    const mappedWithdrawals = withdrawals.map(withdrawal => ({
+      _id: withdrawal._id,
+      amount: withdrawal.amount,
+      status: withdrawal.status,
+      requestedAt: withdrawal.requestDate, // Map requestDate to requestedAt
+      processedDate: withdrawal.processedDate,
+      adminNotes: withdrawal.adminNotes,
+      rejectionReason: withdrawal.rejectionReason,
+      bankDetails: withdrawal.bankDetails
+    }));
+
     res.json({
       success: true,
       message: 'Login successful',
@@ -131,7 +150,7 @@ exports.login = async (req, res) => {
         totalCommission: seller.totalCommission || 0,
         availableCommission: seller.availableCommission || 0,
         bankDetails: seller.bankDetails || {},
-        withdrawals: seller.withdrawals || [],
+        withdrawals: mappedWithdrawals,
         createdAt: seller.createdAt,
         verified: seller.verified,
         blocked: seller.blocked,
@@ -157,9 +176,34 @@ exports.getProfile = async (req, res) => {
         message: 'Seller not found'
       });
     }
+
+    // Get withdrawal data from Withdrawal model
+    const Withdrawal = require('../models/Withdrawal');
+    const withdrawals = await Withdrawal.find({ sellerId: req.seller._id })
+      .sort({ createdAt: -1 })
+      .select('amount status requestDate processedDate adminNotes rejectionReason bankDetails');
+
+    // Map withdrawal data to match expected format
+    const mappedWithdrawals = withdrawals.map(withdrawal => ({
+      _id: withdrawal._id,
+      amount: withdrawal.amount,
+      status: withdrawal.status,
+      requestedAt: withdrawal.requestDate, // Map requestDate to requestedAt
+      processedDate: withdrawal.processedDate,
+      adminNotes: withdrawal.adminNotes,
+      rejectionReason: withdrawal.rejectionReason,
+      bankDetails: withdrawal.bankDetails
+    }));
+
+    // Combine seller data with withdrawal data
+    const sellerWithWithdrawals = {
+      ...seller.toObject(),
+      withdrawals: mappedWithdrawals
+    };
+
     res.json({
       success: true,
-      seller
+      seller: sellerWithWithdrawals
     });
   } catch (error) {
     console.error('Get seller profile error:', error);
@@ -211,9 +255,34 @@ exports.updateProfile = async (req, res) => {
         message: 'Seller not found'
       });
     }
+
+    // Get withdrawal data from Withdrawal model
+    const Withdrawal = require('../models/Withdrawal');
+    const withdrawals = await Withdrawal.find({ sellerId: req.seller._id })
+      .sort({ createdAt: -1 })
+      .select('amount status requestDate processedDate adminNotes rejectionReason bankDetails');
+
+    // Map withdrawal data to match expected format
+    const mappedWithdrawals = withdrawals.map(withdrawal => ({
+      _id: withdrawal._id,
+      amount: withdrawal.amount,
+      status: withdrawal.status,
+      requestedAt: withdrawal.requestDate, // Map requestDate to requestedAt
+      processedDate: withdrawal.processedDate,
+      adminNotes: withdrawal.adminNotes,
+      rejectionReason: withdrawal.rejectionReason,
+      bankDetails: withdrawal.bankDetails
+    }));
+
+    // Combine seller data with withdrawal data
+    const sellerWithWithdrawals = {
+      ...seller.toObject(),
+      withdrawals: mappedWithdrawals
+    };
+
     res.json({
       success: true,
-      seller
+      seller: sellerWithWithdrawals
     });
   } catch (error) {
     console.error('Update seller profile error:', error);
@@ -351,11 +420,23 @@ exports.getAllSellers = async (req, res) => {
       sellers.map(async (seller) => {
         const withdrawals = await Withdrawal.find({ sellerId: seller._id })
           .sort({ createdAt: -1 })
-          .select('amount status requestedAt processedDate adminNotes rejectionReason bankDetails');
+          .select('amount status requestDate processedDate adminNotes rejectionReason bankDetails');
+        
+        // Map withdrawal data to match expected format
+        const mappedWithdrawals = withdrawals.map(withdrawal => ({
+          _id: withdrawal._id,
+          amount: withdrawal.amount,
+          status: withdrawal.status,
+          requestedAt: withdrawal.requestDate, // Map requestDate to requestedAt
+          processedDate: withdrawal.processedDate,
+          adminNotes: withdrawal.adminNotes,
+          rejectionReason: withdrawal.rejectionReason,
+          bankDetails: withdrawal.bankDetails
+        }));
         
         return {
           ...seller.toObject(),
-          withdrawals: withdrawals
+          withdrawals: mappedWithdrawals
         };
       })
     );
