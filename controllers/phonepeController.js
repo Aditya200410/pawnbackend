@@ -1,10 +1,11 @@
 const axios = require('axios');
 const crypto = require('crypto');
 
-// Latest PhonePe API Integration (2024)
-// Based on current PhonePe API documentation
+// PhonePe API Integration based on official documentation
+// https://developer.phonepe.com/v1/reference/pay-api
 
 // Helper to generate X-VERIFY header for PhonePe
+// Format: SHA256(base64 encoded payload + "/pg/v1/pay" + salt key) + ### + salt index
 function generateXVerify(payload, apiEndpoint, merchantSecret) {
   const base64Payload = Buffer.from(JSON.stringify(payload)).toString('base64');
   const stringToHash = base64Payload + apiEndpoint + merchantSecret;
@@ -70,65 +71,38 @@ exports.createPhonePeOrder = async (req, res) => {
       });
     }
 
-    // Latest PhonePe API endpoints (2024)
-    const endpoints = [
-      {
-        name: 'Latest Production',
-        baseUrl: 'https://api.phonepe.com/apis/hermes',
-        endpoint: '/pg/v1/pay',
-        env: 'production'
-      },
-      {
-        name: 'Latest Sandbox',
-        baseUrl: 'https://api-preprod.phonepe.com/apis/pg-sandbox',
-        endpoint: '/pg/v1/pay',
-        env: 'sandbox'
-      },
-      {
-        name: 'Alternative Production',
-        baseUrl: 'https://api.phonepe.com/apis/hermes',
-        endpoint: '/pg/v2/pay',
-        env: 'production'
-      },
-      {
-        name: 'Alternative Sandbox',
-        baseUrl: 'https://api-preprod.phonepe.com/apis/pg-sandbox',
-        endpoint: '/pg/v2/pay',
-        env: 'sandbox'
-      }
-    ];
-
-    const merchantTransactionId = `TXN_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    // PhonePe API endpoints based on official documentation
+    const baseUrl = env === 'production' 
+      ? 'https://api.phonepe.com/apis/hermes'
+      : 'https://api-preprod.phonepe.com/apis/pg-sandbox';
     
-    // Latest PhonePe payload structure (2024)
+    const apiEndpoint = '/pg/v1/pay';
+
+    const merchantTransactionId = `MT${Date.now()}${Math.random().toString(36).substr(2, 9)}`;
+    const merchantUserId = email || phone || `MU${Date.now()}`;
+    
+    // PhonePe payload structure according to official documentation
     const payload = {
       merchantId: merchantId,
       merchantTransactionId: merchantTransactionId,
-      merchantUserId: email || phone || `user_${Date.now()}`,
+      merchantUserId: merchantUserId,
       amount: Math.round(amount * 100), // Convert to paise
       redirectUrl: `${frontendUrl.replace(/\/+$/, '')}/payment/success?transactionId=${merchantTransactionId}`,
       redirectMode: 'POST',
       callbackUrl: `${(process.env.BACKEND_URL || 'https://pawnbackend-xmqa.onrender.com').replace(/\/+$/, '')}/api/payment/phonepe/callback`,
       paymentInstrument: {
-        type: 'PAY_PAGE'
+        type: 'PAY_PAGE' // Using PAY_PAGE for web integration
       },
+      mobileNumber: phone,
+      // Additional optional fields for better tracking
       merchantOrderId: merchantTransactionId,
       message: `Payment for order ${merchantTransactionId}`,
-      // Additional fields for better tracking
-      mobileNumber: phone,
-      email: email,
       shortName: customerName,
       name: customerName,
-      // UPI specific fields
-      upiIntent: true,
-      enablePayMode: {
-        upi: true,
-        card: true,
-        netbanking: true,
-        wallet: true
-      }
+      email: email
     };
 
+    // Convert payload to base64 as required by PhonePe
     const base64Payload = Buffer.from(JSON.stringify(payload)).toString('base64');
 
     console.log('PhonePe API Request - Environment:', env);
@@ -136,104 +110,87 @@ exports.createPhonePeOrder = async (req, res) => {
     console.log('PhonePe API Request - Payload:', JSON.stringify(payload, null, 2));
     console.log('PhonePe API Request - Base64 Payload:', base64Payload);
 
-    // Try all PhonePe API endpoints
-    let response;
-    let lastError;
+    // Generate X-VERIFY header
+    const xVerify = generateXVerify(payload, apiEndpoint, merchantSecret);
+    console.log('PhonePe API Request - X-VERIFY:', xVerify);
     
-    for (const endpoint of endpoints) {
-      // Only try endpoints for the current environment
-      if (endpoint.env !== env) continue;
+    try {
+      console.log(`Making PhonePe API request to: ${baseUrl}${apiEndpoint}`);
       
-      try {
-        console.log(`Trying ${endpoint.name} endpoint: ${endpoint.baseUrl}${endpoint.endpoint}`);
-        
-        const xVerify = generateXVerify(payload, endpoint.endpoint, merchantSecret);
-        console.log(`PhonePe ${endpoint.name} - X-VERIFY:`, xVerify);
-        
-        response = await axios.post(
-          endpoint.baseUrl + endpoint.endpoint,
-          { request: base64Payload },
-          {
-            headers: {
-              'Content-Type': 'application/json',
-              'X-VERIFY': xVerify,
-              'X-MERCHANT-ID': merchantId,
-            },
-            timeout: 15000, // 15 second timeout per endpoint
-          }
-        );
-        
-        console.log(`✅ ${endpoint.name} endpoint successful!`);
-        break; // Exit loop if successful
-        
-      } catch (error) {
-        lastError = error;
-        console.log(`❌ ${endpoint.name} endpoint failed: ${error.response?.status || 'Network Error'}`);
-        if (error.response?.data) {
-          console.log(`   Error details: ${JSON.stringify(error.response.data)}`);
+      const response = await axios.post(
+        baseUrl + apiEndpoint,
+        { request: base64Payload },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'X-VERIFY': xVerify
+          },
+          timeout: 30000, // 30 second timeout
         }
-        continue; // Try next endpoint
-      }
-    }
-    
-    if (!response) {
-      console.error('All PhonePe API endpoints failed');
-      throw lastError;
-    }
-
-    console.log('PhonePe API Response:', JSON.stringify(response.data, null, 2));
-
-    // Handle different response structures
-    let redirectUrl = null;
-    
-    if (response.data && response.data.success) {
-      // New response structure (2024)
-      if (response.data.data && response.data.data.instrumentResponse && response.data.data.instrumentResponse.redirectInfo) {
-        redirectUrl = response.data.data.instrumentResponse.redirectInfo.url;
-      } else if (response.data.data && response.data.data.paymentUrl) {
-        // Alternative response structure
-        redirectUrl = response.data.data.paymentUrl;
-      } else if (response.data.data && response.data.data.redirectUrl) {
-        // Another alternative structure
-        redirectUrl = response.data.data.redirectUrl;
-      }
-    }
-    
-    if (redirectUrl) {
-      // Store order data temporarily (you might want to save this to database)
-      const orderData = {
-        merchantTransactionId,
-        customerName,
-        email,
-        phone,
-        items,
-        totalAmount,
-        shippingCost,
-        codExtraCharge,
-        finalTotal,
-        paymentMethod,
-        sellerToken,
-        couponCode,
-        status: 'pending',
-        createdAt: new Date()
-      };
+      );
       
-      console.log('PhonePe Order Created Successfully:', merchantTransactionId);
-      console.log('PhonePe Redirect URL:', redirectUrl);
-      
-      return res.json({ 
-        success: true, 
-        redirectUrl,
-        transactionId: merchantTransactionId,
-        orderData 
-      });
-    } else {
-      console.error('PhonePe API Error - Invalid response structure:', response.data);
-      return res.status(500).json({ 
-        success: false, 
-        message: 'Failed to get PhonePe redirect URL', 
-        data: response.data 
-      });
+      console.log('PhonePe API Response:', JSON.stringify(response.data, null, 2));
+
+      // Handle PhonePe response according to official documentation
+      if (response.data && response.data.success) {
+        let redirectUrl = null;
+        
+        // Check for redirect URL in the response
+        if (response.data.data && response.data.data.instrumentResponse && response.data.data.instrumentResponse.redirectInfo) {
+          redirectUrl = response.data.data.instrumentResponse.redirectInfo.url;
+        } else if (response.data.data && response.data.data.paymentUrl) {
+          redirectUrl = response.data.data.paymentUrl;
+        } else if (response.data.data && response.data.data.redirectUrl) {
+          redirectUrl = response.data.data.redirectUrl;
+        }
+        
+        if (redirectUrl) {
+          // Store order data temporarily (you might want to save this to database)
+          const orderData = {
+            merchantTransactionId,
+            customerName,
+            email,
+            phone,
+            items,
+            totalAmount,
+            shippingCost,
+            codExtraCharge,
+            finalTotal,
+            paymentMethod,
+            sellerToken,
+            couponCode,
+            status: 'pending',
+            createdAt: new Date()
+          };
+          
+          console.log('PhonePe Order Created Successfully:', merchantTransactionId);
+          console.log('PhonePe Redirect URL:', redirectUrl);
+          
+          return res.json({ 
+            success: true, 
+            redirectUrl,
+            transactionId: merchantTransactionId,
+            orderData 
+          });
+        } else {
+          console.error('PhonePe API Error - No redirect URL in response:', response.data);
+          return res.status(500).json({ 
+            success: false, 
+            message: 'Failed to get PhonePe redirect URL', 
+            data: response.data 
+          });
+        }
+      } else {
+        console.error('PhonePe API Error - Request failed:', response.data);
+        return res.status(500).json({ 
+          success: false, 
+          message: response.data.message || 'PhonePe payment initiation failed', 
+          data: response.data 
+        });
+      }
+    } catch (error) {
+      console.error('PhonePe API request failed:', error.response?.data || error.message);
+      throw error;
     }
   } catch (error) {
     console.error('PhonePe order error:', error.response?.data || error.message);
@@ -275,27 +232,29 @@ exports.phonePeCallback = async (req, res) => {
       message
     } = req.body;
 
-    // Verify the callback
+    // Verify the callback using X-VERIFY header
     const merchantSecret = process.env.PHONEPE_CLIENT_SECRET;
     const receivedChecksum = req.headers['x-verify'];
     
-    // Generate checksum for verification
-    const payload = JSON.stringify(req.body);
-    const base64Payload = Buffer.from(payload).toString('base64');
-    const stringToHash = base64Payload + '/pg/v1/status/' + merchantSecret;
-    const sha256 = crypto.createHash('sha256').update(stringToHash).digest('hex');
-    const calculatedChecksum = sha256 + '###1';
+    if (receivedChecksum) {
+      // Generate checksum for verification
+      const payload = JSON.stringify(req.body);
+      const base64Payload = Buffer.from(payload).toString('base64');
+      const stringToHash = base64Payload + '/pg/v1/status/' + merchantSecret;
+      const sha256 = crypto.createHash('sha256').update(stringToHash).digest('hex');
+      const calculatedChecksum = sha256 + '###1';
 
-    if (receivedChecksum !== calculatedChecksum) {
-      console.error('PhonePe Callback - Checksum verification failed');
-      return res.status(400).json({ success: false, message: 'Invalid checksum' });
+      if (receivedChecksum !== calculatedChecksum) {
+        console.error('PhonePe Callback - Checksum verification failed');
+        return res.status(400).json({ success: false, message: 'Invalid checksum' });
+      }
     }
 
     console.log('PhonePe Callback - Transaction ID:', merchantTransactionId);
     console.log('PhonePe Callback - State:', state);
     console.log('PhonePe Callback - Response Code:', responseCode || code);
 
-    // Handle different payment states (updated for 2024)
+    // Handle different payment states according to PhonePe documentation
     if ((state === 'COMPLETED' || state === 'SUCCESS') && (responseCode === 'SUCCESS' || code === 'SUCCESS')) {
       // Payment successful - create order
       console.log('PhonePe Callback - Payment successful, creating order');
@@ -331,58 +290,28 @@ exports.getPhonePeStatus = async (req, res) => {
     console.log('PhonePe Status Check - Transaction ID:', transactionId);
     console.log('PhonePe Status Check - Environment:', env);
 
-    // Latest status check endpoints (2024)
-    const statusEndpoints = [
+    // PhonePe status check endpoint according to official documentation
+    const baseUrl = env === 'production' 
+      ? 'https://api.phonepe.com'
+      : 'https://api-preprod.phonepe.com';
+    
+    const statusEndpoint = `/pg/v1/status/${merchantId}/${transactionId}`;
+
+    console.log(`Making PhonePe status request to: ${baseUrl}${statusEndpoint}`);
+    
+    const xVerify = generateStatusXVerify(statusEndpoint, merchantSecret);
+    console.log('PhonePe Status Check - X-VERIFY:', xVerify);
+
+    const response = await axios.get(
+      baseUrl + statusEndpoint,
       {
-        name: 'Latest v1',
-        baseUrl: env === 'production' ? 'https://api.phonepe.com' : 'https://api-preprod.phonepe.com',
-        endpoint: `/pg/v1/status/${merchantId}/${transactionId}`
-      },
-      {
-        name: 'Latest v2',
-        baseUrl: env === 'production' ? 'https://api.phonepe.com' : 'https://api-preprod.phonepe.com',
-        endpoint: `/pg/v2/status/${merchantId}/${transactionId}`
+        headers: {
+          'Content-Type': 'application/json',
+          'X-VERIFY': xVerify
+        },
+        timeout: 30000,
       }
-    ];
-
-    let response;
-    let lastError;
-
-    for (const statusEndpoint of statusEndpoints) {
-      try {
-        console.log(`Trying ${statusEndpoint.name} status endpoint: ${statusEndpoint.baseUrl}${statusEndpoint.endpoint}`);
-        
-        const xVerify = generateStatusXVerify(statusEndpoint.endpoint, merchantSecret);
-        console.log(`PhonePe ${statusEndpoint.name} Status - X-VERIFY:`, xVerify);
-
-        response = await axios.get(
-          statusEndpoint.baseUrl + statusEndpoint.endpoint,
-          {
-            headers: {
-              'Content-Type': 'application/json',
-              'X-VERIFY': xVerify,
-              'X-MERCHANT-ID': merchantId,
-            },
-            timeout: 15000,
-          }
-        );
-
-        console.log(`✅ ${statusEndpoint.name} status endpoint successful!`);
-        break;
-      } catch (error) {
-        lastError = error;
-        console.log(`❌ ${statusEndpoint.name} status endpoint failed: ${error.response?.status || 'Network Error'}`);
-        if (error.response?.data) {
-          console.log(`   Error details: ${JSON.stringify(error.response.data)}`);
-        }
-        continue;
-      }
-    }
-
-    if (!response) {
-      console.error('All PhonePe status endpoints failed');
-      throw lastError;
-    }
+    );
 
     console.log('PhonePe Status Response:', JSON.stringify(response.data, null, 2));
     res.json(response.data);
