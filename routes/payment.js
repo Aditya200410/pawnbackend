@@ -1,18 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const {
-  createPhonePeOrder,
-  phonePeCallback,
-  getPhonePeStatus
-} = require('../controllers/phonepeController');
+const phonepeController = require('../controllers/phonepeController');
 
-// Create a new PhonePe payment order
-router.post('/phonepe', createPhonePeOrder);
+// Debugging
+console.log('Controller keys:', Object.keys(phonepeController)); // should include 'createPhonePeOrder'
 
-// Handle callback from PhonePe after payment
-router.post('/phonepe/callback', phonePeCallback);
-
-// Check the status of a PhonePe transaction
-router.get('/phonepe/status/:transactionId', getPhonePeStatus);
+router.post('/phonepe', phonepeController.createPhonePeOrder);
+router.post('/phonepe/callback', phonepeController.phonePeCallback);
+router.get('/phonepe/status/:transactionId', phonepeController.getPhonePeStatus);
 
 module.exports = router;
