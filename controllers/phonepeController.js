@@ -22,33 +22,75 @@ function generateStatusXVerify(apiEndpoint, merchantSecret) {
 // POST /api/payment/phonepe
 exports.createPhonePeOrder = async (req, res) => {
   try {
-    const { amount, customerName, email, phone } = req.body;
+    const { 
+      amount, 
+      customerName, 
+      email, 
+      phone, 
+      items, 
+      totalAmount, 
+      shippingCost, 
+      codExtraCharge, 
+      finalTotal, 
+      paymentMethod, 
+      sellerToken,
+      couponCode 
+    } = req.body;
+    
     const merchantId = process.env.PHONEPE_MERCHANT_ID;
     const merchantSecret = process.env.PHONEPE_CLIENT_SECRET;
     const env = process.env.PHONEPE_ENV || 'sandbox';
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const frontendUrl = process.env.FRONTEND_URL || 'https://pawn-shop-git-local-host-api-used-aditya200410s-projects.vercel.app';
+
+    console.log('PhonePe Order Creation - Environment:', env);
+    console.log('PhonePe Order Creation - Frontend URL:', frontendUrl);
+    console.log('PhonePe Order Creation - Amount:', amount);
+
+    // Validate required fields
+    if (!merchantId || !merchantSecret) {
+      console.error('PhonePe credentials not configured');
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Payment gateway not configured properly' 
+      });
+    }
+
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid amount provided' 
+      });
+    }
 
     const apiEndpoint = '/pg/v1/pay';
     const phonepeBaseUrl = env === 'production'
       ? 'https://api.phonepe.com/apis/hermes'
       : 'https://api-preprod.phonepe.com/apis/pg-sandbox';
 
-    const merchantTransactionId = `txn_${Date.now()}`;
+    const merchantTransactionId = `TXN_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Create order data for PhonePe
     const payload = {
-      merchantId, // Use merchantId from env
+      merchantId,
       merchantTransactionId,
-      merchantUserId: email || phone,
-      amount: Math.round(amount * 100), // paise
-      redirectUrl: `${frontendUrl}/payment/success`,
+      merchantUserId: email || phone || `user_${Date.now()}`,
+      amount: Math.round(amount * 100), // Convert to paise
+      redirectUrl: `${frontendUrl}/payment/success?transactionId=${merchantTransactionId}`,
       redirectMode: 'POST',
-      callbackUrl: `${frontendUrl}/payment/success`,
+      callbackUrl: `${process.env.BACKEND_URL || 'https://pawnbackend-xmqa.onrender.com'}/api/payment/phonepe/callback`,
       paymentInstrument: {
         type: 'PAY_PAGE',
       },
+      merchantOrderId: merchantTransactionId,
+      message: `Payment for order ${merchantTransactionId}`,
     };
 
     const xVerify = generateXVerify(payload, apiEndpoint, merchantSecret);
     const base64Payload = Buffer.from(JSON.stringify(payload)).toString('base64');
+
+    console.log('PhonePe API Request - URL:', phonepeBaseUrl + apiEndpoint);
+    console.log('PhonePe API Request - Payload:', JSON.stringify(payload, null, 2));
+    console.log('PhonePe API Request - X-VERIFY:', xVerify);
 
     const response = await axios.post(
       phonepeBaseUrl + apiEndpoint,
@@ -57,20 +99,130 @@ exports.createPhonePeOrder = async (req, res) => {
         headers: {
           'Content-Type': 'application/json',
           'X-VERIFY': xVerify,
-          'X-MERCHANT-ID': merchantId, // Use merchantId in header
+          'X-MERCHANT-ID': merchantId,
         },
+        timeout: 30000, // 30 second timeout
       }
     );
 
+    console.log('PhonePe API Response:', JSON.stringify(response.data, null, 2));
+
     if (response.data && response.data.success && response.data.data && response.data.data.instrumentResponse && response.data.data.instrumentResponse.redirectInfo && response.data.data.instrumentResponse.redirectInfo.url) {
       const redirectUrl = response.data.data.instrumentResponse.redirectInfo.url;
-      return res.json({ success: true, redirectUrl });
+      
+      // Store order data temporarily (you might want to save this to database)
+      const orderData = {
+        merchantTransactionId,
+        customerName,
+        email,
+        phone,
+        items,
+        totalAmount,
+        shippingCost,
+        codExtraCharge,
+        finalTotal,
+        paymentMethod,
+        sellerToken,
+        couponCode,
+        status: 'pending',
+        createdAt: new Date()
+      };
+      
+      console.log('PhonePe Order Created Successfully:', merchantTransactionId);
+      console.log('PhonePe Redirect URL:', redirectUrl);
+      
+      return res.json({ 
+        success: true, 
+        redirectUrl,
+        transactionId: merchantTransactionId,
+        orderData 
+      });
     } else {
-      return res.status(500).json({ success: false, message: 'Failed to get PhonePe redirect URL', data: response.data });
+      console.error('PhonePe API Error - Invalid response structure:', response.data);
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Failed to get PhonePe redirect URL', 
+        data: response.data 
+      });
     }
   } catch (error) {
     console.error('PhonePe order error:', error.response?.data || error.message);
-    res.status(500).json({ success: false, message: 'Failed to create PhonePe order', error: error.response?.data || error.message });
+    console.error('PhonePe order error stack:', error.stack);
+    
+    let errorMessage = 'Failed to create PhonePe order';
+    if (error.response?.data?.message) {
+      errorMessage = error.response.data.message;
+    } else if (error.code === 'ECONNABORTED') {
+      errorMessage = 'Payment gateway timeout. Please try again.';
+    } else if (error.code === 'ENOTFOUND') {
+      errorMessage = 'Payment gateway not reachable. Please try again.';
+    }
+    
+    res.status(500).json({ 
+      success: false, 
+      message: errorMessage, 
+      error: error.response?.data || error.message 
+    });
+  }
+};
+
+// POST /api/payment/phonepe/callback
+exports.phonePeCallback = async (req, res) => {
+  try {
+    console.log('PhonePe Callback Received:', JSON.stringify(req.body, null, 2));
+    
+    const { 
+      merchantId, 
+      merchantTransactionId, 
+      transactionId, 
+      amount, 
+      state, 
+      responseCode, 
+      paymentInstrument 
+    } = req.body;
+
+    // Verify the callback
+    const merchantSecret = process.env.PHONEPE_CLIENT_SECRET;
+    const receivedChecksum = req.headers['x-verify'];
+    
+    // Generate checksum for verification
+    const payload = JSON.stringify(req.body);
+    const base64Payload = Buffer.from(payload).toString('base64');
+    const stringToHash = base64Payload + '/pg/v1/status/' + merchantSecret;
+    const sha256 = crypto.createHash('sha256').update(stringToHash).digest('hex');
+    const calculatedChecksum = sha256 + '###1';
+
+    if (receivedChecksum !== calculatedChecksum) {
+      console.error('PhonePe Callback - Checksum verification failed');
+      return res.status(400).json({ success: false, message: 'Invalid checksum' });
+    }
+
+    console.log('PhonePe Callback - Transaction ID:', merchantTransactionId);
+    console.log('PhonePe Callback - State:', state);
+    console.log('PhonePe Callback - Response Code:', responseCode);
+
+    // Handle different payment states
+    if (state === 'COMPLETED' && responseCode === 'SUCCESS') {
+      // Payment successful - create order
+      console.log('PhonePe Callback - Payment successful, creating order');
+      
+      // Here you would typically:
+      // 1. Find the pending order using merchantTransactionId
+      // 2. Update the order status to 'completed'
+      // 3. Send confirmation email
+      // 4. Update inventory
+      
+      return res.json({ success: true, message: 'Payment processed successfully' });
+    } else if (state === 'FAILED') {
+      console.log('PhonePe Callback - Payment failed');
+      return res.json({ success: false, message: 'Payment failed' });
+    } else {
+      console.log('PhonePe Callback - Payment pending or unknown state');
+      return res.json({ success: true, message: 'Payment status received' });
+    }
+  } catch (error) {
+    console.error('PhonePe callback error:', error);
+    res.status(500).json({ success: false, message: 'Callback processing failed' });
   }
 };
 
@@ -82,6 +234,9 @@ exports.getPhonePeStatus = async (req, res) => {
     const merchantSecret = process.env.PHONEPE_CLIENT_SECRET;
     const env = process.env.PHONEPE_ENV || 'sandbox';
 
+    console.log('PhonePe Status Check - Transaction ID:', transactionId);
+    console.log('PhonePe Status Check - Environment:', env);
+
     const apiEndpoint = `/pg/v1/status/${merchantId}/${transactionId}`;
     const phonepeBaseUrl = env === 'production'
       ? 'https://api.phonepe.com'
@@ -89,21 +244,39 @@ exports.getPhonePeStatus = async (req, res) => {
 
     const xVerify = generateStatusXVerify(apiEndpoint, merchantSecret);
 
+    console.log('PhonePe Status Check - URL:', phonepeBaseUrl + apiEndpoint);
+    console.log('PhonePe Status Check - X-VERIFY:', xVerify);
+
     const response = await axios.get(
       phonepeBaseUrl + apiEndpoint,
       {
         headers: {
           'Content-Type': 'application/json',
           'X-VERIFY': xVerify,
-          'X-MERCHANT-ID': merchantId, // Use merchantId in header
+          'X-MERCHANT-ID': merchantId,
         },
+        timeout: 30000,
       }
     );
 
+    console.log('PhonePe Status Response:', JSON.stringify(response.data, null, 2));
     res.json(response.data);
   } catch (error) {
     console.error('PhonePe status error:', error.response?.data || error.message);
-    res.status(500).json({ success: false, message: 'Failed to verify PhonePe payment', error: error.response?.data || error.message });
+    console.error('PhonePe status error stack:', error.stack);
+    
+    let errorMessage = 'Failed to verify PhonePe payment';
+    if (error.response?.data?.message) {
+      errorMessage = error.response.data.message;
+    } else if (error.code === 'ECONNABORTED') {
+      errorMessage = 'Payment verification timeout. Please try again.';
+    }
+    
+    res.status(500).json({ 
+      success: false, 
+      message: errorMessage, 
+      error: error.response?.data || error.message 
+    });
   }
 };
 
