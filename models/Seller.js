@@ -71,8 +71,8 @@ const sellerSchema = new mongoose.Schema({
     alt: { type: String, default: 'Seller image' }
   }],
   profileImage: {
-    public_id: { type: String },
-    url: { type: String },
+    public_id: { type: String, required: true },
+    url: { type: String, required: true },
     alt: { type: String, default: 'Profile image' }
   },
   totalOrders: {
