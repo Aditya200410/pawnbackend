@@ -1,5 +1,6 @@
 const axios = require('axios');
 const crypto = require('crypto');
+require('dotenv').config();
 
 // PhonePe API Integration based on official documentation
 // https://developer.phonepe.com/v1/reference/pay-api
@@ -38,10 +39,12 @@ exports.createPhonePeOrder = async (req, res) => {
       couponCode 
     } = req.body;
     
+    // Load environment variables
     const merchantId = process.env.PHONEPE_MERCHANT_ID;
     const merchantSecret = process.env.PHONEPE_CLIENT_SECRET;
-    const env = process.env.PHONEPE_ENV || 'production';
+    const env = process.env.PHONEPE_ENV || 'sandbox';
     const frontendUrl = process.env.FRONTEND_URL;
+    const backendUrl = process.env.BACKEND_URL;
 
     console.log('PhonePe Order Creation - Environment:', env);
     console.log('PhonePe Order Creation - Frontend URL:', frontendUrl);
@@ -89,7 +92,7 @@ exports.createPhonePeOrder = async (req, res) => {
       amount: Math.round(amount * 100), // Convert to paise
       redirectUrl: `${frontendUrl.replace(/\/+$/, '')}/payment/success?transactionId=${merchantTransactionId}`,
       redirectMode: 'POST',
-      callbackUrl: `${(process.env.BACKEND_URL || 'https://pawnbackend-xmqa.onrender.com').replace(/\/+$/, '')}/api/payment/phonepe/callback`,
+      callbackUrl: `${backendUrl.replace(/\/+$/, '')}/api/payment/phonepe/callback`,
       paymentInstrument: {
         type: 'PAY_PAGE' // Using PAY_PAGE for web integration
       },
@@ -283,9 +286,11 @@ exports.phonePeCallback = async (req, res) => {
 exports.getPhonePeStatus = async (req, res) => {
   try {
     const { transactionId } = req.params;
+    
+    // Load environment variables
     const merchantId = process.env.PHONEPE_MERCHANT_ID;
     const merchantSecret = process.env.PHONEPE_CLIENT_SECRET;
-    const env = process.env.PHONEPE_ENV || 'production';
+    const env = process.env.PHONEPE_ENV || 'sandbox';
 
     console.log('PhonePe Status Check - Transaction ID:', transactionId);
     console.log('PhonePe Status Check - Environment:', env);
