@@ -5,8 +5,20 @@ const Order = require('../models/Order');
 // Get seller's commission history
 exports.getCommissionHistory = async (req, res) => {
   try {
+    console.log('getCommissionHistory called with seller:', req.seller);
+    
+    // Check if seller is authenticated
+    if (!req.seller || !req.seller.id) {
+      return res.status(401).json({
+        success: false,
+        message: 'Seller authentication required'
+      });
+    }
+
     const sellerId = req.seller.id;
     const { page = 1, limit = 10, type, status, startDate, endDate } = req.query;
+
+    console.log('Query params:', { sellerId, page, limit, type, status, startDate, endDate });
 
     const query = { sellerId };
     
@@ -18,6 +30,8 @@ exports.getCommissionHistory = async (req, res) => {
       if (startDate) query.createdAt.$gte = new Date(startDate);
       if (endDate) query.createdAt.$lte = new Date(endDate);
     }
+
+    console.log('Final query:', JSON.stringify(query, null, 2));
 
     const commissionHistory = await CommissionHistory.find(query)
       .sort({ createdAt: -1 })
@@ -75,6 +89,9 @@ exports.getCommissionHistory = async (req, res) => {
       }
     ]);
 
+    console.log('Commission history found:', commissionHistory.length);
+    console.log('Summary:', summary);
+
     res.json({
       success: true,
       commissionHistory,
@@ -94,9 +111,11 @@ exports.getCommissionHistory = async (req, res) => {
 
   } catch (error) {
     console.error('Get commission history error:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch commission history'
+      message: 'Failed to fetch commission history',
+      error: error.message
     });
   }
 };
@@ -250,87 +269,6 @@ exports.createCommissionEntry = async (orderId, sellerId, orderAmount, commissio
   }
 };
 
-// Confirm commission (admin function)
-exports.confirmCommission = async (req, res) => {
-  try {
-    const { commissionId } = req.params;
-    const adminId = req.admin.id;
-
-    const commission = await CommissionHistory.findById(commissionId);
-    if (!commission) {
-      return res.status(404).json({
-        success: false,
-        message: 'Commission record not found'
-      });
-    }
-
-    if (commission.status !== 'pending') {
-      return res.status(400).json({
-        success: false,
-        message: 'Commission cannot be confirmed in current status'
-      });
-    }
-
-    await commission.confirm(adminId);
-
-    res.json({
-      success: true,
-      message: 'Commission confirmed successfully'
-    });
-
-  } catch (error) {
-    console.error('Confirm commission error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to confirm commission'
-    });
-  }
-};
-
-// Cancel commission (admin function)
-exports.cancelCommission = async (req, res) => {
-  try {
-    const { commissionId } = req.params;
-    const { reason } = req.body;
-    const adminId = req.admin.id;
-
-    const commission = await CommissionHistory.findById(commissionId);
-    if (!commission) {
-      return res.status(404).json({
-        success: false,
-        message: 'Commission record not found'
-      });
-    }
-
-    if (commission.status !== 'pending') {
-      return res.status(400).json({
-        success: false,
-        message: 'Commission cannot be cancelled in current status'
-      });
-    }
-
-    await commission.cancel(adminId, reason);
-
-    // Update seller's commission totals
-    const seller = await Seller.findById(commission.sellerId);
-    seller.totalCommission -= commission.amount;
-    seller.availableCommission -= commission.amount;
-    await seller.save();
-
-    res.json({
-      success: true,
-      message: 'Commission cancelled successfully'
-    });
-
-  } catch (error) {
-    console.error('Cancel commission error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to cancel commission'
-    });
-  }
-};
-
 // Admin: Get all commission history
 exports.getAllCommissionHistory = async (req, res) => {
   try {
@@ -345,7 +283,7 @@ exports.getAllCommissionHistory = async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit)
-      .populate('sellerId', 'businessName email')
+      .populate('sellerId', 'businessName email phone')
       .populate('orderId', 'orderNumber customerName')
       .populate('withdrawalId', 'amount status')
       .populate('processedBy', 'name email');
@@ -368,6 +306,67 @@ exports.getAllCommissionHistory = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch commission history'
+    });
+  }
+};
+
+// Admin: Confirm commission
+exports.confirmCommission = async (req, res) => {
+  try {
+    const { commissionId } = req.params;
+    const adminId = req.admin.id;
+
+    const commission = await CommissionHistory.findById(commissionId);
+    if (!commission) {
+      return res.status(404).json({
+        success: false,
+        message: 'Commission record not found'
+      });
+    }
+
+    await commission.confirm(adminId);
+
+    res.json({
+      success: true,
+      message: 'Commission confirmed successfully'
+    });
+
+  } catch (error) {
+    console.error('Confirm commission error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to confirm commission'
+    });
+  }
+};
+
+// Admin: Cancel commission
+exports.cancelCommission = async (req, res) => {
+  try {
+    const { commissionId } = req.params;
+    const { reason } = req.body;
+    const adminId = req.admin.id;
+
+    const commission = await CommissionHistory.findById(commissionId);
+    if (!commission) {
+      return res.status(404).json({
+        success: false,
+        message: 'Commission record not found'
+      });
+    }
+
+    await commission.cancel(adminId, reason);
+
+    res.json({
+      success: true,
+      message: 'Commission cancelled successfully'
+    });
+
+  } catch (error) {
+    console.error('Cancel commission error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to cancel commission'
     });
   }
 }; 

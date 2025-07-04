@@ -9,7 +9,7 @@ const commissionHistorySchema = new mongoose.Schema({
   orderId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Order',
-    required: true
+    required: false
   },
   type: {
     type: String,
@@ -26,7 +26,8 @@ const commissionHistorySchema = new mongoose.Schema({
   },
   orderAmount: {
     type: Number,
-    required: true
+    required: false,
+    default: 0
   },
   description: {
     type: String,
