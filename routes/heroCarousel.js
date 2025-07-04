@@ -15,11 +15,9 @@ const {
   updateCarouselOrder
 } = require('../controllers/heroCarouselController');
 
-// Configure multiple file upload fields
+// Configure single file upload field
 const uploadFields = upload.fields([
-  { name: 'desktopImage', maxCount: 1 },
-  { name: 'mobileImage', maxCount: 1 },
-  { name: 'image', maxCount: 1 } // for backward compatibility
+  { name: 'image', maxCount: 1 }
 ]);
 
 // Middleware to handle multer upload

@@ -16,13 +16,13 @@ const heroCarouselSchema = new mongoose.Schema({
     trim: true,
     default: ''
   },
-  desktopImage: {
+  image: {
     type: String,
-    required: false
+    required: true
   },
-  mobileImage: {
-    type: String,
-    required: false
+  isMobile: {
+    type: Boolean,
+    default: false
   },
   showOn: {
     type: String,

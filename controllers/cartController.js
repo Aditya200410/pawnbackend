@@ -52,11 +52,23 @@ const getCart = async (req, res) => {
       cart = new Cart({ userId, items: [] });
       await cart.save();
     }
+
+    // Fetch latest codAvailable for each item
+    const itemsWithCod = await Promise.all(
+      cart.items.map(async (item) => {
+        const product = await findProductById(item.productId);
+        return {
+          ...item.toObject(),
+          codAvailable: product ? product.codAvailable : undefined
+        };
+      })
+    );
+
     res.json({
       success: true,
-      items: cart.items,
-      totalItems: cart.items.reduce((sum, item) => sum + item.quantity, 0),
-      totalPrice: cart.items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+      items: itemsWithCod,
+      totalItems: itemsWithCod.reduce((sum, item) => sum + item.quantity, 0),
+      totalPrice: itemsWithCod.reduce((sum, item) => sum + (item.price * item.quantity), 0)
     });
   } catch (error) {
     console.error('Error getting cart:', error);
