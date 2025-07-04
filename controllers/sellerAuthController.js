@@ -412,7 +412,12 @@ exports.deleteImage = async (req, res) => {
 // Get all sellers (for admin panel)
 exports.getAllSellers = async (req, res) => {
   try {
+    console.log('=== GET ALL SELLERS REQUEST ===');
+    console.log('Request headers:', req.headers);
+    console.log('Request user:', req.user);
+    
     const sellers = await Seller.find({}, '-password');
+    console.log('Found sellers count:', sellers.length);
     
     // Get withdrawal data for each seller
     const Withdrawal = require('../models/Withdrawal');
@@ -421,6 +426,8 @@ exports.getAllSellers = async (req, res) => {
         const withdrawals = await Withdrawal.find({ sellerId: seller._id })
           .sort({ createdAt: -1 })
           .select('amount status requestDate processedDate adminNotes rejectionReason bankDetails');
+        
+        console.log(`Seller ${seller.businessName} has ${withdrawals.length} withdrawals`);
         
         // Map withdrawal data to match expected format
         const mappedWithdrawals = withdrawals.map(withdrawal => ({
@@ -441,6 +448,14 @@ exports.getAllSellers = async (req, res) => {
       })
     );
 
+    console.log('=== SELLERS WITH WITHDRAWALS ===');
+    sellersWithWithdrawals.forEach(seller => {
+      console.log(`Seller: ${seller.businessName}, Withdrawals: ${seller.withdrawals.length}`);
+      seller.withdrawals.forEach(w => {
+        console.log(`  - Withdrawal: ${w._id}, Amount: ${w.amount}, Status: ${w.status}`);
+      });
+    });
+
     res.json({
       success: true,
       sellers: sellersWithWithdrawals
@@ -449,7 +464,8 @@ exports.getAllSellers = async (req, res) => {
     console.error('Error fetching all sellers:', error);
     res.status(500).json({
       success: false,
-      message: 'Error fetching sellers'
+      message: 'Error fetching sellers',
+      error: error.message
     });
   }
 };

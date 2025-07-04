@@ -257,11 +257,23 @@ exports.getAllWithdrawals = async (req, res) => {
 exports.approveWithdrawal = async (req, res) => {
   try {
     const { withdrawalId } = req.params;
-    const adminId = req.user.id;
+    const adminId = req.user?.id;
 
-    console.log('Approving withdrawal:', withdrawalId);
+    console.log('=== APPROVE WITHDRAWAL REQUEST ===');
+    console.log('Withdrawal ID:', withdrawalId);
     console.log('Admin ID:', adminId);
     console.log('Request user:', req.user);
+    console.log('Request params:', req.params);
+    console.log('Request body:', req.body);
+    console.log('Request headers:', req.headers);
+
+    if (!withdrawalId) {
+      console.log('No withdrawal ID provided');
+      return res.status(400).json({
+        success: false,
+        message: 'Withdrawal ID is required'
+      });
+    }
 
     const withdrawal = await Withdrawal.findById(withdrawalId);
     if (!withdrawal) {
@@ -276,7 +288,8 @@ exports.approveWithdrawal = async (req, res) => {
       id: withdrawal._id,
       status: withdrawal.status,
       amount: withdrawal.amount,
-      sellerId: withdrawal.sellerId
+      sellerId: withdrawal.sellerId,
+      requestDate: withdrawal.requestDate
     });
 
     if (withdrawal.status !== 'pending') {
@@ -297,25 +310,30 @@ exports.approveWithdrawal = async (req, res) => {
     console.log('Withdrawal saved with new status:', withdrawal.status);
 
     // Update commission history
-    await CommissionHistory.findOneAndUpdate(
+    const commissionUpdate = await CommissionHistory.findOneAndUpdate(
       { withdrawalId: withdrawal._id },
       { status: 'confirmed' }
     );
+    console.log('Commission history update result:', commissionUpdate);
 
-    console.log('Commission history updated');
-
-    console.log('Withdrawal approved successfully');
+    console.log('=== WITHDRAWAL APPROVED SUCCESSFULLY ===');
 
     res.json({
       success: true,
-      message: 'Withdrawal approved successfully. Amount will be credited in 3-5 business days.'
+      message: 'Withdrawal approved successfully. Amount will be credited in 3-5 business days.',
+      withdrawal: {
+        id: withdrawal._id,
+        status: withdrawal.status,
+        processedDate: withdrawal.processedDate
+      }
     });
 
   } catch (error) {
     console.error('Approve withdrawal error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to approve withdrawal'
+      message: 'Failed to approve withdrawal',
+      error: error.message
     });
   }
 };
