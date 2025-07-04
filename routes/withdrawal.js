@@ -12,8 +12,8 @@ router.put('/cancel/:withdrawalId', sellerAuth, withdrawalController.cancelWithd
 
 // Admin routes (protected by adminAuth)
 router.get('/admin/all', authenticateToken, isAdmin, withdrawalController.getAllWithdrawals);
-router.put('/admin/approve/:withdrawalId', authenticateToken, isAdmin, withdrawalController.approveWithdrawal);
-router.put('/admin/reject/:withdrawalId', authenticateToken, isAdmin, withdrawalController.rejectWithdrawal);
-router.put('/admin/complete/:withdrawalId', authenticateToken, isAdmin, withdrawalController.completeWithdrawal);
+router.patch('/admin/approve/:withdrawalId', authenticateToken, isAdmin, withdrawalController.approveWithdrawal);
+router.patch('/admin/reject/:withdrawalId', authenticateToken, isAdmin, withdrawalController.rejectWithdrawal);
+router.patch('/admin/complete/:withdrawalId', authenticateToken, isAdmin, withdrawalController.completeWithdrawal);
 
 module.exports = router; 

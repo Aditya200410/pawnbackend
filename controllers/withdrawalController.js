@@ -256,11 +256,22 @@ exports.getAllWithdrawals = async (req, res) => {
 // Admin: Approve withdrawal
 exports.approveWithdrawal = async (req, res) => {
   try {
+    console.log('Approve withdrawal called');
+    console.log('Request params:', req.params);
+    console.log('Request body:', req.body);
+    console.log('Request user:', req.user);
+    
     const { withdrawalId } = req.params;
     const { transactionId, adminNotes } = req.body;
-    const adminId = req.admin.id;
+    const adminId = req.user.id;
+
+    console.log('Withdrawal ID:', withdrawalId);
+    console.log('Admin ID:', adminId);
+    console.log('Transaction ID:', transactionId);
 
     const withdrawal = await Withdrawal.findById(withdrawalId);
+    console.log('Found withdrawal:', withdrawal);
+    
     if (!withdrawal) {
       return res.status(404).json({
         success: false,
@@ -275,6 +286,7 @@ exports.approveWithdrawal = async (req, res) => {
       });
     }
 
+    console.log('Approving withdrawal...');
     // Approve withdrawal
     await withdrawal.approve(adminId, transactionId);
     if (adminNotes) {
@@ -288,6 +300,7 @@ exports.approveWithdrawal = async (req, res) => {
       { status: 'confirmed' }
     );
 
+    console.log('Withdrawal approved successfully');
     res.json({
       success: true,
       message: 'Withdrawal approved successfully'
@@ -307,7 +320,7 @@ exports.rejectWithdrawal = async (req, res) => {
   try {
     const { withdrawalId } = req.params;
     const { rejectionReason, adminNotes } = req.body;
-    const adminId = req.admin.id;
+    const adminId = req.user.id;
 
     const withdrawal = await Withdrawal.findById(withdrawalId);
     if (!withdrawal) {

@@ -147,7 +147,7 @@ app.use('/api/seller', sellerRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/data-page', require('./routes/dataPage'));
 app.use('/api/payment', require('./routes/payment'));
-app.use('/api/withdrawals', require('./routes/withdrawal'));
+app.use('/api/withdrawal', require('./routes/withdrawal'));
 app.use('/api/commission', require('./routes/commission'));
 
 // Health check endpoint
