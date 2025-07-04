@@ -111,7 +111,7 @@ const createCarouselItemWithFiles = async (req, res) => {
     const itemData = req.body;
     
     // Validate required fields
-    const requiredFields = ["title"];
+    const requiredFields = ["title", "showOn"];
     console.log('Validating required fields...');
     const missingFields = [];
     for (const field of requiredFields) {
@@ -127,9 +127,14 @@ const createCarouselItemWithFiles = async (req, res) => {
     }
 
     // Process uploaded files
-    const desktopImageUrl = files.desktopImage ? files.desktopImage[0].path : (files.image ? files.image[0].path : null);
-    const mobileImageUrl = files.mobileImage ? files.mobileImage[0].path : null;
-    const imageUrl = desktopImageUrl; // for backward compatibility
+    let desktopImageUrl = null;
+    let mobileImageUrl = null;
+    if (itemData.showOn === 'desktop' && files.desktopImage && files.desktopImage[0]) {
+      desktopImageUrl = files.desktopImage[0].path;
+    }
+    if (itemData.showOn === 'mobile' && files.mobileImage && files.mobileImage[0]) {
+      mobileImageUrl = files.mobileImage[0].path;
+    }
 
     // Get current max order
     const maxOrderItem = await HeroCarousel.findOne().sort('-order');
@@ -141,9 +146,9 @@ const createCarouselItemWithFiles = async (req, res) => {
       description: (itemData.description || '').trim(),
       buttonText: (itemData.buttonText || 'Shop Now').trim(),
       buttonLink: (itemData.buttonLink || '/shop').trim(),
-      image: imageUrl, // deprecated
       desktopImage: desktopImageUrl,
       mobileImage: mobileImageUrl,
+      showOn: itemData.showOn,
       isActive: itemData.isActive === 'true' || itemData.isActive === true,
       order: newOrder
     });
@@ -191,15 +196,10 @@ const updateCarouselItemWithFiles = async (req, res) => {
     // Handle image/video update
     let desktopImageUrl = existingItem.desktopImage;
     let mobileImageUrl = existingItem.mobileImage;
-    let imageUrl = existingItem.image;
-    if (files.desktopImage && files.desktopImage[0]) {
+    if (itemData.showOn === 'desktop' && files.desktopImage && files.desktopImage[0]) {
       desktopImageUrl = files.desktopImage[0].path;
-      imageUrl = desktopImageUrl; // for backward compatibility
-    } else if (files.image && files.image[0]) {
-      desktopImageUrl = files.image[0].path;
-      imageUrl = desktopImageUrl;
     }
-    if (files.mobileImage && files.mobileImage[0]) {
+    if (itemData.showOn === 'mobile' && files.mobileImage && files.mobileImage[0]) {
       mobileImageUrl = files.mobileImage[0].path;
     }
 
@@ -210,9 +210,9 @@ const updateCarouselItemWithFiles = async (req, res) => {
       description: (itemData.description || existingItem.description || '').trim(),
       buttonText: (itemData.buttonText || existingItem.buttonText || 'Shop Now').trim(),
       buttonLink: (itemData.buttonLink || existingItem.buttonLink || '/shop').trim(),
-      image: imageUrl, // deprecated
       desktopImage: desktopImageUrl,
       mobileImage: mobileImageUrl,
+      showOn: itemData.showOn || existingItem.showOn,
       isActive: typeof itemData.isActive !== 'undefined' ? (itemData.isActive === 'true' || itemData.isActive === true) : existingItem.isActive,
       order: typeof itemData.order !== 'undefined' ? itemData.order : existingItem.order
     };
@@ -220,7 +220,7 @@ const updateCarouselItemWithFiles = async (req, res) => {
     // Log the update operation
     console.log('Updating carousel item with data:', {
       id,
-      imageUrl,
+      imageUrl: desktopImageUrl,
       filesReceived: Object.keys(files)
     });
 

@@ -16,17 +16,18 @@ const heroCarouselSchema = new mongoose.Schema({
     trim: true,
     default: ''
   },
-  image: {
-    type: String,
-    required: false // deprecated, kept for backward compatibility
-  },
   desktopImage: {
     type: String,
-    required: true
+    required: false
   },
   mobileImage: {
     type: String,
     required: false
+  },
+  showOn: {
+    type: String,
+    enum: ['desktop', 'mobile'],
+    required: true
   },
   buttonText: {
     type: String,
