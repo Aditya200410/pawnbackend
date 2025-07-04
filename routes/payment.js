@@ -1,16 +1,18 @@
 const express = require('express');
 const router = express.Router();
-const phonepeController = require('../controllers/phonepeController');
+const {
+  createPhonePeOrder,
+  phonePeCallback,
+  getPhonePeStatus
+} = require('../controllers/phonepeController');
 
-// Add PhonePe payment route
-router.post('/phonepe', phonepeController.createPhonePeOrder);
+// Create a new PhonePe payment order
+router.post('/phonepe', createPhonePeOrder);
 
-// PhonePe callback endpoint
-router.post('/phonepe/callback', phonepeController.phonePeCallback);
+// Handle callback from PhonePe after payment
+router.post('/phonepe/callback', phonePeCallback);
 
-// Get PhonePe payment status
-router.get('/phonepe/status/:transactionId', phonepeController.getPhonePeStatus);
+// Check the status of a PhonePe transaction
+router.get('/phonepe/status/:transactionId', getPhonePeStatus);
 
 module.exports = router;
-
-module.exports = router; 
