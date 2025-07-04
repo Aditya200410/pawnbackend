@@ -62,6 +62,24 @@ exports.createPhonePeOrder = async (req, res) => {
       });
     }
 
+    // Validate phone number format
+    const phoneRegex = /^[6-9]\d{9}$/;
+    if (!phoneRegex.test(phone)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid phone number format. Please enter a valid 10-digit mobile number.'
+      });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid email format.'
+      });
+    }
+
     // Set base URL
     const baseUrl = env === 'production' 
       ? 'https://api.phonepe.com/apis/hermes' 
@@ -70,7 +88,7 @@ exports.createPhonePeOrder = async (req, res) => {
     const apiEndpoint = '/pg/v1/pay';
 
     const merchantTransactionId = `MT${Date.now()}${Math.random().toString(36).substr(2, 6)}`;
-    const merchantUserId = email || phone || `MU${Date.now()}`;
+    const merchantUserId = process.env.PHONEPE_MERCHANT_USER_ID || email || phone || `MU${Date.now()}`;
 
     const payload = {
       merchantId: merchantId,
@@ -88,7 +106,17 @@ exports.createPhonePeOrder = async (req, res) => {
       message: `Payment for order ${merchantTransactionId}`,
       shortName: customerName,
       name: customerName,
-      email: email
+      email: email,
+      upiIntent: true,
+      enablePayMode: {
+        upi: true,
+        card: true,
+        netbanking: true,
+        wallet: true
+      },
+      deviceContext: {
+        deviceOS: 'WEB'
+      }
     };
 
     console.log('PhonePe payload:', {
@@ -113,7 +141,7 @@ exports.createPhonePeOrder = async (req, res) => {
         headers: {
           'Content-Type': 'application/json',
           'X-VERIFY': xVerify,
-          'X-CLIENT-ID': merchantId
+          'X-MERCHANT-ID': merchantId
         },
         timeout: 30000
       }
@@ -273,7 +301,7 @@ exports.getPhonePeStatus = async (req, res) => {
         headers: {
           'Content-Type': 'application/json',
           'X-VERIFY': xVerify,
-          'X-CLIENT-ID': merchantId
+          'X-MERCHANT-ID': merchantId
         },
         timeout: 30000
       }
