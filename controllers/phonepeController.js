@@ -75,9 +75,9 @@ exports.createPhonePeOrder = async (req, res) => {
       merchantTransactionId,
       merchantUserId: email || phone || `user_${Date.now()}`,
       amount: Math.round(amount * 100), // Convert to paise
-      redirectUrl: `${frontendUrl}/payment/success?transactionId=${merchantTransactionId}`,
+      redirectUrl: `${frontendUrl.replace(/\/+$/, '')}/payment/success?transactionId=${merchantTransactionId}`,
       redirectMode: 'POST',
-      callbackUrl: `${process.env.BACKEND_URL || 'https://pawnbackend-xmqa.onrender.com'}/api/payment/phonepe/callback`,
+      callbackUrl: `${(process.env.BACKEND_URL || 'https://pawnbackend-xmqa.onrender.com').replace(/\/+$/, '')}/api/payment/phonepe/callback`,
       paymentInstrument: {
         type: 'PAY_PAGE',
       },
