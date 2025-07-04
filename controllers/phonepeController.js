@@ -161,3 +161,98 @@ exports.createPhonePeOrder = async (req, res) => {
     });
   }
 };
+
+exports.phonePeCallback = async (req, res) => {
+  try {
+    const { merchantTransactionId, transactionId, amount, status, code, merchantId } = req.body;
+    
+    console.log('PhonePe callback received:', req.body);
+    
+    // Verify the callback data
+    if (!merchantTransactionId || !status) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid callback data'
+      });
+    }
+    
+    // Here you would typically:
+    // 1. Verify the transaction with PhonePe
+    // 2. Update your order status in database
+    // 3. Send confirmation email/SMS
+    
+    // For now, just log and return success
+    console.log(`Payment ${status} for transaction: ${merchantTransactionId}`);
+    
+    return res.json({
+      success: true,
+      message: 'Callback processed successfully'
+    });
+    
+  } catch (error) {
+    console.error('PhonePe callback error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to process callback'
+    });
+  }
+};
+
+exports.getPhonePeStatus = async (req, res) => {
+  try {
+    const { transactionId } = req.params;
+    
+    if (!transactionId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Transaction ID is required'
+      });
+    }
+    
+    const merchantId = process.env.PHONEPE_MERCHANT_ID;
+    const merchantSecret = process.env.PHONEPE_CLIENT_SECRET;
+    const env = process.env.PHONEPE_ENV || 'sandbox';
+    
+    // Set base URL
+    const baseUrl = env === 'production' 
+      ? 'https://api.phonepe.com/apis/hermes' 
+      : 'https://api-preprod.phonepe.com/apis/pg-sandbox';
+    
+    const apiEndpoint = `/pg/v1/status/${merchantId}/${transactionId}`;
+    
+    // Generate X-VERIFY header
+    const stringToHash = apiEndpoint + merchantSecret;
+    const xVerify = crypto.createHash('sha256').update(stringToHash).digest('hex') + '###1';
+    
+    const response = await axios.get(
+      baseUrl + apiEndpoint,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'X-VERIFY': xVerify,
+          'X-CLIENT-ID': merchantId
+        },
+        timeout: 30000
+      }
+    );
+    
+    if (response.data && response.data.success) {
+      return res.json({
+        success: true,
+        data: response.data.data
+      });
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: response.data.message || 'Failed to get transaction status'
+      });
+    }
+    
+  } catch (error) {
+    console.error('PhonePe status check error:', error.response?.data || error.message);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to check transaction status'
+    });
+  }
+};
