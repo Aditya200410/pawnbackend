@@ -39,7 +39,7 @@ exports.createPhonePeOrder = async (req, res) => {
     
     const merchantId = process.env.PHONEPE_MERCHANT_ID;
     const merchantSecret = process.env.PHONEPE_CLIENT_SECRET;
-    const env = process.env.PHONEPE_ENV || 'sandbox';
+    const env = process.env.PHONEPE_ENV || 'production';
     const frontendUrl = process.env.FRONTEND_URL || 'https://pawn-shop-git-local-host-api-used-aditya200410s-projects.vercel.app';
 
     console.log('PhonePe Order Creation - Environment:', env);
@@ -89,21 +89,57 @@ exports.createPhonePeOrder = async (req, res) => {
     const base64Payload = Buffer.from(JSON.stringify(payload)).toString('base64');
 
     console.log('PhonePe API Request - URL:', phonepeBaseUrl + apiEndpoint);
+    console.log('PhonePe API Request - Environment:', env);
+    console.log('PhonePe API Request - Merchant ID:', merchantId);
     console.log('PhonePe API Request - Payload:', JSON.stringify(payload, null, 2));
+    console.log('PhonePe API Request - Base64 Payload:', base64Payload);
     console.log('PhonePe API Request - X-VERIFY:', xVerify);
 
-    const response = await axios.post(
-      phonepeBaseUrl + apiEndpoint,
-      { request: base64Payload },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'X-VERIFY': xVerify,
-          'X-MERCHANT-ID': merchantId,
-        },
-        timeout: 30000, // 30 second timeout
+    // Try alternative PhonePe API endpoint if the first one fails
+    let response;
+    try {
+      response = await axios.post(
+        phonepeBaseUrl + apiEndpoint,
+        { request: base64Payload },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'X-VERIFY': xVerify,
+            'X-MERCHANT-ID': merchantId,
+          },
+          timeout: 30000, // 30 second timeout
+        }
+      );
+    } catch (error) {
+      if (error.response?.status === 404) {
+        console.log('PhonePe API 404 error, trying alternative endpoint...');
+        // Try alternative endpoint
+        const altApiEndpoint = '/pg/v1/pay';
+        const altPhonepeBaseUrl = env === 'production'
+          ? 'https://api.phonepe.com'
+          : 'https://api-preprod.phonepe.com';
+        
+        const altXVerify = generateXVerify(payload, altApiEndpoint, merchantSecret);
+        
+        console.log('PhonePe Alternative API Request - URL:', altPhonepeBaseUrl + altApiEndpoint);
+        console.log('PhonePe Alternative API Request - X-VERIFY:', altXVerify);
+        
+        response = await axios.post(
+          altPhonepeBaseUrl + altApiEndpoint,
+          { request: base64Payload },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'X-VERIFY': altXVerify,
+              'X-MERCHANT-ID': merchantId,
+            },
+            timeout: 30000,
+          }
+        );
+      } else {
+        throw error;
       }
-    );
+    }
 
     console.log('PhonePe API Response:', JSON.stringify(response.data, null, 2));
 
@@ -232,7 +268,7 @@ exports.getPhonePeStatus = async (req, res) => {
     const { transactionId } = req.params;
     const merchantId = process.env.PHONEPE_MERCHANT_ID;
     const merchantSecret = process.env.PHONEPE_CLIENT_SECRET;
-    const env = process.env.PHONEPE_ENV || 'sandbox';
+    const env = process.env.PHONEPE_ENV || 'production';
 
     console.log('PhonePe Status Check - Transaction ID:', transactionId);
     console.log('PhonePe Status Check - Environment:', env);
