@@ -17,7 +17,9 @@ const {
 
 // Configure multiple file upload fields
 const uploadFields = upload.fields([
-  { name: 'image', maxCount: 1 }
+  { name: 'desktopImage', maxCount: 1 },
+  { name: 'mobileImage', maxCount: 1 },
+  { name: 'image', maxCount: 1 } // for backward compatibility
 ]);
 
 // Middleware to handle multer upload

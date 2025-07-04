@@ -100,10 +100,10 @@ const createCarouselItemWithFiles = async (req, res) => {
     console.log('Files received:', req.files);
     console.log('Body data:', req.body);
 
-    if (!req.files || !req.files.image) {
-      console.log('Error: Missing image/video');
+    if (!req.files || (!req.files.desktopImage && !req.files.image)) {
+      console.log('Error: Missing desktop image');
       return res.status(400).json({ 
-        error: 'Image or video is required. Make sure you are uploading as multipart/form-data and the file field is named "image".' 
+        error: 'Desktop image is required. Make sure you are uploading as multipart/form-data and the file field is named "desktopImage".' 
       });
     }
 
@@ -126,10 +126,10 @@ const createCarouselItemWithFiles = async (req, res) => {
       return res.status(400).json({ error: `Missing required fields: ${missingFields.join(', ')}` });
     }
 
-    // Process uploaded file
-    console.log('Processing uploaded file...');
-    const imageUrl = files.image[0].path; // Cloudinary URL
-    console.log('Added image/video:', imageUrl);
+    // Process uploaded files
+    const desktopImageUrl = files.desktopImage ? files.desktopImage[0].path : (files.image ? files.image[0].path : null);
+    const mobileImageUrl = files.mobileImage ? files.mobileImage[0].path : null;
+    const imageUrl = desktopImageUrl; // for backward compatibility
 
     // Get current max order
     const maxOrderItem = await HeroCarousel.findOne().sort('-order');
@@ -141,7 +141,9 @@ const createCarouselItemWithFiles = async (req, res) => {
       description: (itemData.description || '').trim(),
       buttonText: (itemData.buttonText || 'Shop Now').trim(),
       buttonLink: (itemData.buttonLink || '/shop').trim(),
-      image: imageUrl,
+      image: imageUrl, // deprecated
+      desktopImage: desktopImageUrl,
+      mobileImage: mobileImageUrl,
       isActive: itemData.isActive === 'true' || itemData.isActive === true,
       order: newOrder
     });
@@ -187,9 +189,18 @@ const updateCarouselItemWithFiles = async (req, res) => {
     }
 
     // Handle image/video update
+    let desktopImageUrl = existingItem.desktopImage;
+    let mobileImageUrl = existingItem.mobileImage;
     let imageUrl = existingItem.image;
-    if (files.image && files.image[0]) {
-      imageUrl = files.image[0].path;
+    if (files.desktopImage && files.desktopImage[0]) {
+      desktopImageUrl = files.desktopImage[0].path;
+      imageUrl = desktopImageUrl; // for backward compatibility
+    } else if (files.image && files.image[0]) {
+      desktopImageUrl = files.image[0].path;
+      imageUrl = desktopImageUrl;
+    }
+    if (files.mobileImage && files.mobileImage[0]) {
+      mobileImageUrl = files.mobileImage[0].path;
     }
 
     // Update item object
@@ -199,11 +210,11 @@ const updateCarouselItemWithFiles = async (req, res) => {
       description: (itemData.description || existingItem.description || '').trim(),
       buttonText: (itemData.buttonText || existingItem.buttonText || 'Shop Now').trim(),
       buttonLink: (itemData.buttonLink || existingItem.buttonLink || '/shop').trim(),
-      image: imageUrl,
-      isActive: itemData.isActive !== undefined ? 
-        (itemData.isActive === 'true' || itemData.isActive === true) : 
-        existingItem.isActive,
-      order: itemData.order !== undefined ? parseInt(itemData.order) : existingItem.order
+      image: imageUrl, // deprecated
+      desktopImage: desktopImageUrl,
+      mobileImage: mobileImageUrl,
+      isActive: typeof itemData.isActive !== 'undefined' ? (itemData.isActive === 'true' || itemData.isActive === true) : existingItem.isActive,
+      order: typeof itemData.order !== 'undefined' ? itemData.order : existingItem.order
     };
 
     // Log the update operation
