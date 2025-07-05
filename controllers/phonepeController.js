@@ -17,20 +17,16 @@ async function getPhonePeToken() {
     const clientId = process.env.PHONEPE_CLIENT_ID;
     const clientSecret = process.env.PHONEPE_CLIENT_SECRET;
     const clientVersion = process.env.PHONEPE_CLIENT_VERSION || '1.0';
-    const env = process.env.PHONEPE_ENV || 'sandbox';
+    const env = process.env.PHONEPE_ENV || 'production';
 
     if (!clientId || !clientSecret) {
       throw new Error('PhonePe OAuth credentials not configured');
     }
 
     // Set OAuth URL based on environment
-    // Note: Based on Postman collection, OAuth is only available in sandbox
-    // For production, we might need to use a different approach
+    // Based on PhonePe documentation: https://developer.phonepe.com/v1/reference/authorization-standard-checkout/
     let oauthUrl;
     if (env === 'production') {
-      // For production, we might need to use a different endpoint or approach
-      // For now, we'll use the sandbox endpoint as a fallback
-      console.warn('Warning: Using sandbox OAuth endpoint for production environment');
       oauthUrl = 'https://api.phonepe.com/apis/identity-manager/v1/oauth/token';
     } else {
       oauthUrl = 'https://api-preprod.phonepe.com/apis/pg-sandbox/v1/oauth/token';
@@ -55,10 +51,16 @@ async function getPhonePeToken() {
 
     if (response.data && response.data.access_token) {
       oauthToken = response.data.access_token;
-      // Set expiry to 1 hour from now (tokens typically last 1-2 hours)
-      tokenExpiry = new Date(Date.now() + 60 * 60 * 1000);
+      // Set expiry based on expires_at field from response
+      if (response.data.expires_at) {
+        tokenExpiry = new Date(response.data.expires_at * 1000); // Convert from seconds to milliseconds
+      } else {
+        // Fallback to 1 hour if expires_at is not provided
+        tokenExpiry = new Date(Date.now() + 60 * 60 * 1000);
+      }
       
       console.log('PhonePe OAuth token obtained successfully');
+      console.log('Token expires at:', tokenExpiry);
       return oauthToken;
     } else {
       throw new Error('Invalid OAuth response from PhonePe');
@@ -86,7 +88,7 @@ exports.createPhonePeOrder = async (req, res) => {
       couponCode 
     } = req.body;
     
-    const env = process.env.PHONEPE_ENV || 'sandbox';
+    const env = process.env.PHONEPE_ENV || 'production';
     const frontendUrl = process.env.FRONTEND_URL;
     const backendUrl = process.env.BACKEND_URL;
 
@@ -137,16 +139,16 @@ exports.createPhonePeOrder = async (req, res) => {
     // Get OAuth token
     const accessToken = await getPhonePeToken();
 
-    // Set base URL for payment API based on Postman collection
+    // Set base URL for payment API based on PhonePe documentation
     const baseUrl = env === 'production' 
-      ? 'https://api.phonepe.com/apis/hermes'
-      : 'https://api-preprod.phonepe.com/apis/pg-sandbox';
+      ? 'https://api.phonepe.com/apis/pg/checkout/v2/pay'
+      : 'https://api.phonepe.com/apis/pg/checkout/v2/pay';
 
     const apiEndpoint = '/checkout/v2/pay';
 
     const merchantOrderId = `MT${Date.now()}${Math.random().toString(36).substr(2, 6)}`;
 
-    // Prepare payload according to PhonePe API documentation from Postman
+    // Prepare payload according to PhonePe API documentation
     const payload = {
       merchantOrderId: merchantOrderId,
       amount: Math.round(amount * 100), // Convert to paise
@@ -324,14 +326,14 @@ exports.getPhonePeStatus = async (req, res) => {
       });
     }
     
-    const env = process.env.PHONEPE_ENV || 'sandbox';
+    const env = process.env.PHONEPE_ENV || 'production';
     
     // Get OAuth token
     const accessToken = await getPhonePeToken();
     
-    // Set base URL based on Postman collection
+    // Set base URL based on PhonePe documentation
     const baseUrl = env === 'production' 
-      ? 'https://api.phonepe.com/apis/hermes'
+      ? 'https://api.phonepe.com/apis/identity-manager/v1/oauth/token'
       : 'https://api-preprod.phonepe.com/apis/pg-sandbox';
     
     const apiEndpoint = `/checkout/v2/order/${transactionId}/status`;
@@ -380,11 +382,11 @@ exports.refundPayment = async (req, res) => {
       });
     }
     
-    const env = process.env.PHONEPE_ENV || 'sandbox';
+    const env = process.env.PHONEPE_ENV || 'production';
     const accessToken = await getPhonePeToken();
     
     const baseUrl = env === 'production' 
-      ? 'https://api.phonepe.com/apis/hermes'
+      ? 'https://api.phonepe.com/apis/identity-manager/v1/oauth/token'
       : 'https://api-preprod.phonepe.com/apis/pg-sandbox';
     
     const apiEndpoint = '/payments/v2/refund';
@@ -440,7 +442,7 @@ exports.getRefundStatus = async (req, res) => {
       });
     }
     
-    const env = process.env.PHONEPE_ENV || 'sandbox';
+    const env = process.env.PHONEPE_ENV || 'production';
     const accessToken = await getPhonePeToken();
     
     const baseUrl = env === 'production' 
