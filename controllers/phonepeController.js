@@ -14,8 +14,8 @@ async function getPhonePeToken() {
       return oauthToken;
     }
 
-    const clientId = "SU2507031613442365425629";
-    const clientSecret = "f46b3db1-dc6e-4b59-8624-81b7451a0497";
+    const clientId = process.env.PHONEPE_CLIENT_ID;
+    const clientSecret = process.env.PHONEPE_CLIENT_SECRET;
     const clientVersion = '1';
     const env = 'production';
 
@@ -172,10 +172,10 @@ exports.createPhonePeOrder = async (req, res) => {
       accessToken: '***HIDDEN***'
     });
 
-    console.log(`Making PhonePe API request to: ${baseUrl}${apiEndpoint}`);
+    console.log(`Making PhonePe API request to: ${baseUrl}}`);
     
     const response = await axios.post(
-      baseUrl + apiEndpoint,
+      baseUrl,
       payload,
       {
         headers: {
@@ -328,8 +328,8 @@ exports.getPhonePeStatus = async (req, res) => {
     
     // Set base URL based on PhonePe documentation
     const baseUrl = env === 'production' 
-      ? 'https://api.phonepe.com/apis/identity-manager/v1/oauth/token'
-      : 'https://api-preprod.phonepe.com/apis/pg-sandbox';
+      ? 'https://api.phonepe.com/apis/pg/'
+      : 'hhttps://api.phonepe.com/apis/pg/';
     
     const apiEndpoint = `/checkout/v2/order/${transactionId}/status`;
     
@@ -381,8 +381,8 @@ exports.refundPayment = async (req, res) => {
     const accessToken = await getPhonePeToken();
     
     const baseUrl = env === 'production' 
-      ? 'https://api.phonepe.com/apis/identity-manager/v1/oauth/token'
-      : 'https://api-preprod.phonepe.com/apis/pg-sandbox';
+      ? 'https://api.phonepe.com/apis/pg'
+      : 'https://api.phonepe.com/apis/pg';
     
     const apiEndpoint = '/payments/v2/refund';
     
@@ -441,8 +441,8 @@ exports.getRefundStatus = async (req, res) => {
     const accessToken = await getPhonePeToken();
     
     const baseUrl = env === 'production' 
-      ? 'https://api.phonepe.com/apis/hermes'
-      : 'https://api-preprod.phonepe.com/apis/pg-sandbox';
+      ? 'https://api.phonepe.com/apis/pg'
+      : 'https://api.phonepe.com/apis/pg';
     
     const apiEndpoint = `/payments/v2/refund/${merchantRefundId}/status`;
     
