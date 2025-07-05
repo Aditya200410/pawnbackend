@@ -250,6 +250,62 @@ router.post('/logout', async (req, res) => {
   }
 });
 
+// POST /register-with-msg91 - Register user with MSG91 token verification
+router.post('/register-with-msg91', async (req, res) => {
+  const { name, email, password, phone, msg91Token } = req.body;
+  
+  if (!name || !email || !password || !phone || !msg91Token) {
+    return res.status(400).json({ message: 'Name, email, password, phone, and MSG91 token are required' });
+  }
+
+  try {
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: 'Email already registered' });
+    }
+
+    // Verify MSG91 token with MSG91 API using the correct endpoint
+    const apiKey = process.env.MSG91_API_KEY || '458779TNIVxOl3qDwI6866bc33P1';
+    const verifyUrl = 'https://control.msg91.com/api/v5/widget/verifyAccessToken';
+    
+    try {
+      const response = await axios.post(verifyUrl, {
+        authkey: apiKey,
+        'access-token': msg91Token
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+      
+      console.log('MSG91 verification response:', response.data);
+      
+      if (response.data.type !== 'success' && response.data.status !== 'success') {
+        return res.status(400).json({ message: 'Invalid OTP token' });
+      }
+    } catch (verifyErr) {
+      console.error('MSG91 token verification error:', verifyErr.response?.data || verifyErr.message);
+      return res.status(400).json({ message: 'OTP verification failed' });
+    }
+
+    // Create new user
+    const user = new User({ 
+      name, 
+      email, 
+      password, 
+      phone 
+    });
+    await user.save();
+
+    return res.json({ message: 'Registration successful with MSG91 verification' });
+  } catch (err) {
+    console.error('Register with MSG91 error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // PUT /update-profile (Protected)
 router.put('/update-profile', auth, async (req, res) => {
   const { name, email, phone, address, currentPassword, newPassword } = req.body;
