@@ -312,14 +312,13 @@ exports.createCommissionEntry = async (orderId, sellerId, orderAmount, commissio
     await commissionEntry.save();
     console.log('Commission entry saved successfully');
 
-    // Update seller's commission totals
+    // Update seller's commission totals (only totalCommission, not availableCommission until confirmed)
     const seller = await Seller.findById(sellerId);
     if (seller) {
       console.log('Updating seller commission totals...');
       console.log('Before update - Total:', seller.totalCommission, 'Available:', seller.availableCommission);
       
       seller.totalCommission += commissionAmount;
-      seller.availableCommission += commissionAmount;
       seller.totalOrders += 1;
       
       await seller.save();
@@ -392,7 +391,28 @@ exports.confirmCommission = async (req, res) => {
       });
     }
 
+    // Only confirm if status is pending
+    if (commission.status !== 'pending') {
+      return res.status(400).json({
+        success: false,
+        message: 'Commission is not in pending status'
+      });
+    }
+
     await commission.confirm(adminId);
+
+    // Update seller's available commission when commission is confirmed
+    const seller = await Seller.findById(commission.sellerId);
+    if (seller) {
+      console.log('Updating seller available commission after confirmation...');
+      console.log('Before update - Available:', seller.availableCommission);
+      
+      seller.availableCommission += commission.amount;
+      
+      await seller.save();
+      
+      console.log('After update - Available:', seller.availableCommission);
+    }
 
     res.json({
       success: true,
@@ -423,6 +443,14 @@ exports.cancelCommission = async (req, res) => {
       });
     }
 
+    // Only cancel if status is pending
+    if (commission.status !== 'pending') {
+      return res.status(400).json({
+        success: false,
+        message: 'Commission is not in pending status'
+      });
+    }
+
     await commission.cancel(adminId, reason);
 
     res.json({
@@ -436,5 +464,32 @@ exports.cancelCommission = async (req, res) => {
       success: false,
       message: 'Failed to cancel commission'
     });
+  }
+};
+
+// Helper function to recalculate seller's available commission
+exports.recalculateSellerCommission = async (sellerId) => {
+  try {
+    // Get all confirmed commissions for the seller
+    const confirmedCommissions = await CommissionHistory.find({
+      sellerId,
+      status: 'confirmed',
+      type: 'earned'
+    });
+
+    const totalConfirmedAmount = confirmedCommissions.reduce((sum, commission) => sum + commission.amount, 0);
+
+    // Update seller's available commission
+    const seller = await Seller.findById(sellerId);
+    if (seller) {
+      seller.availableCommission = totalConfirmedAmount;
+      await seller.save();
+      console.log(`Updated seller ${sellerId} available commission to: ${totalConfirmedAmount}`);
+    }
+
+    return totalConfirmedAmount;
+  } catch (error) {
+    console.error('Error recalculating seller commission:', error);
+    throw error;
   }
 }; 
