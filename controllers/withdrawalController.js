@@ -224,12 +224,19 @@ exports.getAllWithdrawals = async (req, res) => {
     if (status) query.status = status;
     if (sellerId) query.sellerId = sellerId;
 
-    const withdrawals = await Withdrawal.find(query)
+    let withdrawals = await Withdrawal.find(query)
       .sort({ createdAt: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit)
       .populate('sellerId', 'businessName email phone')
       .populate('processedBy', 'name email');
+
+    // Defensive: check if population worked, log if not
+    withdrawals.forEach(w => {
+      if (!w.sellerId || typeof w.sellerId === 'string') {
+        console.warn('Warning: sellerId not populated for withdrawal', w._id, w.sellerId);
+      }
+    });
 
     const total = await Withdrawal.countDocuments(query);
 
