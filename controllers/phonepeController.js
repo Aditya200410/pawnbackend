@@ -23,7 +23,10 @@ async function getPhonePeToken() {
       throw new Error('PhonePe OAuth credentials not configured');
     }
 
-    
+    // Set OAuth URL based on environment
+    // Based on PhonePe documentation: https://developer.phonepe.com/v1/reference/authorization-standard-checkout/
+    let oauthUrl;
+    if (env === 'production') 
       oauthUrl = 'https://api.phonepe.com/apis/identity-manager/v1/oauth/token';
     
 
@@ -83,7 +86,7 @@ exports.createPhonePeOrder = async (req, res) => {
       couponCode 
     } = req.body;
     
-    const env ='production';
+    const env = 'production';
     const frontendUrl = process.env.FRONTEND_URL;
     const backendUrl = process.env.BACKEND_URL;
 
@@ -135,15 +138,17 @@ exports.createPhonePeOrder = async (req, res) => {
     const accessToken = await getPhonePeToken();
 
     // Set base URL for payment API based on PhonePe documentation
+    // Based on: https://developer.phonepe.com/v1/reference/create-payment-standard-checkout
     const baseUrl = env === 'production' 
-      ? 'https://api.phonepe.com/apis/pg/checkout/v2/pay'
-      : 'https://api.phonepe.com/apis/pg/checkout/v2/pay';
+      ? 'https://api.phonepe.com/apis/pg'
+      : 'https://api.phonepe.com/apis/pg';
 
     const apiEndpoint = '/checkout/v2/pay';
 
     const merchantOrderId = `MT${Date.now()}${Math.random().toString(36).substr(2, 6)}`;
 
     // Prepare payload according to PhonePe API documentation
+    // Based on: https://developer.phonepe.com/v1/reference/create-payment-standard-checkout
     const payload = {
       merchantOrderId: merchantOrderId,
       amount: Math.round(amount * 100), // Convert to paise
@@ -159,9 +164,7 @@ exports.createPhonePeOrder = async (req, res) => {
         type: 'PG_CHECKOUT',
         message: `Payment for order ${merchantOrderId}`,
         merchantUrls: {
-          redirectUrl: `${frontendUrl.replace(/\/+$/, '')}/payment/success?transactionId=${merchantOrderId}`,
-          cancelUrl: `${frontendUrl.replace(/\/+$/, '')}/payment/cancel?transactionId=${merchantOrderId}`,
-          callbackUrl: `${backendUrl.replace(/\/+$/, '')}/api/payment/phonepe/callback`
+          redirectUrl: `${frontendUrl.replace(/\/+$/, '')}/payment/success?transactionId=${merchantOrderId}`
         }
       }
     };
@@ -172,10 +175,10 @@ exports.createPhonePeOrder = async (req, res) => {
       accessToken: '***HIDDEN***'
     });
 
-    console.log(`Making PhonePe API request to: ${baseUrl}}`);
+    console.log(`Making PhonePe API request to: ${baseUrl}${apiEndpoint}`);
     
     const response = await axios.post(
-      baseUrl,
+      baseUrl + apiEndpoint,
       payload,
       {
         headers: {
@@ -189,21 +192,15 @@ exports.createPhonePeOrder = async (req, res) => {
     console.log('PhonePe API response:', response.data);
 
     // Success response from PhonePe
-    if (response.data && response.data.success) {
-      let redirectUrl = null;
-      const instrumentResponse = response.data.data?.instrumentResponse;
-
-      if (instrumentResponse?.redirectInfo?.url) {
-        redirectUrl = instrumentResponse.redirectInfo.url;
-      } else if (response.data.data.paymentUrl) {
-        redirectUrl = response.data.data.paymentUrl;
-      } else if (response.data.data.redirectUrl) {
-        redirectUrl = response.data.data.redirectUrl;
-      }
+    if (response.data && response.data.orderId) {
+      const redirectUrl = response.data.redirectUrl;
+      const orderId = response.data.orderId;
+      const state = response.data.state;
 
       if (redirectUrl) {
         const orderData = {
           merchantOrderId,
+          orderId,
           customerName,
           email,
           phone,
@@ -215,19 +212,23 @@ exports.createPhonePeOrder = async (req, res) => {
           paymentMethod,
           sellerToken,
           couponCode,
-          status: 'pending',
+          status: state || 'pending',
           createdAt: new Date()
         };
 
         console.log('PhonePe order created successfully:', {
-          transactionId: merchantOrderId,
+          orderId: orderId,
+          merchantOrderId: merchantOrderId,
+          state: state,
           redirectUrl: redirectUrl.substring(0, 100) + '...'
         });
 
         return res.json({ 
           success: true, 
           redirectUrl,
-          transactionId: merchantOrderId,
+          orderId: orderId,
+          merchantOrderId: merchantOrderId,
+          state: state,
           orderData 
         });
       } else {
@@ -276,7 +277,7 @@ exports.createPhonePeOrder = async (req, res) => {
 
 exports.phonePeCallback = async (req, res) => {
   try {
-    const { merchantOrderId, transactionId, amount, status, code, merchantId } = req.body;
+    const { merchantOrderId, orderId, amount, status, code, merchantId } = req.body;
     
     console.log('PhonePe callback received:', req.body);
     
@@ -312,26 +313,26 @@ exports.phonePeCallback = async (req, res) => {
 
 exports.getPhonePeStatus = async (req, res) => {
   try {
-    const { transactionId } = req.params;
+    const { orderId } = req.params;
     
-    if (!transactionId) {
+    if (!orderId) {
       return res.status(400).json({
         success: false,
-        message: 'Transaction ID is required'
+        message: 'Order ID is required'
       });
     }
     
-    const env = process.env.PHONEPE_ENV || 'production';
+    const env = 'production';
     
     // Get OAuth token
     const accessToken = await getPhonePeToken();
     
     // Set base URL based on PhonePe documentation
     const baseUrl = env === 'production' 
-      ? 'https://api.phonepe.com/apis/pg/'
-      : 'hhttps://api.phonepe.com/apis/pg/';
+      ? 'https://api.phonepe.com/apis/pg'
+      : 'https://api-preprod.phonepe.com/apis/pg-sandbox';
     
-    const apiEndpoint = `/checkout/v2/order/${transactionId}/status`;
+    const apiEndpoint = `/checkout/v2/order/${orderId}/status`;
     
     const response = await axios.get(
       baseUrl + apiEndpoint,
@@ -377,12 +378,12 @@ exports.refundPayment = async (req, res) => {
       });
     }
     
-    const env = process.env.PHONEPE_ENV || 'production';
+    const env = 'production';
     const accessToken = await getPhonePeToken();
     
     const baseUrl = env === 'production' 
       ? 'https://api.phonepe.com/apis/pg'
-      : 'https://api.phonepe.com/apis/pg';
+      : 'https://api-preprod.phonepe.com/apis/pg-sandbox';
     
     const apiEndpoint = '/payments/v2/refund';
     
@@ -437,12 +438,12 @@ exports.getRefundStatus = async (req, res) => {
       });
     }
     
-    const env = process.env.PHONEPE_ENV || 'production';
+    const env = 'production';
     const accessToken = await getPhonePeToken();
     
     const baseUrl = env === 'production' 
       ? 'https://api.phonepe.com/apis/pg'
-      : 'https://api.phonepe.com/apis/pg';
+      : 'https://api-preprod.phonepe.com/apis/pg-sandbox';
     
     const apiEndpoint = `/payments/v2/refund/${merchantRefundId}/status`;
     
