@@ -14,23 +14,18 @@ async function getPhonePeToken() {
       return oauthToken;
     }
 
-    const clientId = process.env.PHONEPE_CLIENT_ID;
-    const clientSecret = process.env.PHONEPE_CLIENT_SECRET;
-    const clientVersion = process.env.PHONEPE_CLIENT_VERSION || '1.0';
-    const env = process.env.PHONEPE_ENV || 'production';
+    const clientId = "SU2507031613442365425629";
+    const clientSecret = "f46b3db1-dc6e-4b59-8624-81b7451a0497";
+    const clientVersion = '1';
+    const env = 'production';
 
     if (!clientId || !clientSecret) {
       throw new Error('PhonePe OAuth credentials not configured');
     }
 
-    // Set OAuth URL based on environment
-    // Based on PhonePe documentation: https://developer.phonepe.com/v1/reference/authorization-standard-checkout/
-    let oauthUrl;
-    if (env === 'production') {
+    
       oauthUrl = 'https://api.phonepe.com/apis/identity-manager/v1/oauth/token';
-    } else {
-      oauthUrl = 'https://api-preprod.phonepe.com/apis/pg-sandbox/v1/oauth/token';
-    }
+    
 
     console.log('Getting PhonePe OAuth token from:', oauthUrl);
 
@@ -88,7 +83,7 @@ exports.createPhonePeOrder = async (req, res) => {
       couponCode 
     } = req.body;
     
-    const env = process.env.PHONEPE_ENV || 'production';
+    const env ='production';
     const frontendUrl = process.env.FRONTEND_URL;
     const backendUrl = process.env.BACKEND_URL;
 
