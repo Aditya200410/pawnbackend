@@ -15,5 +15,6 @@ router.get('/admin/all', authenticateToken, isAdmin, withdrawalController.getAll
 router.patch('/admin/approve/:withdrawalId', authenticateToken, isAdmin, withdrawalController.approveWithdrawal);
 router.patch('/admin/reject/:withdrawalId', authenticateToken, isAdmin, withdrawalController.rejectWithdrawal);
 router.patch('/admin/complete/:withdrawalId', authenticateToken, isAdmin, withdrawalController.completeWithdrawal);
+router.get('/admin/by-seller/:sellerId', authenticateToken, isAdmin, withdrawalController.getWithdrawalsBySeller);
 
 module.exports = router; 

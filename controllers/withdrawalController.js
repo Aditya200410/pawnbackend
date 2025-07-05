@@ -231,12 +231,11 @@ exports.getAllWithdrawals = async (req, res) => {
       .populate('sellerId', 'businessName email phone')
       .populate('processedBy', 'name email');
 
-    // Defensive: check if population worked, log if not
-    withdrawals.forEach(w => {
-      if (!w.sellerId || typeof w.sellerId === 'string') {
-        console.warn('Warning: sellerId not populated for withdrawal', w._id, w.sellerId);
-      }
-    });
+    // Fallback: If any withdrawal has an unpopulated sellerId, re-populate those
+    const needsPopulate = withdrawals.some(w => !w.sellerId || typeof w.sellerId === 'string');
+    if (needsPopulate) {
+      withdrawals = await Withdrawal.populate(withdrawals, { path: 'sellerId', select: 'businessName email phone' });
+    }
 
     const total = await Withdrawal.countDocuments(query);
 
@@ -453,5 +452,23 @@ exports.completeWithdrawal = async (req, res) => {
       success: false,
       message: 'Failed to complete withdrawal'
     });
+  }
+};
+
+// Admin: Get all withdrawals for a specific seller
+exports.getWithdrawalsBySeller = async (req, res) => {
+  try {
+    const { sellerId } = req.params;
+    if (!sellerId) {
+      return res.status(400).json({ success: false, message: 'sellerId is required' });
+    }
+    const withdrawals = await Withdrawal.find({ sellerId })
+      .sort({ createdAt: -1 })
+      .populate('sellerId', 'businessName email phone')
+      .populate('processedBy', 'name email');
+    res.json({ success: true, withdrawals });
+  } catch (error) {
+    console.error('Get withdrawals by seller error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch withdrawals for seller' });
   }
 }; 
