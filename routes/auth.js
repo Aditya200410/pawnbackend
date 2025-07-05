@@ -280,10 +280,31 @@ router.post('/register-with-msg91', async (req, res) => {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
-        }
+        },
+        timeout: 10000 // 10 second timeout
       });
       
       console.log('MSG91 verification response:', response.data);
+      
+      // Handle IP blocked error specifically
+      if (response.data.code === '408' || response.data.message === 'IPBlocked') {
+        console.error('MSG91 IP Blocked Error:', response.data);
+        return res.status(503).json({ 
+          message: 'MSG91 service temporarily unavailable',
+          details: 'IP blocked by MSG91. Please contact support or try again later.',
+          code: 'MSG91_IP_BLOCKED'
+        });
+      }
+      
+      // Handle authentication errors
+      if (response.data.code === '401' || response.data.message === 'Unauthorized') {
+        console.error('MSG91 Authentication Error:', response.data);
+        return res.status(401).json({ 
+          message: 'MSG91 authentication failed',
+          details: 'Invalid API key or authentication credentials.',
+          code: 'MSG91_AUTH_ERROR'
+        });
+      }
       
       // Check for multiple possible success indicators
       const isSuccess = response.data.type === 'success' || 
@@ -295,16 +316,36 @@ router.post('/register-with-msg91', async (req, res) => {
         console.error('MSG91 verification failed:', response.data);
         return res.status(400).json({ 
           message: 'Invalid OTP token',
-          details: response.data.message || 'Verification failed'
+          details: response.data.message || 'Verification failed',
+          code: 'MSG91_VERIFICATION_FAILED'
         });
       }
       
       console.log('MSG91 verification successful');
     } catch (verifyErr) {
       console.error('MSG91 token verification error:', verifyErr.response?.data || verifyErr.message);
+      
+      // Handle specific MSG91 errors
+      if (verifyErr.response?.data?.code === '408' || verifyErr.response?.data?.message === 'IPBlocked') {
+        return res.status(503).json({ 
+          message: 'MSG91 service temporarily unavailable',
+          details: 'IP blocked by MSG91. Please contact support or try again later.',
+          code: 'MSG91_IP_BLOCKED'
+        });
+      }
+      
+      if (verifyErr.response?.data?.code === '401' || verifyErr.response?.data?.message === 'Unauthorized') {
+        return res.status(401).json({ 
+          message: 'MSG91 authentication failed',
+          details: 'Invalid API key or authentication credentials.',
+          code: 'MSG91_AUTH_ERROR'
+        });
+      }
+      
       return res.status(400).json({ 
         message: 'OTP verification failed',
-        details: verifyErr.response?.data?.message || verifyErr.message
+        details: verifyErr.response?.data?.message || verifyErr.message,
+        code: 'MSG91_VERIFICATION_ERROR'
       });
     }
 
