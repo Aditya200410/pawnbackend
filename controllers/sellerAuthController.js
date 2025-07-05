@@ -108,21 +108,21 @@ exports.login = async (req, res) => {
       { expiresIn: '24h' }
     );
 
-    // Get withdrawal data from Withdrawal model
-    const Withdrawal = require('../models/Withdrawal');
-    const withdrawals = await Withdrawal.find({ sellerId: seller._id })
-      .sort({ createdAt: -1 })
-      .select('amount status requestDate processedDate adminNotes rejectionReason bankDetails');
+    // Get withdrawal data from Withdraw model
+    const Withdraw = require('../models/Withdraw');
+    const withdrawals = await Withdraw.find({ seller: seller._id })
+      .sort({ requestedAt: -1 })
+      .select('amount status requestedAt processedAt bankDetails');
 
     // Map withdrawal data to match expected format
     const mappedWithdrawals = withdrawals.map(withdrawal => ({
       _id: withdrawal._id,
       amount: withdrawal.amount,
       status: withdrawal.status,
-      requestedAt: withdrawal.requestDate, // Map requestDate to requestedAt
-      processedDate: withdrawal.processedDate,
-      adminNotes: withdrawal.adminNotes,
-      rejectionReason: withdrawal.rejectionReason,
+      requestedAt: withdrawal.requestedAt,
+      processedDate: withdrawal.processedAt,
+      adminNotes: null,
+      rejectionReason: null,
       bankDetails: withdrawal.bankDetails
     }));
 
@@ -177,21 +177,21 @@ exports.getProfile = async (req, res) => {
       });
     }
 
-    // Get withdrawal data from Withdrawal model
-    const Withdrawal = require('../models/Withdrawal');
-    const withdrawals = await Withdrawal.find({ sellerId: req.seller._id })
-      .sort({ createdAt: -1 })
-      .select('amount status requestDate processedDate adminNotes rejectionReason bankDetails');
+    // Get withdrawal data from Withdraw model
+    const Withdraw = require('../models/Withdraw');
+    const withdrawals = await Withdraw.find({ seller: seller._id })
+      .sort({ requestedAt: -1 })
+      .select('amount status requestedAt processedAt bankDetails');
 
     // Map withdrawal data to match expected format
     const mappedWithdrawals = withdrawals.map(withdrawal => ({
       _id: withdrawal._id,
       amount: withdrawal.amount,
       status: withdrawal.status,
-      requestedAt: withdrawal.requestDate, // Map requestDate to requestedAt
-      processedDate: withdrawal.processedDate,
-      adminNotes: withdrawal.adminNotes,
-      rejectionReason: withdrawal.rejectionReason,
+      requestedAt: withdrawal.requestedAt,
+      processedDate: withdrawal.processedAt,
+      adminNotes: null,
+      rejectionReason: null,
       bankDetails: withdrawal.bankDetails
     }));
 
@@ -256,21 +256,21 @@ exports.updateProfile = async (req, res) => {
       });
     }
 
-    // Get withdrawal data from Withdrawal model
-    const Withdrawal = require('../models/Withdrawal');
-    const withdrawals = await Withdrawal.find({ sellerId: req.seller._id })
-      .sort({ createdAt: -1 })
-      .select('amount status requestDate processedDate adminNotes rejectionReason bankDetails');
+    // Get withdrawal data from Withdraw model
+    const Withdraw = require('../models/Withdraw');
+    const withdrawals = await Withdraw.find({ seller: seller._id })
+      .sort({ requestedAt: -1 })
+      .select('amount status requestedAt processedAt bankDetails');
 
     // Map withdrawal data to match expected format
     const mappedWithdrawals = withdrawals.map(withdrawal => ({
       _id: withdrawal._id,
       amount: withdrawal.amount,
       status: withdrawal.status,
-      requestedAt: withdrawal.requestDate, // Map requestDate to requestedAt
-      processedDate: withdrawal.processedDate,
-      adminNotes: withdrawal.adminNotes,
-      rejectionReason: withdrawal.rejectionReason,
+      requestedAt: withdrawal.requestedAt,
+      processedDate: withdrawal.processedAt,
+      adminNotes: null,
+      rejectionReason: null,
       bankDetails: withdrawal.bankDetails
     }));
 
@@ -420,12 +420,12 @@ exports.getAllSellers = async (req, res) => {
     console.log('Found sellers count:', sellers.length);
     
     // Get withdrawal data for each seller
-    const Withdrawal = require('../models/Withdrawal');
+    const Withdraw = require('../models/Withdraw');
     const sellersWithWithdrawals = await Promise.all(
       sellers.map(async (seller) => {
-        const withdrawals = await Withdrawal.find({ sellerId: seller._id })
-          .sort({ createdAt: -1 })
-          .select('amount status requestDate processedDate adminNotes rejectionReason bankDetails');
+        const withdrawals = await Withdraw.find({ seller: seller._id })
+          .sort({ requestedAt: -1 })
+          .select('amount status requestedAt processedAt bankDetails');
         
         console.log(`Seller ${seller.businessName} has ${withdrawals.length} withdrawals`);
         
@@ -434,10 +434,10 @@ exports.getAllSellers = async (req, res) => {
           _id: withdrawal._id,
           amount: withdrawal.amount,
           status: withdrawal.status,
-          requestedAt: withdrawal.requestDate, // Map requestDate to requestedAt
-          processedDate: withdrawal.processedDate,
-          adminNotes: withdrawal.adminNotes,
-          rejectionReason: withdrawal.rejectionReason,
+          requestedAt: withdrawal.requestedAt,
+          processedDate: withdrawal.processedAt,
+          adminNotes: null,
+          rejectionReason: null,
           bankDetails: withdrawal.bankDetails
         }));
         

@@ -1,8 +1,7 @@
-const Withdrawal = require('../models/Withdrawal');
-const CommissionHistory = require('../models/CommissionHistory');
+const Withdraw = require('../models/Withdraw');
 const Seller = require('../models/Seller');
 
-// Request withdrawal
+// Request withdrawal (old system)
 exports.requestWithdrawal = async (req, res) => {
   try {
     const { amount, sellerNotes } = req.body;
@@ -41,18 +40,16 @@ exports.requestWithdrawal = async (req, res) => {
       });
     }
 
-    // Create withdrawal request
-    const withdrawal = new Withdrawal({
-      sellerId,
+    // Create withdrawal request using old system
+    const withdrawal = new Withdraw({
+      seller: sellerId,
       amount,
-      sellerNotes,
       bankDetails: {
-        accountHolderName: seller.accountHolderName,
+        accountName: seller.accountHolderName,
         accountNumber: seller.bankAccountNumber,
-        ifscCode: seller.ifscCode,
+        ifsc: seller.ifscCode,
         bankName: seller.bankName
-      },
-      netAmount: amount // Will be calculated by pre-save middleware
+      }
     });
 
     await withdrawal.save();
@@ -61,20 +58,6 @@ exports.requestWithdrawal = async (req, res) => {
     seller.availableCommission -= amount;
     await seller.save();
 
-    // Create commission history entry
-    const commissionEntry = new CommissionHistory({
-      sellerId,
-      orderId: null, // Not related to a specific order
-      type: 'withdrawn',
-      amount: amount,
-      orderAmount: 0,
-      description: `Withdrawal request of ₹${amount.toFixed(2)}`,
-      withdrawalId: withdrawal._id,
-      status: 'pending'
-    });
-
-    await commissionEntry.save();
-
     res.json({
       success: true,
       message: 'Withdrawal request submitted successfully',
@@ -82,7 +65,7 @@ exports.requestWithdrawal = async (req, res) => {
         id: withdrawal._id,
         amount: withdrawal.amount,
         status: withdrawal.status,
-        requestDate: withdrawal.requestDate
+        requestDate: withdrawal.requestedAt
       }
     });
 
@@ -95,24 +78,23 @@ exports.requestWithdrawal = async (req, res) => {
   }
 };
 
-// Get seller's withdrawal history
+// Get seller's withdrawal history (old system)
 exports.getWithdrawalHistory = async (req, res) => {
   try {
     const sellerId = req.seller.id;
     const { page = 1, limit = 10, status } = req.query;
 
-    const query = { sellerId };
+    const query = { seller: sellerId };
     if (status) {
       query.status = status;
     }
 
-    const withdrawals = await Withdrawal.find(query)
-      .sort({ createdAt: -1 })
+    const withdrawals = await Withdraw.find(query)
+      .sort({ requestedAt: -1 })
       .limit(limit * 1)
-      .skip((page - 1) * limit)
-      .populate('processedBy', 'name email');
+      .skip((page - 1) * limit);
 
-    const total = await Withdrawal.countDocuments(query);
+    const total = await Withdraw.countDocuments(query);
 
     res.json({
       success: true,
@@ -134,16 +116,16 @@ exports.getWithdrawalHistory = async (req, res) => {
   }
 };
 
-// Get withdrawal details
+// Get withdrawal details (old system)
 exports.getWithdrawalDetails = async (req, res) => {
   try {
     const { withdrawalId } = req.params;
     const sellerId = req.seller.id;
 
-    const withdrawal = await Withdrawal.findOne({
+    const withdrawal = await Withdraw.findOne({
       _id: withdrawalId,
-      sellerId
-    }).populate('processedBy', 'name email');
+      seller: sellerId
+    });
 
     if (!withdrawal) {
       return res.status(404).json({
@@ -166,15 +148,15 @@ exports.getWithdrawalDetails = async (req, res) => {
   }
 };
 
-// Cancel withdrawal request (only if pending)
+// Cancel withdrawal request (old system)
 exports.cancelWithdrawal = async (req, res) => {
   try {
     const { withdrawalId } = req.params;
     const sellerId = req.seller.id;
 
-    const withdrawal = await Withdrawal.findOne({
+    const withdrawal = await Withdraw.findOne({
       _id: withdrawalId,
-      sellerId,
+      seller: sellerId,
       status: 'pending'
     });
 
@@ -187,19 +169,13 @@ exports.cancelWithdrawal = async (req, res) => {
 
     // Update withdrawal status
     withdrawal.status = 'cancelled';
-    withdrawal.processedDate = new Date();
+    withdrawal.processedAt = new Date();
     await withdrawal.save();
 
     // Refund the amount to seller's available commission
     const seller = await Seller.findById(sellerId);
     seller.availableCommission += withdrawal.amount;
     await seller.save();
-
-    // Update commission history
-    await CommissionHistory.findOneAndUpdate(
-      { withdrawalId: withdrawal._id },
-      { status: 'cancelled' }
-    );
 
     res.json({
       success: true,
@@ -215,7 +191,7 @@ exports.cancelWithdrawal = async (req, res) => {
   }
 };
 
-// Admin: Get all withdrawal requests
+// Admin: Get all withdrawal requests (old system only)
 exports.getAllWithdrawals = async (req, res) => {
   try {
     console.log('=== GET ALL WITHDRAWALS REQUEST ===');
@@ -227,80 +203,31 @@ exports.getAllWithdrawals = async (req, res) => {
 
     const query = {};
     if (status) query.status = status;
-    if (sellerId) query.sellerId = sellerId;
+    if (sellerId) query.seller = sellerId;
 
     console.log('MongoDB query:', query);
 
-    // Get withdrawals from new system (Withdrawal model)
-    let newWithdrawals = await Withdrawal.find(query)
-      .sort({ createdAt: -1 })
-      .populate('sellerId', 'businessName email phone')
-      .populate('processedBy', 'name email');
-
-    console.log('New system withdrawals count:', newWithdrawals.length);
-
-    // Get withdrawals from old system (Withdraw model)
+    // Get withdrawals from old system (Withdraw model) only
     const Withdraw = require('../models/Withdraw');
-    const oldQuery = {};
-    if (status) oldQuery.status = status;
-    if (sellerId) oldQuery.seller = sellerId;
-
-    let oldWithdrawals = await Withdraw.find(oldQuery)
+    let withdrawals = await Withdraw.find(query)
       .sort({ requestedAt: -1 })
       .populate('seller', 'businessName email phone');
 
-    console.log('Old system withdrawals count:', oldWithdrawals.length);
-
-    // Convert old withdrawals to match new format
-    const convertedOldWithdrawals = oldWithdrawals.map(w => ({
-      _id: w._id,
+    console.log('Withdrawals count:', withdrawals.length);
+    console.log('Withdrawals:', withdrawals.map(w => ({
+      id: w._id,
       amount: w.amount,
       status: w.status,
-      requestDate: w.requestedAt,
-      processedDate: w.processedAt,
       sellerId: w.seller,
-      bankDetails: w.bankDetails,
-      adminNotes: null,
-      rejectionReason: null,
-      createdAt: w.requestedAt,
-      updatedAt: w.processedAt || w.requestedAt,
-      // Add system identifier
-      system: 'old'
-    }));
-
-    // Add system identifier to new withdrawals
-    const newWithdrawalsWithSystem = newWithdrawals.map(w => ({
-      ...w.toObject(),
-      system: 'new'
-    }));
-
-    // Combine both systems
-    let allWithdrawals = [...newWithdrawalsWithSystem, ...convertedOldWithdrawals];
-
-    // Sort by creation date (newest first)
-    allWithdrawals.sort((a, b) => {
-      const dateA = new Date(a.createdAt || a.requestDate);
-      const dateB = new Date(b.createdAt || b.requestDate);
-      return dateB - dateA;
-    });
+      sellerName: w.seller?.businessName || 'Unknown'
+    })));
 
     // Apply pagination
     const startIndex = (page - 1) * limit;
     const endIndex = startIndex + limit;
-    const paginatedWithdrawals = allWithdrawals.slice(startIndex, endIndex);
+    const paginatedWithdrawals = withdrawals.slice(startIndex, endIndex);
 
-    console.log('Combined withdrawals count:', allWithdrawals.length);
-    console.log('Paginated withdrawals count:', paginatedWithdrawals.length);
-    console.log('Withdrawals:', paginatedWithdrawals.map(w => ({
-      id: w._id,
-      amount: w.amount,
-      status: w.status,
-      sellerId: w.sellerId,
-      sellerName: w.sellerId?.businessName || 'Unknown',
-      system: w.system
-    })));
-
-    const total = allWithdrawals.length;
+    const total = withdrawals.length;
 
     res.json({
       success: true,
@@ -322,7 +249,7 @@ exports.getAllWithdrawals = async (req, res) => {
   }
 };
 
-// Admin: Approve withdrawal
+// Admin: Approve withdrawal (old system only)
 exports.approveWithdrawal = async (req, res) => {
   try {
     const { withdrawalId } = req.params;
@@ -344,19 +271,12 @@ exports.approveWithdrawal = async (req, res) => {
       });
     }
 
-    // Try to find in new system first
-    let withdrawal = await Withdrawal.findById(withdrawalId);
-    let system = 'new';
+    // Find in old system only
+    const Withdraw = require('../models/Withdraw');
+    const withdrawal = await Withdraw.findById(withdrawalId);
 
     if (!withdrawal) {
-      // Try to find in old system
-      const Withdraw = require('../models/Withdraw');
-      withdrawal = await Withdraw.findById(withdrawalId);
-      system = 'old';
-    }
-
-    if (!withdrawal) {
-      console.log('Withdrawal not found in either system:', withdrawalId);
+      console.log('Withdrawal not found:', withdrawalId);
       return res.status(404).json({
         success: false,
         message: 'Withdrawal not found'
@@ -366,8 +286,7 @@ exports.approveWithdrawal = async (req, res) => {
     console.log('Found withdrawal:', {
       id: withdrawal._id,
       status: withdrawal.status,
-      amount: withdrawal.amount,
-      system: system
+      amount: withdrawal.amount
     });
 
     if (withdrawal.status !== 'pending') {
@@ -378,27 +297,12 @@ exports.approveWithdrawal = async (req, res) => {
       });
     }
 
-    if (system === 'new') {
-      // New system approval
-      withdrawal.status = 'approved';
-      withdrawal.processedBy = adminId;
-      withdrawal.processedDate = new Date();
-      withdrawal.adminNotes = 'Approved - Amount will be credited in 3-5 business days';
-      await withdrawal.save();
+    // Old system approval
+    withdrawal.status = 'completed';
+    withdrawal.processedAt = new Date();
+    await withdrawal.save();
 
-      // Update commission history
-      await CommissionHistory.findOneAndUpdate(
-        { withdrawalId: withdrawal._id },
-        { status: 'confirmed' }
-      );
-    } else {
-      // Old system approval
-      withdrawal.status = 'completed';
-      withdrawal.processedAt = new Date();
-      await withdrawal.save();
-    }
-
-    console.log('Withdrawal approved successfully in', system, 'system');
+    console.log('Withdrawal approved successfully');
 
     res.json({
       success: true,
@@ -406,7 +310,7 @@ exports.approveWithdrawal = async (req, res) => {
       withdrawal: {
         id: withdrawal._id,
         status: withdrawal.status,
-        processedDate: withdrawal.processedDate || withdrawal.processedAt
+        processedDate: withdrawal.processedAt
       }
     });
 
@@ -420,7 +324,7 @@ exports.approveWithdrawal = async (req, res) => {
   }
 };
 
-// Admin: Reject withdrawal
+// Admin: Reject withdrawal (old system only)
 exports.rejectWithdrawal = async (req, res) => {
   try {
     const { withdrawalId } = req.params;
@@ -429,16 +333,9 @@ exports.rejectWithdrawal = async (req, res) => {
 
     console.log('Rejecting withdrawal:', withdrawalId);
 
-    // Try to find in new system first
-    let withdrawal = await Withdrawal.findById(withdrawalId);
-    let system = 'new';
-
-    if (!withdrawal) {
-      // Try to find in old system
-      const Withdraw = require('../models/Withdraw');
-      withdrawal = await Withdraw.findById(withdrawalId);
-      system = 'old';
-    }
+    // Find in old system only
+    const Withdraw = require('../models/Withdraw');
+    const withdrawal = await Withdraw.findById(withdrawalId);
 
     if (!withdrawal) {
       return res.status(404).json({
@@ -454,35 +351,12 @@ exports.rejectWithdrawal = async (req, res) => {
       });
     }
 
-    if (system === 'new') {
-      // New system rejection
-      withdrawal.status = 'rejected';
-      withdrawal.processedBy = adminId;
-      withdrawal.rejectionReason = rejectionReason || 'Withdrawal request rejected';
-      withdrawal.processedDate = new Date();
-      await withdrawal.save();
+    // Old system rejection
+    withdrawal.status = 'rejected';
+    withdrawal.processedAt = new Date();
+    await withdrawal.save();
 
-      // Refund the amount to seller's available commission
-      const seller = await Seller.findById(withdrawal.sellerId);
-      if (seller) {
-        seller.availableCommission += withdrawal.amount;
-        await seller.save();
-        console.log('Amount refunded to seller');
-      }
-
-      // Update commission history
-      await CommissionHistory.findOneAndUpdate(
-        { withdrawalId: withdrawal._id },
-        { status: 'cancelled' }
-      );
-    } else {
-      // Old system rejection
-      withdrawal.status = 'rejected';
-      withdrawal.processedAt = new Date();
-      await withdrawal.save();
-    }
-
-    console.log('Withdrawal rejected successfully in', system, 'system');
+    console.log('Withdrawal rejected successfully');
 
     res.json({
       success: true,
@@ -498,7 +372,7 @@ exports.rejectWithdrawal = async (req, res) => {
   }
 };
 
-// Admin: Complete withdrawal (optional - for when payment is actually made)
+// Admin: Complete withdrawal (old system only)
 exports.completeWithdrawal = async (req, res) => {
   try {
     const { withdrawalId } = req.params;
@@ -506,16 +380,9 @@ exports.completeWithdrawal = async (req, res) => {
 
     console.log('Completing withdrawal:', withdrawalId);
 
-    // Try to find in new system first
-    let withdrawal = await Withdrawal.findById(withdrawalId);
-    let system = 'new';
-
-    if (!withdrawal) {
-      // Try to find in old system
-      const Withdraw = require('../models/Withdraw');
-      withdrawal = await Withdraw.findById(withdrawalId);
-      system = 'old';
-    }
+    // Find in old system only
+    const Withdraw = require('../models/Withdraw');
+    const withdrawal = await Withdraw.findById(withdrawalId);
 
     if (!withdrawal) {
       return res.status(404).json({
@@ -524,39 +391,19 @@ exports.completeWithdrawal = async (req, res) => {
       });
     }
 
-    if (system === 'new') {
-      if (withdrawal.status !== 'approved') {
-        return res.status(400).json({
-          success: false,
-          message: 'Withdrawal must be approved before completion'
-        });
-      }
-
-      // Mark as completed
-      withdrawal.status = 'completed';
-      withdrawal.processedDate = new Date();
-      await withdrawal.save();
-
-      // Update commission history
-      await CommissionHistory.findOneAndUpdate(
-        { withdrawalId: withdrawal._id },
-        { status: 'confirmed' }
-      );
-    } else {
-      if (withdrawal.status !== 'pending' && withdrawal.status !== 'completed') {
-        return res.status(400).json({
-          success: false,
-          message: 'Withdrawal cannot be completed in current status'
-        });
-      }
-
-      // Mark as completed
-      withdrawal.status = 'completed';
-      withdrawal.processedAt = new Date();
-      await withdrawal.save();
+    if (withdrawal.status !== 'pending' && withdrawal.status !== 'completed') {
+      return res.status(400).json({
+        success: false,
+        message: 'Withdrawal cannot be completed in current status'
+      });
     }
 
-    console.log('Withdrawal completed successfully in', system, 'system');
+    // Mark as completed
+    withdrawal.status = 'completed';
+    withdrawal.processedAt = new Date();
+    await withdrawal.save();
+
+    console.log('Withdrawal completed successfully');
 
     res.json({
       success: true,
@@ -572,7 +419,7 @@ exports.completeWithdrawal = async (req, res) => {
   }
 };
 
-// Admin: Get all withdrawals for a specific seller
+// Admin: Get all withdrawals for a specific seller (old system only)
 exports.getWithdrawalsBySeller = async (req, res) => {
   try {
     const { sellerId } = req.params;
@@ -583,57 +430,15 @@ exports.getWithdrawalsBySeller = async (req, res) => {
     console.log('=== GET WITHDRAWALS BY SELLER ===');
     console.log('Seller ID:', sellerId);
 
-    // Get withdrawals from new system (Withdrawal model)
-    const newWithdrawals = await Withdrawal.find({ sellerId })
-      .sort({ createdAt: -1 })
-      .populate('sellerId', 'businessName email phone')
-      .populate('processedBy', 'name email');
-
-    console.log('New system withdrawals for seller:', newWithdrawals.length);
-
-    // Get withdrawals from old system (Withdraw model)
+    // Get withdrawals from old system (Withdraw model) only
     const Withdraw = require('../models/Withdraw');
-    const oldWithdrawals = await Withdraw.find({ seller: sellerId })
+    const withdrawals = await Withdraw.find({ seller: sellerId })
       .sort({ requestedAt: -1 })
       .populate('seller', 'businessName email phone');
 
-    console.log('Old system withdrawals for seller:', oldWithdrawals.length);
+    console.log('Withdrawals for seller:', withdrawals.length);
 
-    // Convert old withdrawals to match new format
-    const convertedOldWithdrawals = oldWithdrawals.map(w => ({
-      _id: w._id,
-      amount: w.amount,
-      status: w.status,
-      requestDate: w.requestedAt,
-      processedDate: w.processedAt,
-      sellerId: w.seller,
-      bankDetails: w.bankDetails,
-      adminNotes: null,
-      rejectionReason: null,
-      createdAt: w.requestedAt,
-      updatedAt: w.processedAt || w.requestedAt,
-      system: 'old'
-    }));
-
-    // Add system identifier to new withdrawals
-    const newWithdrawalsWithSystem = newWithdrawals.map(w => ({
-      ...w.toObject(),
-      system: 'new'
-    }));
-
-    // Combine both systems
-    let allWithdrawals = [...newWithdrawalsWithSystem, ...convertedOldWithdrawals];
-
-    // Sort by creation date (newest first)
-    allWithdrawals.sort((a, b) => {
-      const dateA = new Date(a.createdAt || a.requestDate);
-      const dateB = new Date(b.createdAt || b.requestDate);
-      return dateB - dateA;
-    });
-
-    console.log('Combined withdrawals for seller:', allWithdrawals.length);
-
-    res.json({ success: true, withdrawals: allWithdrawals });
+    res.json({ success: true, withdrawals });
   } catch (error) {
     console.error('Get withdrawals by seller error:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch withdrawals for seller' });

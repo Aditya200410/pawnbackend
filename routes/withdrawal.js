@@ -4,13 +4,13 @@ const withdrawalController = require('../controllers/withdrawalController');
 const sellerAuth = require('../middleware/sellerAuth');
 const { authenticateToken, isAdmin } = require('../middleware/auth');
 
-// Seller routes (protected by sellerAuth)
+// Seller routes (protected by sellerAuth) - Old system only
 router.post('/request', sellerAuth, withdrawalController.requestWithdrawal);
 router.get('/history', sellerAuth, withdrawalController.getWithdrawalHistory);
 router.get('/details/:withdrawalId', sellerAuth, withdrawalController.getWithdrawalDetails);
 router.put('/cancel/:withdrawalId', sellerAuth, withdrawalController.cancelWithdrawal);
 
-// Admin routes (protected by adminAuth)
+// Admin routes (protected by adminAuth) - Old system only
 router.get('/admin/all', authenticateToken, isAdmin, withdrawalController.getAllWithdrawals);
 router.patch('/admin/approve/:withdrawalId', authenticateToken, isAdmin, withdrawalController.approveWithdrawal);
 router.patch('/admin/reject/:withdrawalId', authenticateToken, isAdmin, withdrawalController.rejectWithdrawal);
