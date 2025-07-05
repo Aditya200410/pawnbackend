@@ -266,10 +266,13 @@ router.post('/register-with-msg91', async (req, res) => {
     }
 
     // Verify MSG91 token with MSG91 API using the correct endpoint
-    const apiKey = process.env.MSG91_API_KEY || '458779TNIVxOl3qDwI6866bc33P1';
+    const apiKey = process.env.MSG91_API_KEY || '';
     const verifyUrl = 'https://control.msg91.com/api/v5/widget/verifyAccessToken';
     
     try {
+      console.log('Verifying MSG91 token:', msg91Token);
+      console.log('Using API key:', apiKey);
+      
       const response = await axios.post(verifyUrl, {
         authkey: apiKey,
         'access-token': msg91Token
@@ -282,12 +285,27 @@ router.post('/register-with-msg91', async (req, res) => {
       
       console.log('MSG91 verification response:', response.data);
       
-      if (response.data.type !== 'success' && response.data.status !== 'success') {
-        return res.status(400).json({ message: 'Invalid OTP token' });
+      // Check for multiple possible success indicators
+      const isSuccess = response.data.type === 'success' || 
+                       response.data.status === 'success' || 
+                       response.data.success === true ||
+                       response.data.message === 'success';
+      
+      if (!isSuccess) {
+        console.error('MSG91 verification failed:', response.data);
+        return res.status(400).json({ 
+          message: 'Invalid OTP token',
+          details: response.data.message || 'Verification failed'
+        });
       }
+      
+      console.log('MSG91 verification successful');
     } catch (verifyErr) {
       console.error('MSG91 token verification error:', verifyErr.response?.data || verifyErr.message);
-      return res.status(400).json({ message: 'OTP verification failed' });
+      return res.status(400).json({ 
+        message: 'OTP verification failed',
+        details: verifyErr.response?.data?.message || verifyErr.message
+      });
     }
 
     // Create new user
