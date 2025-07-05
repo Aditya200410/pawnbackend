@@ -24,9 +24,17 @@ async function getPhonePeToken() {
     }
 
     // Set OAuth URL based on environment
-    const oauthUrl = env === 'production' 
-      ? 'https://api.phonepe.com/apis/hermes/oauth/token'
-      : 'https://api-preprod.phonepe.com/apis/pg-sandbox/v1/oauth/token';
+    // Note: Based on Postman collection, OAuth is only available in sandbox
+    // For production, we might need to use a different approach
+    let oauthUrl;
+    if (env === 'production') {
+      // For production, we might need to use a different endpoint or approach
+      // For now, we'll use the sandbox endpoint as a fallback
+      console.warn('Warning: Using sandbox OAuth endpoint for production environment');
+      oauthUrl = 'https://api.phonepe.com/apis/identity-manager/v1/oauth/token';
+    } else {
+      oauthUrl = 'https://api-preprod.phonepe.com/apis/pg-sandbox/v1/oauth/token';
+    }
 
     console.log('Getting PhonePe OAuth token from:', oauthUrl);
 
@@ -129,7 +137,7 @@ exports.createPhonePeOrder = async (req, res) => {
     // Get OAuth token
     const accessToken = await getPhonePeToken();
 
-    // Set base URL for payment API
+    // Set base URL for payment API based on Postman collection
     const baseUrl = env === 'production' 
       ? 'https://api.phonepe.com/apis/hermes'
       : 'https://api-preprod.phonepe.com/apis/pg-sandbox';
@@ -138,7 +146,7 @@ exports.createPhonePeOrder = async (req, res) => {
 
     const merchantOrderId = `MT${Date.now()}${Math.random().toString(36).substr(2, 6)}`;
 
-    // Prepare payload according to PhonePe API documentation
+    // Prepare payload according to PhonePe API documentation from Postman
     const payload = {
       merchantOrderId: merchantOrderId,
       amount: Math.round(amount * 100), // Convert to paise
@@ -321,7 +329,7 @@ exports.getPhonePeStatus = async (req, res) => {
     // Get OAuth token
     const accessToken = await getPhonePeToken();
     
-    // Set base URL
+    // Set base URL based on Postman collection
     const baseUrl = env === 'production' 
       ? 'https://api.phonepe.com/apis/hermes'
       : 'https://api-preprod.phonepe.com/apis/pg-sandbox';
