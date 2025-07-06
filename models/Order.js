@@ -33,8 +33,10 @@ const orderSchema = new mongoose.Schema({
   paymentStatus: { 
     type: String, 
     required: true,
-    enum: ['pending', 'completed', 'failed']
+    enum: ['pending', 'completed', 'failed', 'pending_upfront']
   },
+  upfrontAmount: { type: Number, default: 0 }, // Upfront payment amount for COD orders
+  remainingAmount: { type: Number, default: 0 }, // Remaining amount to be paid on delivery
   sellerToken: { type: String, required: false }, // Track which seller referred this order
   commission: { type: Number, default: 0 }, // Commission amount for this order
   transactionId: { type: String, required: false }, // PhonePe transaction ID

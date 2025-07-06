@@ -22,6 +22,8 @@ const createOrder = async (req, res) => {
       totalAmount,
       paymentMethod,
       paymentStatus,
+      upfrontAmount,
+      remainingAmount,
       sellerToken, // Get seller token from request
       transactionId, // PhonePe transaction ID
       couponCode, // Coupon code if applied
@@ -98,6 +100,8 @@ const createOrder = async (req, res) => {
       totalAmount,
       paymentMethod,
       paymentStatus: mappedPaymentStatus,
+      upfrontAmount: upfrontAmount || 0,
+      remainingAmount: remainingAmount || 0,
       sellerToken,
       transactionId,
       couponCode,

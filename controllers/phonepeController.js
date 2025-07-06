@@ -82,6 +82,8 @@ exports.createPhonePeOrder = async (req, res) => {
       codExtraCharge, 
       finalTotal, 
       paymentMethod, 
+      upfrontAmount,
+      remainingAmount,
       sellerToken,
       couponCode 
     } = req.body;
@@ -158,11 +160,15 @@ exports.createPhonePeOrder = async (req, res) => {
         udf2: email,
         udf3: phone,
         udf4: sellerToken || '',
-        udf5: couponCode || ''
+        udf5: couponCode || '',
+        udf6: upfrontAmount ? `upfront:${upfrontAmount}` : '',
+        udf7: remainingAmount ? `remaining:${remainingAmount}` : ''
       },
       paymentFlow: {
         type: 'PG_CHECKOUT',
-        message: `Payment for order ${merchantOrderId}`,
+        message: paymentMethod === 'cod' 
+          ? `Upfront payment ₹${upfrontAmount} for COD order ${merchantOrderId}`
+          : `Payment for order ${merchantOrderId}`,
         merchantUrls: {
           redirectUrl: `${frontendUrl.replace(/\/+$/, '')}/payment/success?transactionId=${merchantOrderId}`
         }
@@ -210,6 +216,8 @@ exports.createPhonePeOrder = async (req, res) => {
           codExtraCharge,
           finalTotal,
           paymentMethod,
+          upfrontAmount: upfrontAmount || 0,
+          remainingAmount: remainingAmount || 0,
           sellerToken,
           couponCode,
           status: state || 'pending',
