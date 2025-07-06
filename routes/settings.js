@@ -6,11 +6,11 @@ const { authenticateToken } = require('../middleware/auth');
 // Get all settings
 router.get('/', authenticateToken, settingsController.getAllSettings);
 
-// Public endpoint to get COD upfront amount (must come before /:key route)
-router.get('/cod-upfront-amount', settingsController.getCodUpfrontAmount);
-
 // Create or update a setting
 router.post('/', authenticateToken, settingsController.upsertSetting);
+
+// Public endpoint to get COD upfront amount (must come before /:key route)
+router.get('/cod-upfront-amount', settingsController.getCodUpfrontAmount);
 
 // Get a specific setting by key
 router.get('/:key', authenticateToken, settingsController.getSettingByKey);

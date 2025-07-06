@@ -1,9 +1,16 @@
 const Settings = require('../models/Settings');
 
+// Check if Settings model is available
+if (!Settings) {
+  console.error('Settings model not found');
+}
+
 // Get all settings
 const getAllSettings = async (req, res) => {
   try {
+    console.log('Fetching all settings...');
     const settings = await Settings.find().sort({ key: 1 });
+    console.log('Settings found:', settings.length);
     res.status(200).json({ success: true, settings });
   } catch (error) {
     console.error('Error fetching settings:', error);
@@ -33,6 +40,8 @@ const upsertSetting = async (req, res) => {
   try {
     const { key, value, description } = req.body;
     
+    console.log('Upserting setting:', { key, value, description });
+    
     if (!key || value === undefined) {
       return res.status(400).json({ success: false, message: 'Key and value are required' });
     }
@@ -51,6 +60,8 @@ const upsertSetting = async (req, res) => {
         runValidators: true 
       }
     );
+    
+    console.log('Setting saved:', setting);
     
     res.status(200).json({ 
       success: true, 
