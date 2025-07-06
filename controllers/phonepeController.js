@@ -297,18 +297,74 @@ exports.phonePeCallback = async (req, res) => {
       });
     }
     
-    // Here you would typically:
-    // 1. Verify the transaction with PhonePe
-    // 2. Update your order status in database
-    // 3. Send confirmation email/SMS
-    
-    // For now, just log and return success
-    console.log(`Payment ${status} for transaction: ${merchantOrderId}`);
-    
-    return res.json({
-      success: true,
-      message: 'Callback processed successfully'
-    });
+    // Verify the transaction with PhonePe
+    try {
+      const accessToken = await getPhonePeToken();
+      const env = 'production';
+      const baseUrl = env === 'production' 
+        ? 'https://api.phonepe.com/apis/pg'
+        : 'https://api-preprod.phonepe.com/apis/pg-sandbox';
+      
+      const apiEndpoint = `/checkout/v2/order/${orderId}/status`;
+      
+      const response = await axios.get(
+        baseUrl + apiEndpoint,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `O-Bearer ${accessToken}`
+          },
+          timeout: 30000
+        }
+      );
+      
+      console.log('PhonePe verification response:', response.data);
+      
+      if (response.data && response.data.state === 'COMPLETED') {
+        // Payment is successful, create order
+        console.log(`Payment completed for transaction: ${merchantOrderId}`);
+        
+        // Here you would typically:
+        // 1. Create order in database
+        // 2. Send confirmation email/SMS
+        // 3. Update inventory
+        
+        return res.json({
+          success: true,
+          message: 'Payment completed successfully',
+          orderId: orderId,
+          merchantOrderId: merchantOrderId,
+          status: 'COMPLETED'
+        });
+      } else if (response.data && response.data.state === 'FAILED') {
+        console.log(`Payment failed for transaction: ${merchantOrderId}`);
+        return res.json({
+          success: false,
+          message: 'Payment failed',
+          orderId: orderId,
+          merchantOrderId: merchantOrderId,
+          status: 'FAILED',
+          errorCode: response.data.errorCode,
+          detailedErrorCode: response.data.detailedErrorCode
+        });
+      } else {
+        console.log(`Payment pending for transaction: ${merchantOrderId}`);
+        return res.json({
+          success: true,
+          message: 'Payment is pending',
+          orderId: orderId,
+          merchantOrderId: merchantOrderId,
+          status: 'PENDING'
+        });
+      }
+      
+    } catch (verificationError) {
+      console.error('PhonePe verification error:', verificationError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to verify payment with PhonePe'
+      });
+    }
     
   } catch (error) {
     console.error('PhonePe callback error:', error);
@@ -342,6 +398,9 @@ exports.getPhonePeStatus = async (req, res) => {
     
     const apiEndpoint = `/checkout/v2/order/${orderId}/status`;
     
+    console.log(`Checking PhonePe status for order: ${orderId}`);
+    console.log(`API URL: ${baseUrl}${apiEndpoint}`);
+    
     const response = await axios.get(
       baseUrl + apiEndpoint,
       {
@@ -353,20 +412,66 @@ exports.getPhonePeStatus = async (req, res) => {
       }
     );
     
-    if (response.data && response.data.success) {
+    console.log('PhonePe status response:', response.data);
+    
+    // According to PhonePe documentation, the response structure is:
+    // {
+    //   "orderId": "OMO2403282020198641071317",
+    //   "state": "COMPLETED",
+    //   "amount": 1000,
+    //   "expireAt": 1711867462542,
+    //   "paymentDetails": [...]
+    // }
+    
+    if (response.data && response.data.state) {
       return res.json({
         success: true,
-        data: response.data.data
+        data: {
+          orderId: response.data.orderId,
+          state: response.data.state,
+          amount: response.data.amount,
+          expireAt: response.data.expireAt,
+          paymentDetails: response.data.paymentDetails || [],
+          errorCode: response.data.errorCode,
+          detailedErrorCode: response.data.detailedErrorCode,
+          errorContext: response.data.errorContext
+        }
+      });
+    } else if (response.data && response.data.success === false) {
+      // Handle error response from PhonePe
+      return res.status(400).json({
+        success: false,
+        message: response.data.message || 'Failed to get transaction status',
+        code: response.data.code
       });
     } else {
       return res.status(400).json({
         success: false,
-        message: response.data.message || 'Failed to get transaction status'
+        message: 'Invalid response from PhonePe'
       });
     }
     
   } catch (error) {
     console.error('PhonePe status check error:', error.response?.data || error.message);
+    
+    // Handle specific error cases
+    if (error.response?.status === 404) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    } else if (error.response?.status === 401) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication failed'
+      });
+    } else if (error.code === 'ECONNABORTED') {
+      return res.status(408).json({
+        success: false,
+        message: 'Request timeout'
+      });
+    }
+    
     return res.status(500).json({
       success: false,
       message: 'Failed to check transaction status'
