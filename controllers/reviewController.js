@@ -2,43 +2,15 @@ const Review = require('../models/Review');
 const Product = require('../models/Product');
 const User = require('../models/User');
 
-// Create a new review (supports both authenticated and unauthenticated users)
+// Create a new review (simple - just requires email and name)
 const createReview = async (req, res) => {
   try {
     const { productId, stars, reviewTitle, reviewDescription, userEmail, userName } = req.body;
-    
-    // Determine user info - prefer authenticated user, fallback to provided info
-    let finalUserEmail, finalUserName;
-    
-    if (req.user) {
-      // User is authenticated, use their account info
-      finalUserEmail = req.user.email;
-      finalUserName = req.user.name;
-    } else {
-      // User is not authenticated, use provided info
-      finalUserEmail = userEmail;
-      finalUserName = userName;
-      
-      // Validate required fields for unauthenticated users
-      if (!userEmail || !userName) {
-        return res.status(400).json({ 
-          message: "Email and name are required for unauthenticated users" 
-        });
-      }
-      
-      // Validate email format
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(userEmail)) {
-        return res.status(400).json({ 
-          message: "Please provide a valid email address" 
-        });
-      }
-    }
 
     // Validate required fields
-    if (!productId || !stars || !reviewTitle || !reviewDescription) {
+    if (!productId || !stars || !reviewTitle || !reviewDescription || !userEmail || !userName) {
       return res.status(400).json({ 
-        message: "All fields are required: productId, stars, reviewTitle, reviewDescription" 
+        message: "All fields are required: productId, stars, reviewTitle, reviewDescription, userEmail, userName" 
       });
     }
 
@@ -46,6 +18,14 @@ const createReview = async (req, res) => {
     if (stars < 1 || stars > 5) {
       return res.status(400).json({ 
         message: "Stars must be between 1 and 5" 
+      });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(userEmail)) {
+      return res.status(400).json({ 
+        message: "Please provide a valid email address" 
       });
     }
 
@@ -57,19 +37,19 @@ const createReview = async (req, res) => {
 
     // Check if user already reviewed this product with this email
     const existingReview = await Review.findOne({ 
-      userEmail: finalUserEmail.toLowerCase(), 
+      userEmail: userEmail.toLowerCase(), 
       product: productId 
     });
     if (existingReview) {
       return res.status(400).json({ 
-        message: "You have already reviewed this product" 
+        message: "You have already reviewed this product with this email" 
       });
     }
 
     // Create the review
     const newReview = new Review({
-      userEmail: finalUserEmail.toLowerCase(),
-      userName: finalUserName,
+      userEmail: userEmail.toLowerCase(),
+      userName,
       product: productId,
       stars,
       reviewTitle,
@@ -159,15 +139,8 @@ const updateReview = async (req, res) => {
     const { reviewId } = req.params;
     const { stars, reviewTitle, reviewDescription, userEmail } = req.body;
 
-    // Determine user email - prefer authenticated user, fallback to provided
-    let finalUserEmail;
-    if (req.user) {
-      finalUserEmail = req.user.email;
-    } else {
-      finalUserEmail = userEmail;
-      if (!userEmail) {
-        return res.status(400).json({ message: "User email is required for unauthenticated users" });
-      }
+    if (!userEmail) {
+      return res.status(400).json({ message: "User email is required" });
     }
 
     // Validate required fields
@@ -186,7 +159,7 @@ const updateReview = async (req, res) => {
 
     // Find and update the review
     const review = await Review.findOneAndUpdate(
-      { _id: reviewId, userEmail: finalUserEmail.toLowerCase() },
+      { _id: reviewId, userEmail: userEmail.toLowerCase() },
       { stars, reviewTitle, reviewDescription },
       { new: true, runValidators: true }
     );
@@ -220,20 +193,13 @@ const deleteReview = async (req, res) => {
     const { reviewId } = req.params;
     const { userEmail } = req.body;
 
-    // Determine user email - prefer authenticated user, fallback to provided
-    let finalUserEmail;
-    if (req.user) {
-      finalUserEmail = req.user.email;
-    } else {
-      finalUserEmail = userEmail;
-      if (!userEmail) {
-        return res.status(400).json({ message: "User email is required for unauthenticated users" });
-      }
+    if (!userEmail) {
+      return res.status(400).json({ message: "User email is required" });
     }
 
     const review = await Review.findOneAndDelete({ 
       _id: reviewId, 
-      userEmail: finalUserEmail.toLowerCase() 
+      userEmail: userEmail.toLowerCase() 
     });
 
     if (!review) {
