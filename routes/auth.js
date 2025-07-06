@@ -68,25 +68,48 @@ router.get('/validate-token', auth, async (req, res) => {
 
 // Helper to send OTP via MSG91
 async function sendOtpViaMsg91(phone, otp) {
+  console.log('📤 Sending OTP via MSG91:', { phone, otp: otp ? '***' : 'undefined' });
+  
   const apiKey = process.env.MSG91_API_KEY;
-  const senderId = process.env.MSG91_SENDER_ID;
-  const templateId = process.env.MSG91_TEMPLATE_ID; // Optional, if using templates
+  
+  console.log('🔧 MSG91 Configuration:', {
+    apiKey: apiKey ? '✅ Set' : '❌ Missing'
+  });
+
+  if (!apiKey) {
+    console.error('❌ MSG91 API key missing');
+    throw new Error('MSG91 configuration incomplete');
+  }
+
   const url = `https://api.msg91.com/api/v5/otp`;
   const payload = {
     mobile: phone,
-    otp: otp,
-    sender: senderId,
-    template_id: templateId
+    otp: otp
   };
+
   const headers = {
     'authkey': apiKey,
     'Content-Type': 'application/json'
   };
+
   try {
+    console.log('📡 Making MSG91 API request to:', url);
+    console.log('📋 Request payload:', { ...payload, otp: '***' });
+    
     const response = await axios.post(url, payload, { headers });
+    
+    console.log('✅ MSG91 API response:', {
+      status: response.status,
+      data: response.data
+    });
+    
     return response.data;
   } catch (err) {
-    console.error('MSG91 OTP send error:', err.response?.data || err.message);
+    console.error('❌ MSG91 OTP send error:', {
+      message: err.message,
+      response: err.response?.data,
+      status: err.response?.status
+    });
     throw new Error('Failed to send OTP via SMS');
   }
 }
@@ -252,22 +275,58 @@ router.post('/logout', async (req, res) => {
 
 // POST /register-with-msg91 - Register user with MSG91 token verification
 router.post('/register-with-msg91', async (req, res) => {
+  console.log('🔍 /register-with-msg91 endpoint called');
+  console.log('📋 Request body:', {
+    name: req.body.name ? '✅ Present' : '❌ Missing',
+    email: req.body.email ? '✅ Present' : '❌ Missing',
+    phone: req.body.phone ? '✅ Present' : '❌ Missing',
+    hasPassword: !!req.body.password,
+    hasToken: !!req.body.msg91Token
+  });
+
   const { name, email, password, phone, msg91Token } = req.body;
 
   if (!name || !email || !password || !phone || !msg91Token) {
-    return res.status(400).json({ message: 'All fields are required: name, email, password, phone, msg91Token' });
+    console.error('❌ Missing required fields:', {
+      name: !name,
+      email: !email,
+      password: !password,
+      phone: !phone,
+      msg91Token: !msg91Token
+    });
+    return res.status(400).json({ 
+      message: 'All fields are required: name, email, password, phone, msg91Token' 
+    });
   }
 
   try {
     // Check if user already exists
+    console.log('🔍 Checking for existing user with email:', email);
     const existingUser = await User.findOne({ email });
     if (existingUser) {
+      console.log('❌ User already exists with email:', email);
       return res.status(400).json({ message: 'Email already registered' });
     }
 
+    console.log('✅ No existing user found, proceeding with verification');
+
     // Step 1: Verify the token from OTP widget using MSG91 API
     const verifyUrl = 'https://control.msg91.com/api/v5/widget/verifyAccessToken';
-    const apiKey = process.env.MSG91_API_KEY || 'YOUR_MSG91_API_KEY';
+    const apiKey = process.env.MSG91_API_KEY;
+
+    console.log('🔧 MSG91 Verification Configuration:', {
+      verifyUrl,
+      apiKey: apiKey ? '✅ Set' : '❌ Missing',
+      tokenLength: msg91Token?.length || 0
+    });
+
+    if (!apiKey) {
+      console.error('❌ MSG91 API key not configured');
+      return res.status(500).json({ 
+        message: 'Server configuration error',
+        details: 'MSG91 API key not configured'
+      });
+    }
 
     const headers = {
       'Content-Type': 'application/json',
@@ -279,37 +338,68 @@ router.post('/register-with-msg91', async (req, res) => {
       'access-token': msg91Token
     };
 
+    console.log('📡 Making MSG91 verification request...');
+    console.log('📋 Verification payload:', { ...body, authkey: '***' });
+
     const verifyResponse = await fetch(verifyUrl, {
       method: 'POST',
       headers,
       body: JSON.stringify(body)
     });
 
+    console.log('📥 MSG91 verification response status:', verifyResponse.status);
+
     const result = await verifyResponse.json();
+    console.log('📥 MSG91 verification response:', result);
 
     // Check if OTP verification was successful
     if (!result || result.type !== 'success') {
-      console.error('MSG91 verification failed:', result);
+      console.error('❌ MSG91 verification failed:', {
+        result,
+        type: result?.type,
+        message: result?.message
+      });
       return res.status(400).json({
         message: 'OTP verification failed',
         details: result?.message || 'Verification error'
       });
     }
 
-    console.log('MSG91 OTP verification passed ✅');
+    console.log('✅ MSG91 OTP verification passed');
 
     // Step 2: Save the user
+    console.log('💾 Creating new user...');
     const user = new User({ name, email, password, phone });
     await user.save();
 
-    return res.status(201).json({ message: 'Registration successful with MSG91 OTP verification' });
+    console.log('✅ User created successfully:', {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone
+    });
+
+    return res.status(201).json({ 
+      message: 'Registration successful with MSG91 OTP verification',
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone
+      }
+    });
 
   } catch (err) {
-    console.error('Error in register-with-msg91:', err);
-    res.status(500).json({ message: 'Server error during registration' });
+    console.error('❌ Error in register-with-msg91:', {
+      message: err.message,
+      stack: err.stack
+    });
+    res.status(500).json({ 
+      message: 'Server error during registration',
+      details: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
+    });
   }
 });
-
 
 // PUT /update-profile (Protected)
 router.put('/update-profile', auth, async (req, res) => {
