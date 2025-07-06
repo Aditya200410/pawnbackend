@@ -90,7 +90,7 @@ exports.createPhonePeOrder = async (req, res) => {
       couponCode 
     } = req.body;
     
-    const env = 'production';
+    const env = process.env.PHONEPE_ENV || 'sandbox';
     const frontendUrl = process.env.FRONTEND_URL;
     const backendUrl = process.env.BACKEND_URL;
 
@@ -302,7 +302,7 @@ exports.phonePeCallback = async (req, res) => {
     // Verify the transaction with PhonePe
     try {
       const accessToken = await getPhonePeToken();
-      const env = 'production';
+      const env = process.env.PHONEPE_ENV || 'sandbox';
       const baseUrl = env === 'production' 
         ? 'https://api.phonepe.com/apis/pg'
         : 'https://api-preprod.phonepe.com/apis/pg-sandbox';
@@ -388,7 +388,7 @@ exports.getPhonePeStatus = async (req, res) => {
       });
     }
     
-    const env = 'production';
+    const env = process.env.PHONEPE_ENV || 'sandbox';
     
     // Get OAuth token
     const accessToken = await getPhonePeToken();
@@ -493,7 +493,7 @@ exports.refundPayment = async (req, res) => {
       });
     }
     
-    const env = 'production';
+           const env = process.env.PHONEPE_ENV || 'sandbox';
     const accessToken = await getPhonePeToken();
     
     const baseUrl = env === 'production' 
@@ -553,7 +553,7 @@ exports.getRefundStatus = async (req, res) => {
       });
     }
     
-    const env = 'production';
+      const env = process.env.PHONEPE_ENV || 'sandbox';
     const accessToken = await getPhonePeToken();
     
     const baseUrl = env === 'production' 
