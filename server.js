@@ -19,6 +19,7 @@ const heroCarouselRoutes = require('./routes/heroCarousel');
 const sellerRoutes = require('./routes/seller');
 const couponRoutes = require('./routes/coupon');
 const crypto = require('crypto');
+const settingsController = require('./controllers/settingsController');
 const app = express();
 
 // Generate a random JWT secret for seller authentication if not provided
@@ -150,6 +151,7 @@ app.use('/api/payment', require('./routes/payment'));
 app.use('/api/withdrawal', require('./routes/withdrawal'));
 app.use('/api/commission', require('./routes/commission'));
 app.use('/api/reviews', require('./routes/reviews'));
+app.use('/api/settings', require('./routes/settings'));
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -183,8 +185,16 @@ app.use((err, req, res, next) => {
 
 // Port from environment variable
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
     console.log(`Server is running on port ${PORT}`);
+    
+    // Initialize default settings
+    try {
+        await settingsController.initializeDefaultSettings();
+        console.log('Default settings initialized successfully');
+    } catch (error) {
+        console.error('Failed to initialize default settings:', error);
+    }
 }); 
 
 
