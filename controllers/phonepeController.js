@@ -16,8 +16,8 @@ async function getPhonePeToken() {
 
     const clientId = process.env.PHONEPE_CLIENT_ID;
     const clientSecret = process.env.PHONEPE_CLIENT_SECRET;
-    const clientVersion = '1';
-    const env = process.env.PHONEPE_EV;
+    const clientVersion = '1';      
+    const env = process.env.PHONEPE_ENV || 'sandbox';
 
     if (!clientId || !clientSecret) {
       throw new Error('PhonePe OAuth credentials not configured');
