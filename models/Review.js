@@ -1,10 +1,17 @@
 const mongoose = require('mongoose');
 
 const reviewSchema = new mongoose.Schema({
-  user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
+  userEmail: {
+    type: String,
+    required: true,
+    lowercase: true,
+    trim: true
+  },
+  userName: {
+    type: String,
+    required: true,
+    trim: true,
+    maxlength: 100
   },
   product: {
     type: mongoose.Schema.Types.ObjectId,
@@ -37,8 +44,8 @@ const reviewSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Ensure one review per user per product
-reviewSchema.index({ user: 1, product: 1 }, { unique: true });
+// Ensure one review per email per product
+reviewSchema.index({ userEmail: 1, product: 1 }, { unique: true });
 
 // Create and export the Review model
 const Review = mongoose.model('Review', reviewSchema);

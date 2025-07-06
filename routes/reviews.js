@@ -9,13 +9,13 @@ const {
   deleteReview
 } = require('../controllers/reviewController');
 
-// Public routes
+// Public routes (no authentication required)
 router.get('/product/:productId', getProductReviews);
+router.get('/user/:productId', getUserReview);
 
-// Protected routes (require authentication)
-router.post('/', authenticateToken, createReview);
-router.get('/user/:productId', authenticateToken, getUserReview);
-router.put('/:reviewId', authenticateToken, updateReview);
-router.delete('/:reviewId', authenticateToken, deleteReview);
+// Routes that support both authenticated and unauthenticated users
+router.post('/', createReview); // Authentication optional
+router.put('/:reviewId', updateReview); // Authentication optional
+router.delete('/:reviewId', deleteReview); // Authentication optional
 
 module.exports = router; 

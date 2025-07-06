@@ -2,11 +2,38 @@ const Review = require('../models/Review');
 const Product = require('../models/Product');
 const User = require('../models/User');
 
-// Create a new review
+// Create a new review (supports both authenticated and unauthenticated users)
 const createReview = async (req, res) => {
   try {
-    const { productId, stars, reviewTitle, reviewDescription } = req.body;
-    const userId = req.user.id; // From auth middleware
+    const { productId, stars, reviewTitle, reviewDescription, userEmail, userName } = req.body;
+    
+    // Determine user info - prefer authenticated user, fallback to provided info
+    let finalUserEmail, finalUserName;
+    
+    if (req.user) {
+      // User is authenticated, use their account info
+      finalUserEmail = req.user.email;
+      finalUserName = req.user.name;
+    } else {
+      // User is not authenticated, use provided info
+      finalUserEmail = userEmail;
+      finalUserName = userName;
+      
+      // Validate required fields for unauthenticated users
+      if (!userEmail || !userName) {
+        return res.status(400).json({ 
+          message: "Email and name are required for unauthenticated users" 
+        });
+      }
+      
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(userEmail)) {
+        return res.status(400).json({ 
+          message: "Please provide a valid email address" 
+        });
+      }
+    }
 
     // Validate required fields
     if (!productId || !stars || !reviewTitle || !reviewDescription) {
@@ -28,14 +55,11 @@ const createReview = async (req, res) => {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    // Check if user exists
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    // Check if user already reviewed this product
-    const existingReview = await Review.findOne({ user: userId, product: productId });
+    // Check if user already reviewed this product with this email
+    const existingReview = await Review.findOne({ 
+      userEmail: finalUserEmail.toLowerCase(), 
+      product: productId 
+    });
     if (existingReview) {
       return res.status(400).json({ 
         message: "You have already reviewed this product" 
@@ -44,7 +68,8 @@ const createReview = async (req, res) => {
 
     // Create the review
     const newReview = new Review({
-      user: userId,
+      userEmail: finalUserEmail.toLowerCase(),
+      userName: finalUserName,
       product: productId,
       stars,
       reviewTitle,
@@ -52,9 +77,6 @@ const createReview = async (req, res) => {
     });
 
     const savedReview = await newReview.save();
-
-    // Populate user details for response
-    await savedReview.populate('user', 'name');
 
     // Update product rating and review count
     await updateProductRating(productId);
@@ -85,7 +107,6 @@ const getProductReviews = async (req, res) => {
     }
 
     const reviews = await Review.find({ product: productId })
-      .populate('user', 'name')
       .sort({ createdAt: -1 });
 
     res.json({
@@ -102,14 +123,20 @@ const getProductReviews = async (req, res) => {
   }
 };
 
-// Get user's review for a product
+// Get user's review for a product (by email)
 const getUserReview = async (req, res) => {
   try {
     const { productId } = req.params;
-    const userId = req.user.id;
+    const { userEmail } = req.query;
 
-    const review = await Review.findOne({ user: userId, product: productId })
-      .populate('user', 'name');
+    if (!userEmail) {
+      return res.status(400).json({ message: "User email is required" });
+    }
+
+    const review = await Review.findOne({ 
+      userEmail: userEmail.toLowerCase(), 
+      product: productId 
+    });
 
     if (!review) {
       return res.status(404).json({ message: "Review not found" });
@@ -126,12 +153,22 @@ const getUserReview = async (req, res) => {
   }
 };
 
-// Update user's review
+// Update user's review (by email)
 const updateReview = async (req, res) => {
   try {
     const { reviewId } = req.params;
-    const { stars, reviewTitle, reviewDescription } = req.body;
-    const userId = req.user.id;
+    const { stars, reviewTitle, reviewDescription, userEmail } = req.body;
+
+    // Determine user email - prefer authenticated user, fallback to provided
+    let finalUserEmail;
+    if (req.user) {
+      finalUserEmail = req.user.email;
+    } else {
+      finalUserEmail = userEmail;
+      if (!userEmail) {
+        return res.status(400).json({ message: "User email is required for unauthenticated users" });
+      }
+    }
 
     // Validate required fields
     if (!stars || !reviewTitle || !reviewDescription) {
@@ -149,10 +186,10 @@ const updateReview = async (req, res) => {
 
     // Find and update the review
     const review = await Review.findOneAndUpdate(
-      { _id: reviewId, user: userId },
+      { _id: reviewId, userEmail: finalUserEmail.toLowerCase() },
       { stars, reviewTitle, reviewDescription },
       { new: true, runValidators: true }
-    ).populate('user', 'name');
+    );
 
     if (!review) {
       return res.status(404).json({ 
@@ -177,13 +214,27 @@ const updateReview = async (req, res) => {
   }
 };
 
-// Delete user's review
+// Delete user's review (by email)
 const deleteReview = async (req, res) => {
   try {
     const { reviewId } = req.params;
-    const userId = req.user.id;
+    const { userEmail } = req.body;
 
-    const review = await Review.findOneAndDelete({ _id: reviewId, user: userId });
+    // Determine user email - prefer authenticated user, fallback to provided
+    let finalUserEmail;
+    if (req.user) {
+      finalUserEmail = req.user.email;
+    } else {
+      finalUserEmail = userEmail;
+      if (!userEmail) {
+        return res.status(400).json({ message: "User email is required for unauthenticated users" });
+      }
+    }
+
+    const review = await Review.findOneAndDelete({ 
+      _id: reviewId, 
+      userEmail: finalUserEmail.toLowerCase() 
+    });
 
     if (!review) {
       return res.status(404).json({ 
