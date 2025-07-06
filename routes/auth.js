@@ -81,67 +81,18 @@ router.get('/validate-token', auth, async (req, res) => {
   }
 });
 
-// Helper to send OTP via Email using nodemailer
-async function sendOtpViaEmail(email, otp) {
-  console.log('📧 Sending OTP via Email:', { email, otp: otp ? '***' : 'undefined' });
-  
-  const emailUser = process.env.EMAIL_USER;
-  const emailPass = process.env.EMAIL_PASS;
-  
-  console.log('🔧 Email Configuration:', {
-    emailUser: emailUser ? '✅ Set' : '❌ Missing',
-    emailPass: emailPass ? '✅ Set' : '❌ Missing'
-  });
 
-  if (!emailUser || !emailPass) {
-    console.error('❌ Email configuration missing');
-    throw new Error('Email configuration incomplete');
-  }
-
-  try {
-    console.log('📡 Sending email OTP to:', email);
-    
-    const mailOptions = {
-      from: emailUser,
-      to: email,
-      subject: 'Your Registration OTP',
-      text: `Your OTP for registration is: ${otp}`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #333; text-align: center;">Registration OTP</h2>
-          <p style="color: #666; font-size: 16px;">Your OTP for registration is:</p>
-          <div style="background: #f8f9fa; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0;">
-            <h1 style="color: #007bff; font-size: 32px; margin: 0; letter-spacing: 4px;">${otp}</h1>
-          </div>
-          <p style="color: #666; font-size: 14px;">This OTP will expire in 10 minutes.</p>
-          <p style="color: #999; font-size: 12px; text-align: center; margin-top: 30px;">
-            If you didn't request this OTP, please ignore this email.
-          </p>
-        </div>
-      `
-    };
-    
-    const result = await transporter.sendMail(mailOptions);
-    
-    console.log('✅ Email OTP sent successfully:', {
-      messageId: result.messageId,
-      response: result.response
-    });
-    
-    return result;
-  } catch (err) {
-    console.error('❌ Email OTP send error:', {
-      message: err.message,
-      code: err.code
-    });
-    throw new Error('Failed to send OTP via email');
-  }
-}
 
 // POST /register (alias for /signup)
 router.post('/register', async (req, res) => {
   console.log('📝 /register endpoint called');
   console.log('📋 Request body:', req.body);
+  
+  // Check email configuration
+  console.log('🔧 Email Configuration Check:', {
+    EMAIL_USER: process.env.EMAIL_USER ? '✅ Set' : '❌ Missing',
+    EMAIL_PASS: process.env.EMAIL_PASS ? '✅ Set' : '❌ Missing'
+  });
   
   const { name, email, password, phone } = req.body;
   
@@ -185,15 +136,42 @@ router.post('/register', async (req, res) => {
     await TempUser.create({ username: name, email, password, phone, otp, otpExpires: expiresAt });
     console.log('✅ TempUser created successfully');
     
-    console.log('📧 Sending OTP via Email...');
+    console.log('📧 Sending OTP via email...');
+    
+    // Check if email configuration is available
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      console.error('❌ Email configuration missing');
+      await TempUser.deleteOne({ email });
+      return res.status(500).json({ message: 'Email service not configured. Please contact support.' });
+    }
+    
     try {
-      await sendOtpViaEmail(email, otp);
-      console.log('✅ OTP Email sent to', email);
+      await transporter.sendMail({
+        from: process.env.EMAIL_USER,
+        to: email,
+        subject: 'Your Registration OTP',
+        text: `Your OTP for registration is: ${otp}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #333; text-align: center;">Registration OTP</h2>
+            <p style="color: #666; font-size: 16px;">Your OTP for registration is:</p>
+            <div style="background: #f8f9fa; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0;">
+              <h1 style="color: #007bff; font-size: 32px; margin: 0; letter-spacing: 4px;">${otp}</h1>
+            </div>
+            <p style="color: #666; font-size: 14px;">This OTP will expire in 10 minutes.</p>
+            <p style="color: #999; font-size: 12px; text-align: center; margin-top: 30px;">
+              If you didn't request this OTP, please ignore this email.
+            </p>
+          </div>
+        `
+      });
+      
+      console.log('✅ Registration OTP sent successfully');
     } catch (emailErr) {
       console.error('❌ Error sending OTP Email:', emailErr);
       // Delete the TempUser if email fails
       await TempUser.deleteOne({ email });
-      throw emailErr;
+      throw new Error('Failed to send OTP email. Please try again.');
     }
     
     console.log('✅ Registration process completed successfully');
@@ -329,6 +307,12 @@ router.post('/forgot-password', async (req, res) => {
   console.log('📝 /forgot-password endpoint called');
   console.log('📋 Request body:', req.body);
   
+  // Check email configuration
+  console.log('🔧 Email Configuration Check:', {
+    EMAIL_USER: process.env.EMAIL_USER ? '✅ Set' : '❌ Missing',
+    EMAIL_PASS: process.env.EMAIL_PASS ? '✅ Set' : '❌ Missing'
+  });
+  
   const { email } = req.body;
   
   console.log('🔍 Validating required fields:', {
@@ -371,15 +355,27 @@ router.post('/forgot-password', async (req, res) => {
     }
     
     console.log('📧 Sending OTP via email...');
-    await transporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: 'Your Password Reset OTP',
-      text: `Your OTP for password reset is: ${otp}`,
-      html: `<p>Your OTP for password reset is: <b>${otp}</b></p>`
-    });
     
-    console.log('✅ Password reset OTP sent successfully');
+    // Check if email configuration is available
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      console.error('❌ Email configuration missing');
+      return res.status(500).json({ message: 'Email service not configured. Please contact support.' });
+    }
+    
+    try {
+      await transporter.sendMail({
+        from: process.env.EMAIL_USER,
+        to: email,
+        subject: 'Your Password Reset OTP',
+        text: `Your OTP for password reset is: ${otp}`,
+        html: `<p>Your OTP for password reset is: <b>${otp}</b></p>`
+      });
+      
+      console.log('✅ Password reset OTP sent successfully');
+    } catch (emailErr) {
+      console.error('❌ Error sending password reset OTP Email:', emailErr);
+      throw new Error('Failed to send OTP email. Please try again.');
+    }
     return res.json({ message: 'OTP sent to your email' });
   } catch (err) {
     console.error('❌ Forgot password error:', err);
