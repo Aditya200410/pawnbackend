@@ -114,6 +114,10 @@ const sellerSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  approved: {
+    type: Boolean,
+    default: false
+  },
   upi: {
     type: String,
     required: false,

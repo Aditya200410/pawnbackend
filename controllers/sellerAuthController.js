@@ -594,6 +594,25 @@ exports.setBlockedStatus = async (req, res) => {
   }
 };
 
+// Approve or disapprove a seller (admin only)
+exports.setApprovalStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { approved } = req.body;
+    if (typeof approved !== 'boolean') {
+      return res.status(400).json({ success: false, message: 'Approval status must be boolean' });
+    }
+    const seller = await Seller.findByIdAndUpdate(id, { approved }, { new: true });
+    if (!seller) {
+      return res.status(404).json({ success: false, message: 'Seller not found' });
+    }
+    res.json({ success: true, message: `Seller ${approved ? 'approved' : 'disapproved'} successfully`, seller });
+  } catch (error) {
+    console.error('Set approval status error:', error);
+    res.status(500).json({ success: false, message: 'Error updating approval status' });
+  }
+};
+
 // Delete a seller (admin only)
 exports.deleteSeller = async (req, res) => {
   try {
@@ -622,6 +641,23 @@ exports.requestWithdraw = async (req, res) => {
     if (!seller) {
       return res.status(404).json({ success: false, message: 'Seller not found' });
     }
+    
+    // Check if seller is approved
+    if (!seller.approved) {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Your account is not yet approved. Please wait for admin approval before making withdrawal requests.' 
+      });
+    }
+    
+    // Check if seller is blocked
+    if (seller.blocked) {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Your account is blocked. Please contact admin for assistance.' 
+      });
+    }
+    
     // Create Withdraw record
     const Withdraw = require('../models/Withdraw');
     const withdraw = await Withdraw.create({

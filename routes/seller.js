@@ -33,6 +33,9 @@ router.delete('/:id', sellerAuthController.deleteSeller);
 // Block/unblock seller (admin only)
 router.patch('/:id/block', sellerAuthController.setBlockedStatus);
 
+// Approve/disapprove seller (admin only)
+router.patch('/:id/approve', sellerAuthController.setApprovalStatus);
+
 // New route for withdrawing money
 router.post('/withdraw', sellerAuth, sellerAuthController.requestWithdraw);
 
