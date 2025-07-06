@@ -149,6 +149,7 @@ app.use('/api/data-page', require('./routes/dataPage'));
 app.use('/api/payment', require('./routes/payment'));
 app.use('/api/withdrawal', require('./routes/withdrawal'));
 app.use('/api/commission', require('./routes/commission'));
+app.use('/api/reviews', require('./routes/reviews'));
 
 // Health check endpoint
 app.get('/health', (req, res) => {
