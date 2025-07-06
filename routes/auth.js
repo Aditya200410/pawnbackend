@@ -253,9 +253,9 @@ router.post('/logout', async (req, res) => {
 // POST /register-with-msg91 - Register user with MSG91 token verification
 router.post('/register-with-msg91', async (req, res) => {
   const { name, email, password, phone, msg91Token } = req.body;
-  
+
   if (!name || !email || !password || !phone || !msg91Token) {
-    return res.status(400).json({ message: 'Name, email, password, phone, and MSG91 token are required' });
+    return res.status(400).json({ message: 'All fields are required: name, email, password, phone, msg91Token' });
   }
 
   try {
@@ -265,105 +265,51 @@ router.post('/register-with-msg91', async (req, res) => {
       return res.status(400).json({ message: 'Email already registered' });
     }
 
-    // Verify MSG91 token with MSG91 API using the correct endpoint
-    const apiKey = process.env.MSG91_API_KEY || '';
+    // Step 1: Verify the token from OTP widget using MSG91 API
     const verifyUrl = 'https://control.msg91.com/api/v5/widget/verifyAccessToken';
-    
-    try {
-      console.log('Verifying MSG91 token:', msg91Token);
-      console.log('Using API key:', apiKey);
-      
-      const response = await axios.post(verifyUrl, {
-        authkey: apiKey,
-        'access-token': msg91Token
-      }, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        timeout: 10000 // 10 second timeout
-      });
-      
-      console.log('MSG91 verification response:', response.data);
-      
-      // Handle IP blocked error specifically
-      if (response.data.code === '408' || response.data.message === 'IPBlocked') {
-        console.error('MSG91 IP Blocked Error:', response.data);
-        return res.status(503).json({ 
-          message: 'MSG91 service temporarily unavailable',
-          details: 'IP blocked by MSG91. Please contact support or try again later.',
-          code: 'MSG91_IP_BLOCKED'
-        });
-      }
-      
-      // Handle authentication errors
-      if (response.data.code === '401' || response.data.message === 'Unauthorized') {
-        console.error('MSG91 Authentication Error:', response.data);
-        return res.status(401).json({ 
-          message: 'MSG91 authentication failed',
-          details: 'Invalid API key or authentication credentials.',
-          code: 'MSG91_AUTH_ERROR'
-        });
-      }
-      
-      // Check for multiple possible success indicators
-      const isSuccess = response.data.type === 'success' || 
-                       response.data.status === 'success' || 
-                       response.data.success === true ||
-                       response.data.message === 'success';
-      
-      if (!isSuccess) {
-        console.error('MSG91 verification failed:', response.data);
-        return res.status(400).json({ 
-          message: 'Invalid OTP token',
-          details: response.data.message || 'Verification failed',
-          code: 'MSG91_VERIFICATION_FAILED'
-        });
-      }
-      
-      console.log('MSG91 verification successful');
-    } catch (verifyErr) {
-      console.error('MSG91 token verification error:', verifyErr.response?.data || verifyErr.message);
-      
-      // Handle specific MSG91 errors
-      if (verifyErr.response?.data?.code === '408' || verifyErr.response?.data?.message === 'IPBlocked') {
-        return res.status(503).json({ 
-          message: 'MSG91 service temporarily unavailable',
-          details: 'IP blocked by MSG91. Please contact support or try again later.',
-          code: 'MSG91_IP_BLOCKED'
-        });
-      }
-      
-      if (verifyErr.response?.data?.code === '401' || verifyErr.response?.data?.message === 'Unauthorized') {
-        return res.status(401).json({ 
-          message: 'MSG91 authentication failed',
-          details: 'Invalid API key or authentication credentials.',
-          code: 'MSG91_AUTH_ERROR'
-        });
-      }
-      
-      return res.status(400).json({ 
+    const apiKey = process.env.MSG91_API_KEY || 'YOUR_MSG91_API_KEY';
+
+    const headers = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    };
+
+    const body = {
+      authkey: apiKey,
+      'access-token': msg91Token
+    };
+
+    const verifyResponse = await fetch(verifyUrl, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body)
+    });
+
+    const result = await verifyResponse.json();
+
+    // Check if OTP verification was successful
+    if (!result || result.type !== 'success') {
+      console.error('MSG91 verification failed:', result);
+      return res.status(400).json({
         message: 'OTP verification failed',
-        details: verifyErr.response?.data?.message || verifyErr.message,
-        code: 'MSG91_VERIFICATION_ERROR'
+        details: result?.message || 'Verification error'
       });
     }
 
-    // Create new user
-    const user = new User({ 
-      name, 
-      email, 
-      password, 
-      phone 
-    });
+    console.log('MSG91 OTP verification passed ✅');
+
+    // Step 2: Save the user
+    const user = new User({ name, email, password, phone });
     await user.save();
 
-    return res.json({ message: 'Registration successful with MSG91 verification' });
+    return res.status(201).json({ message: 'Registration successful with MSG91 OTP verification' });
+
   } catch (err) {
-    console.error('Register with MSG91 error:', err);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Error in register-with-msg91:', err);
+    res.status(500).json({ message: 'Server error during registration' });
   }
 });
+
 
 // PUT /update-profile (Protected)
 router.put('/update-profile', auth, async (req, res) => {
