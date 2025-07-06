@@ -19,6 +19,105 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+// Email template function
+const sendOTPEmail = async (email, otp, customerName, action = 'signup') => {
+  const subject = 'Your OTP for Rikocraft Login / Signup';
+  
+  const htmlBody = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
+      <div style="background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #333; margin: 0; font-size: 24px;">Rikocraft</h1>
+          <p style="color: #666; margin: 5px 0; font-size: 14px;">Where heritage meets craftsmanship</p>
+        </div>
+        
+        <div style="margin-bottom: 25px;">
+          <p style="color: #333; font-size: 16px; line-height: 1.6; margin: 0;">
+            Dear <strong>${customerName}</strong>,
+          </p>
+          <p style="color: #333; font-size: 16px; line-height: 1.6; margin: 15px 0;">
+            Thank you for choosing Rikocraft — where heritage meets craftsmanship!
+          </p>
+          <p style="color: #333; font-size: 16px; line-height: 1.6; margin: 15px 0;">
+            To proceed with your <strong>${action}</strong>, please use the One-Time Password (OTP) given below:
+          </p>
+        </div>
+        
+        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; text-align: center; margin: 25px 0;">
+          <p style="color: #333; font-size: 14px; margin: 0 0 10px 0;">🔐 Your OTP is:</p>
+          <div style="background-color: #007bff; color: white; padding: 15px; border-radius: 6px; font-size: 24px; font-weight: bold; letter-spacing: 3px;">
+            ${otp}
+          </div>
+        </div>
+        
+        <div style="margin: 25px 0; padding: 15px; background-color: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px;">
+          <p style="color: #856404; font-size: 14px; margin: 0; line-height: 1.5;">
+            <strong>⚠️ Important:</strong> This OTP is valid for the next 10 minutes only. Please do not share this code with anyone for your security.
+          </p>
+        </div>
+        
+        <div style="margin: 25px 0;">
+          <p style="color: #666; font-size: 14px; line-height: 1.6; margin: 0;">
+            If you did not request this OTP, please ignore this email.
+          </p>
+        </div>
+        
+        <div style="margin: 25px 0;">
+          <p style="color: #333; font-size: 16px; line-height: 1.6; margin: 0;">
+            Thank you for being a part of the Rikocraft community!
+          </p>
+        </div>
+        
+        <div style="border-top: 1px solid #eee; padding-top: 20px; margin-top: 30px;">
+          <p style="color: #666; font-size: 14px; margin: 0; line-height: 1.6;">
+            <strong>Warm regards,</strong><br>
+            Team Rikocraft
+          </p>
+          <div style="margin-top: 15px; color: #666; font-size: 12px;">
+            <p style="margin: 5px 0;">🌐 www.rikocraft.com</p>
+            <p style="margin: 5px 0;">📩 Email: Care@Rikocraft.com</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const textBody = `
+Dear ${customerName},
+
+Thank you for choosing Rikocraft — where heritage meets craftsmanship!
+
+To proceed with your ${action}, please use the One-Time Password (OTP) given below:
+
+🔐 Your OTP is: ${otp}
+
+This OTP is valid for the next 10 minutes only. Please do not share this code with anyone for your security.
+
+If you did not request this OTP, please ignore this email.
+
+Thank you for being a part of the Rikocraft community!
+
+Warm regards,
+Team Rikocraft
+🌐 www.rikocraft.com
+📩 Email: Care@Rikocraft.com
+  `;
+
+  try {
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: subject,
+      text: textBody,
+      html: htmlBody
+    });
+    console.log(`OTP email sent to ${email}`);
+  } catch (mailErr) {
+    console.error('Error sending OTP email:', mailErr);
+    throw mailErr;
+  }
+};
+
 // Middleware to protect routes
 const auth = (req, res, next) => {
   // Check for token in Authorization header first
@@ -83,19 +182,15 @@ router.post('/register', async (req, res) => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     await TempUser.create({ username: name, email, password, otp });
     console.log(`OTP for ${email}: ${otp}`);
-    // Send OTP via email
+    
+    // Send OTP via email with new template
     try {
-      await transporter.sendMail({
-        from: "rikoenterprises25@gmail.com" ,
-        to: email,
-        subject: 'Your OTP Code',
-        text: `Your OTP code is: ${otp}`,
-        html: `<p>Your OTP code is: <b>${otp}</b></p>`
-      });
-      console.log(`OTP email sent to ${email}`);
+      await sendOTPEmail(email, otp, name, 'signup');
     } catch (mailErr) {
       console.error('Error sending OTP email:', mailErr);
+      // Don't fail the request if email fails
     }
+    
     return res.json({ message: 'OTP sent to your email', email });
   } catch (err) {
     console.error('Register error:', err);
@@ -173,14 +268,15 @@ router.post('/forgot-password', async (req, res) => {
       temp.otpExpires = expiresAt;
       await temp.save();
     }
-    // Send OTP via email
-    await transporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: 'Your Password Reset OTP',
-      text: `Your OTP for password reset is: ${otp}`,
-      html: `<p>Your OTP for password reset is: <b>${otp}</b></p>`
-    });
+    
+    // Send OTP via email with new template
+    try {
+      await sendOTPEmail(email, otp, user.name, 'password reset');
+    } catch (mailErr) {
+      console.error('Error sending password reset OTP email:', mailErr);
+      // Don't fail the request if email fails
+    }
+    
     return res.json({ message: 'OTP sent to your email' });
   } catch (err) {
     console.error('Forgot password error:', err);
