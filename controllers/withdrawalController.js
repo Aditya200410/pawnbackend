@@ -3,7 +3,7 @@ const Seller = require('../models/Seller');
 const CommissionHistory = require('../models/CommissionHistory');
 
 // Function to calculate available commission based on commission history and withdrawals
-const calculateAvailableCommission = async (sellerId) => {
+exports.calculateAvailableCommission = async (sellerId) => {
   try {
     // Get all confirmed commissions
     const confirmedCommissions = await CommissionHistory.find({
@@ -364,6 +364,16 @@ exports.approveWithdrawal = async (req, res) => {
     withdrawal.processedAt = new Date();
     await withdrawal.save();
 
+    // Recalculate available commission after approval
+    const { availableCommission } = await calculateAvailableCommission(withdrawal.seller);
+    
+    // Update seller's available commission
+    const seller = await Seller.findById(withdrawal.seller);
+    if (seller) {
+      seller.availableCommission = availableCommission;
+      await seller.save();
+    }
+
     console.log('Withdrawal approved successfully');
 
     res.json({
@@ -373,7 +383,8 @@ exports.approveWithdrawal = async (req, res) => {
         id: withdrawal._id,
         status: withdrawal.status,
         processedDate: withdrawal.processedAt
-      }
+      },
+      availableCommission
     });
 
   } catch (error) {
@@ -418,11 +429,22 @@ exports.rejectWithdrawal = async (req, res) => {
     withdrawal.processedAt = new Date();
     await withdrawal.save();
 
+    // Recalculate available commission after rejection (pending amount is freed up)
+    const { availableCommission } = await calculateAvailableCommission(withdrawal.seller);
+    
+    // Update seller's available commission
+    const seller = await Seller.findById(withdrawal.seller);
+    if (seller) {
+      seller.availableCommission = availableCommission;
+      await seller.save();
+    }
+
     console.log('Withdrawal rejected successfully');
 
     res.json({
       success: true,
-      message: 'Withdrawal rejected successfully'
+      message: 'Withdrawal rejected successfully',
+      availableCommission
     });
 
   } catch (error) {
@@ -466,7 +488,7 @@ exports.completeWithdrawal = async (req, res) => {
     await withdrawal.save();
 
     // Recalculate available commission after completion
-    const { availableCommission } = await calculateAvailableCommission(withdrawal.seller);
+    const { availableCommission } = await exports.calculateAvailableCommission(withdrawal.seller);
     
     // Update seller's available commission
     const seller = await Seller.findById(withdrawal.seller);
@@ -503,7 +525,7 @@ exports.recalculateAllSellersCommission = async (req, res) => {
 
     for (const seller of sellers) {
       try {
-        const { availableCommission } = await calculateAvailableCommission(seller._id);
+        const { availableCommission } = await exports.calculateAvailableCommission(seller._id);
         
         if (seller.availableCommission !== availableCommission) {
           seller.availableCommission = availableCommission;

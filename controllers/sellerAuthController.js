@@ -325,10 +325,48 @@ exports.updateProfile = async (req, res) => {
       bankDetails: withdrawal.bankDetails
     }));
 
+    // Calculate available commission using the new system (same as getProfile)
+    const CommissionHistory = require('../models/CommissionHistory');
+    
+    // Get all confirmed commissions
+    const confirmedCommissions = await CommissionHistory.find({
+      sellerId: seller._id,
+      status: 'confirmed',
+      type: 'earned'
+    });
+
+    const totalConfirmedCommissions = confirmedCommissions.reduce((sum, commission) => sum + commission.amount, 0);
+
+    // Get all completed withdrawals
+    const completedWithdrawals = await Withdraw.find({
+      seller: seller._id,
+      status: 'completed'
+    });
+
+    const totalWithdrawn = completedWithdrawals.reduce((sum, withdrawal) => sum + withdrawal.amount, 0);
+
+    // Get pending withdrawals (amounts that are already requested but not yet processed)
+    const pendingWithdrawals = await Withdraw.find({
+      seller: seller._id,
+      status: 'pending'
+    });
+
+    const totalPendingWithdrawals = pendingWithdrawals.reduce((sum, withdrawal) => sum + withdrawal.amount, 0);
+
+    // Calculate available commission
+    const availableCommission = Math.max(0, totalConfirmedCommissions - totalWithdrawn - totalPendingWithdrawals);
+
+    // Update seller's available commission in the database to match calculation
+    if (seller.availableCommission !== availableCommission) {
+      seller.availableCommission = availableCommission;
+      await seller.save();
+    }
+
     // Combine seller data with withdrawal data
     const sellerWithWithdrawals = {
       ...seller.toObject(),
-      withdrawals: mappedWithdrawals
+      withdrawals: mappedWithdrawals,
+      calculatedAvailableCommission: availableCommission
     };
 
     res.json({

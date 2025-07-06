@@ -150,7 +150,8 @@ sellerSchema.methods.addCommission = async function(orderAmount) {
   console.log(`Seller.addCommission - Before update - Total: ${this.totalCommission}, Available: ${this.availableCommission}, Orders: ${this.totalOrders}`);
   
   this.totalCommission += commission;
-  this.availableCommission += commission;
+  // Note: availableCommission should not be updated here as commissions start as pending
+  // and only become available when confirmed by admin
   this.totalOrders += 1;
   
   console.log(`Seller.addCommission - After update - Total: ${this.totalCommission}, Available: ${this.availableCommission}, Orders: ${this.totalOrders}`);

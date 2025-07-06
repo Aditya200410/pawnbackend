@@ -393,11 +393,14 @@ exports.confirmCommission = async (req, res) => {
 
     await commission.confirm(adminId);
 
-    // Update seller's available commission when commission is confirmed
+    // Recalculate available commission using the proper calculation function
+    const withdrawalController = require('./withdrawalController');
+    const { availableCommission } = await withdrawalController.calculateAvailableCommission(commission.sellerId);
+    
+    // Update seller's available commission
     const seller = await Seller.findById(commission.sellerId);
     if (seller) {
-      seller.availableCommission += commission.amount;
-      
+      seller.availableCommission = availableCommission;
       await seller.save();
     }
 
@@ -457,24 +460,18 @@ exports.cancelCommission = async (req, res) => {
 // Helper function to recalculate seller's available commission
 exports.recalculateSellerCommission = async (sellerId) => {
   try {
-    // Get all confirmed commissions for the seller
-    const confirmedCommissions = await CommissionHistory.find({
-      sellerId,
-      status: 'confirmed',
-      type: 'earned'
-    });
-
-    const totalConfirmedAmount = confirmedCommissions.reduce((sum, commission) => sum + commission.amount, 0);
+    // Use the proper calculation function from withdrawalController
+    const withdrawalController = require('./withdrawalController');
+    const { availableCommission } = await withdrawalController.calculateAvailableCommission(sellerId);
 
     // Update seller's available commission
     const seller = await Seller.findById(sellerId);
     if (seller) {
-      seller.availableCommission = totalConfirmedAmount;
+      seller.availableCommission = availableCommission;
       await seller.save();
-
     }
 
-    return totalConfirmedAmount;
+    return availableCommission;
   } catch (error) {
     console.error('Error recalculating seller commission:', error);
     throw error;
