@@ -81,51 +81,60 @@ router.get('/validate-token', auth, async (req, res) => {
   }
 });
 
-// Helper to send OTP via MSG91
-async function sendOtpViaMsg91(phone, otp) {
-  console.log('📤 Sending OTP via MSG91:', { phone, otp: otp ? '***' : 'undefined' });
+// Helper to send OTP via Email using nodemailer
+async function sendOtpViaEmail(email, otp) {
+  console.log('📧 Sending OTP via Email:', { email, otp: otp ? '***' : 'undefined' });
   
-  const apiKey = process.env.MSG91_API_KEY;
+  const emailUser = process.env.EMAIL_USER;
+  const emailPass = process.env.EMAIL_PASS;
   
-  console.log('🔧 MSG91 Configuration:', {
-    apiKey: apiKey ? '✅ Set' : '❌ Missing'
+  console.log('🔧 Email Configuration:', {
+    emailUser: emailUser ? '✅ Set' : '❌ Missing',
+    emailPass: emailPass ? '✅ Set' : '❌ Missing'
   });
 
-  if (!apiKey) {
-    console.error('❌ MSG91 API key missing');
-    throw new Error('MSG91 configuration incomplete');
+  if (!emailUser || !emailPass) {
+    console.error('❌ Email configuration missing');
+    throw new Error('Email configuration incomplete');
   }
 
-  const url = `https://api.msg91.com/api/v5/otp`;
-  const payload = {
-    mobile: phone,
-    otp: otp
-  };
-
-  const headers = {
-    'authkey': apiKey,
-    'Content-Type': 'application/json'
-  };
-
   try {
-    console.log('📡 Making MSG91 API request to:', url);
-    console.log('📋 Request payload:', { ...payload, otp: '***' });
+    console.log('📡 Sending email OTP to:', email);
     
-    const response = await axios.post(url, payload, { headers });
+    const mailOptions = {
+      from: emailUser,
+      to: email,
+      subject: 'Your Registration OTP',
+      text: `Your OTP for registration is: ${otp}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #333; text-align: center;">Registration OTP</h2>
+          <p style="color: #666; font-size: 16px;">Your OTP for registration is:</p>
+          <div style="background: #f8f9fa; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0;">
+            <h1 style="color: #007bff; font-size: 32px; margin: 0; letter-spacing: 4px;">${otp}</h1>
+          </div>
+          <p style="color: #666; font-size: 14px;">This OTP will expire in 10 minutes.</p>
+          <p style="color: #999; font-size: 12px; text-align: center; margin-top: 30px;">
+            If you didn't request this OTP, please ignore this email.
+          </p>
+        </div>
+      `
+    };
     
-    console.log('✅ MSG91 API response:', {
-      status: response.status,
-      data: response.data
+    const result = await transporter.sendMail(mailOptions);
+    
+    console.log('✅ Email OTP sent successfully:', {
+      messageId: result.messageId,
+      response: result.response
     });
     
-    return response.data;
+    return result;
   } catch (err) {
-    console.error('❌ MSG91 OTP send error:', {
+    console.error('❌ Email OTP send error:', {
       message: err.message,
-      response: err.response?.data,
-      status: err.response?.status
+      code: err.code
     });
-    throw new Error('Failed to send OTP via SMS');
+    throw new Error('Failed to send OTP via email');
   }
 }
 
@@ -168,25 +177,30 @@ router.post('/register', async (req, res) => {
     }
     
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 min
     console.log('🔢 Generated OTP for', email, ':', otp);
+    console.log('⏰ OTP expires at:', expiresAt);
     
     console.log('💾 Creating TempUser...');
-    await TempUser.create({ username: name, email, password, phone, otp });
+    await TempUser.create({ username: name, email, password, phone, otp, otpExpires: expiresAt });
     console.log('✅ TempUser created successfully');
     
-    console.log('📤 Sending OTP via MSG91...');
+    console.log('📧 Sending OTP via Email...');
     try {
-      await sendOtpViaMsg91(phone, otp);
-      console.log('✅ OTP SMS sent to', phone);
-    } catch (smsErr) {
-      console.error('❌ Error sending OTP SMS:', smsErr);
+      await sendOtpViaEmail(email, otp);
+      console.log('✅ OTP Email sent to', email);
+    } catch (emailErr) {
+      console.error('❌ Error sending OTP Email:', emailErr);
+      // Delete the TempUser if email fails
+      await TempUser.deleteOne({ email });
+      throw emailErr;
     }
     
     console.log('✅ Registration process completed successfully');
-    return res.json({ message: 'OTP sent to your phone', phone });
+    return res.json({ message: 'OTP sent to your email' });
   } catch (err) {
-    console.error('❌ Register error:', err);
-    res.status(500).json({ message: 'Server error' });
+    console.error('❌ Registration error:', err);
+    res.status(500).json({ message: err.message || 'Server error' });
   }
 });
 
@@ -216,6 +230,13 @@ router.post('/verify-otp', async (req, res) => {
     if (!tempUser) {
       console.log('❌ No TempUser found for email:', email);
       return res.status(400).json({ message: 'OTP expired or not found. Please register again.' });
+    }
+    
+    // Check if OTP is expired
+    if (tempUser.otpExpires && tempUser.otpExpires < new Date()) {
+      console.log('❌ OTP expired');
+      await TempUser.deleteOne({ _id: tempUser._id });
+      return res.status(400).json({ message: 'OTP has expired. Please register again.' });
     }
     
     console.log('🔍 Comparing OTPs:', {
@@ -440,134 +461,7 @@ router.post('/logout', async (req, res) => {
   }
 });
 
-// POST /register-with-msg91 - Register user with MSG91 token verification
-router.post('/register-with-msg91', async (req, res) => {
-  console.log('🔍 /register-with-msg91 endpoint called');
-  console.log('📋 Request body:', {
-    name: req.body.name ? '✅ Present' : '❌ Missing',
-    email: req.body.email ? '✅ Present' : '❌ Missing',
-    phone: req.body.phone ? '✅ Present' : '❌ Missing',
-    hasPassword: !!req.body.password,
-    hasToken: !!req.body.msg91Token,
-    tokenLength: req.body.msg91Token?.length || 0
-  });
 
-  const { name, email, password, phone, msg91Token } = req.body;
-
-  if (!name || !email || !password || !phone || !msg91Token) {
-    console.error('❌ Missing required fields:', {
-      name: !name,
-      email: !email,
-      password: !password,
-      phone: !phone,
-      msg91Token: !msg91Token
-    });
-    return res.status(400).json({ 
-      message: 'All fields are required: name, email, password, phone, msg91Token' 
-    });
-  }
-
-  try {
-    // Check if user already exists
-    console.log('🔍 Checking for existing user with email:', email);
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      console.log('❌ User already exists with email:', email);
-      return res.status(400).json({ message: 'Email already registered' });
-    }
-
-    console.log('✅ No existing user found, proceeding with verification');
-
-    // Step 1: Verify the token from OTP widget using MSG91 API
-    const verifyUrl = 'https://control.msg91.com/api/v5/widget/verifyAccessToken';
-    const apiKey = process.env.MSG91_API_KEY;
-
-    console.log('🔧 MSG91 Verification Configuration:', {
-      verifyUrl,
-      apiKey: apiKey ? '✅ Set' : '❌ Missing',
-      tokenLength: msg91Token?.length || 0
-    });
-
-    if (!apiKey) {
-      console.error('❌ MSG91 API key not configured');
-      return res.status(500).json({ 
-        message: 'Server configuration error',
-        details: 'MSG91 API key not configured'
-      });
-    }
-
-    const headers = {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json'
-    };
-
-    const body = {
-      authkey: apiKey,
-      'access-token': msg91Token
-    };
-
-    console.log('📡 Making MSG91 verification request...');
-    console.log('📋 Verification payload:', { ...body, authkey: '***' });
-
-    const verifyResponse = await fetch(verifyUrl, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(body)
-    });
-
-    console.log('📥 MSG91 verification response status:', verifyResponse.status);
-
-    const result = await verifyResponse.json();
-    console.log('📥 MSG91 verification response:', result);
-
-    // Check if OTP verification was successful
-    if (!result || result.type !== 'success') {
-      console.error('❌ MSG91 verification failed:', {
-        result,
-        type: result?.type,
-        message: result?.message
-      });
-      return res.status(400).json({
-        message: 'OTP verification failed',
-        details: result?.message || 'Verification error'
-      });
-    }
-
-    console.log('✅ MSG91 OTP verification passed');
-
-    // Step 2: Save the user
-    console.log('💾 Creating new user...');
-    const user = new User({ name, email, password, phone });
-    await user.save();
-
-    console.log('✅ User created successfully:', {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      phone: user.phone
-    });
-
-    return res.status(201).json({ 
-      message: 'Registration successful with MSG91 OTP verification',
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone
-      }
-    });
-
-  } catch (err) {
-    console.error('❌ Error in register-with-msg91:', {
-      message: err.message,
-      stack: err.stack
-    });
-    res.status(500).json({ 
-      message: 'Server error during registration',
-      details: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
-    });
-  }
-});
 
 // PUT /update-profile (Protected)
 router.put('/update-profile', auth, async (req, res) => {
