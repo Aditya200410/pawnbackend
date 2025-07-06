@@ -20,13 +20,24 @@ exports.register = async (req, res) => {
     if (missingFields.length > 0) {
       return res.status(400).json({ success: false, message: `Missing required fields: ${missingFields.join(', ')}` });
     }
+    
+    // Process uploaded images
+    let images = [];
+    if (req.files && req.files.length > 0) {
+      images = req.files.map(file => ({
+        public_id: file.filename,
+        url: file.path,
+        alt: 'Business image'
+      }));
+    }
+    
     // Generate unique sellerToken
     const sellerToken = uuidv4();
     // Create websiteLink with sellerToken
     const websiteLink = `${'https://rikocraft.com'}?seller=${sellerToken}`;
     // Generate QR code for websiteLink
     const qrCode = await QRCode.toDataURL(websiteLink);
-    // Create seller with all info
+    // Create seller with all info including images
     const seller = await Seller.create({
       businessName,
       email: normalizedEmail,
@@ -36,7 +47,8 @@ exports.register = async (req, res) => {
       businessType,
       sellerToken,
       websiteLink,
-      qrCode
+      qrCode,
+      images
     });
     // Create JWT token for seller
     const token = jwt.sign(
@@ -64,6 +76,7 @@ exports.register = async (req, res) => {
         sellerToken: seller.sellerToken,
         websiteLink: seller.websiteLink,
         qrCode: seller.qrCode,
+        images: seller.images || [],
         createdAt: seller.createdAt,
         verified: seller.verified
       }

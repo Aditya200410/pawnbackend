@@ -5,7 +5,7 @@ const Order = require('../models/Order');
 // Get seller's commission history
 exports.getCommissionHistory = async (req, res) => {
   try {
-    console.log('getCommissionHistory called with seller:', req.seller);
+
     
     // Check if seller is authenticated
     if (!req.seller || !req.seller.id) {
@@ -18,7 +18,7 @@ exports.getCommissionHistory = async (req, res) => {
     const sellerId = req.seller.id;
     const { page = 1, limit = 10, type, status, startDate, endDate } = req.query;
 
-    console.log('Query params:', { sellerId, page, limit, type, status, startDate, endDate });
+
 
     const query = { sellerId };
     
@@ -31,7 +31,7 @@ exports.getCommissionHistory = async (req, res) => {
       if (endDate) query.createdAt.$lte = new Date(endDate);
     }
 
-    console.log('Final query:', JSON.stringify(query, null, 2));
+
 
     const commissionHistory = await CommissionHistory.find(query)
       .sort({ createdAt: -1 })
@@ -89,8 +89,7 @@ exports.getCommissionHistory = async (req, res) => {
       }
     ]);
 
-    console.log('Commission history found:', commissionHistory.length);
-    console.log('Summary:', summary);
+
 
     res.json({
       success: true,
@@ -277,7 +276,7 @@ exports.getCommissionSummary = async (req, res) => {
 // Create commission entry (called when order is completed)
 exports.createCommissionEntry = async (orderId, sellerId, orderAmount, commissionRate = 0.05) => {
   try {
-    console.log('Creating commission entry:', { orderId, sellerId, orderAmount, commissionRate });
+
     
     const order = await Order.findById(orderId);
     if (!order) {
@@ -285,7 +284,7 @@ exports.createCommissionEntry = async (orderId, sellerId, orderAmount, commissio
     }
 
     const commissionAmount = orderAmount * commissionRate;
-    console.log('Commission amount calculated:', commissionAmount);
+
     
     const commissionEntry = new CommissionHistory({
       sellerId,
@@ -308,22 +307,15 @@ exports.createCommissionEntry = async (orderId, sellerId, orderAmount, commissio
       }
     });
 
-    console.log('Saving commission entry...');
     await commissionEntry.save();
-    console.log('Commission entry saved successfully');
 
     // Update seller's commission totals (only totalCommission, not availableCommission until confirmed)
     const seller = await Seller.findById(sellerId);
     if (seller) {
-      console.log('Updating seller commission totals...');
-      console.log('Before update - Total:', seller.totalCommission, 'Available:', seller.availableCommission);
-      
       seller.totalCommission += commissionAmount;
       seller.totalOrders += 1;
       
       await seller.save();
-      
-      console.log('After update - Total:', seller.totalCommission, 'Available:', seller.availableCommission);
     } else {
       console.error('Seller not found for ID:', sellerId);
     }
@@ -404,14 +396,9 @@ exports.confirmCommission = async (req, res) => {
     // Update seller's available commission when commission is confirmed
     const seller = await Seller.findById(commission.sellerId);
     if (seller) {
-      console.log('Updating seller available commission after confirmation...');
-      console.log('Before update - Available:', seller.availableCommission);
-      
       seller.availableCommission += commission.amount;
       
       await seller.save();
-      
-      console.log('After update - Available:', seller.availableCommission);
     }
 
     res.json({
@@ -484,7 +471,7 @@ exports.recalculateSellerCommission = async (sellerId) => {
     if (seller) {
       seller.availableCommission = totalConfirmedAmount;
       await seller.save();
-      console.log(`Updated seller ${sellerId} available commission to: ${totalConfirmedAmount}`);
+
     }
 
     return totalConfirmedAmount;
