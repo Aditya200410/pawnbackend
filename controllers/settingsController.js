@@ -46,11 +46,17 @@ const upsertSetting = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Key and value are required' });
     }
     
+    // Convert value to number for numeric settings
+    let processedValue = value;
+    if (key === 'cod_upfront_amount') {
+      processedValue = Number(value) || 39;
+    }
+    
     // Use findOneAndUpdate with upsert to create or update
     const setting = await Settings.findOneAndUpdate(
       { key },
       { 
-        value, 
+        value: processedValue, 
         description: description || '',
         updatedAt: new Date()
       },
@@ -122,7 +128,12 @@ const initializeDefaultSettings = async () => {
 const getCodUpfrontAmount = async (req, res) => {
   try {
     const setting = await Settings.findOne({ key: 'cod_upfront_amount' });
-    const amount = setting ? setting.value : 39; // Default to 39 if not found
+    let amount = 39; // Default to 39 if not found
+    
+    if (setting) {
+      // Ensure the value is a number
+      amount = Number(setting.value) || 39;
+    }
     
     res.status(200).json({ 
       success: true, 
