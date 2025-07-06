@@ -17,7 +17,7 @@ async function getPhonePeToken() {
     const clientId = process.env.PHONEPE_CLIENT_ID;
     const clientSecret = process.env.PHONEPE_CLIENT_SECRET;
     const clientVersion = '1';
-    const env = process.env.PHONEPE_EN;
+    const env = process.env.PHONEPE_EV;
 
     if (!clientId || !clientSecret) {
       throw new Error('PhonePe OAuth credentials not configured');
@@ -26,13 +26,13 @@ async function getPhonePeToken() {
     // Set OAuth URL based on environment
     // Based on PhonePe documentation: https://developer.phonepe.com/v1/reference/authorization-standard-checkout/
     let oauthUrl;
-    if (env === 'production') {
+    if (env === 'production') 
       oauthUrl = 'https://api.phonepe.com/apis/identity-manager/v1/oauth/token';
-    } else {
+    else
       oauthUrl = 'https://api-preprod.phonepe.com/apis/pg-sandbox/v1/oauth/token';
-    }
+    
 
-
+    console.log('Getting PhonePe OAuth token from:', oauthUrl);
 
     const response = await axios.post(oauthUrl, 
       new URLSearchParams({
@@ -59,7 +59,8 @@ async function getPhonePeToken() {
         tokenExpiry = new Date(Date.now() + 60 * 60 * 1000);
       }
       
-
+      console.log('PhonePe OAuth token obtained successfully');
+      console.log('Token expires at:', tokenExpiry);
       return oauthToken;
     } else {
       throw new Error('Invalid OAuth response from PhonePe');
@@ -171,13 +172,18 @@ exports.createPhonePeOrder = async (req, res) => {
           ? `Upfront payment ₹${upfrontAmount} for COD order ${merchantOrderId}`
           : `Payment for order ${merchantOrderId}`,
         merchantUrls: {
-          redirectUrl: `${frontendUrl.replace(/\/+$/, '')}/payment/success?transactionId=${merchantOrderId}`,
-          callbackUrl: `${backendUrl.replace(/\/+$/, '')}/api/payment/phonepe/callback`
+          redirectUrl: `${frontendUrl.replace(/\/+$/, '')}/payment/success?transactionId=${merchantOrderId}`
         }
       }
     };
 
+    console.log('PhonePe payload:', {
+      ...payload,
+      amount: payload.amount,
+      accessToken: '***HIDDEN***'
+    });
 
+    console.log(`Making PhonePe API request to: ${baseUrl}${apiEndpoint}`);
     
     const response = await axios.post(
       baseUrl + apiEndpoint,
@@ -191,7 +197,7 @@ exports.createPhonePeOrder = async (req, res) => {
       }
     );
 
-
+    console.log('PhonePe API response:', response.data);
 
     // Success response from PhonePe
     if (response.data && response.data.orderId) {
@@ -299,7 +305,7 @@ exports.phonePeCallback = async (req, res) => {
       const env = 'production';
       const baseUrl = env === 'production' 
         ? 'https://api.phonepe.com/apis/pg'
-        : '	https://api-preprod.phonepe.com/apis/pg-sandbox';
+        : 'https://api-preprod.phonepe.com/apis/pg-sandbox';
       
       const apiEndpoint = `/checkout/v2/order/${orderId}/status`;
       
@@ -314,11 +320,11 @@ exports.phonePeCallback = async (req, res) => {
         }
       );
       
-  
+      console.log('PhonePe verification response:', response.data);
       
       if (response.data && response.data.state === 'COMPLETED') {
         // Payment is successful, create order
-
+        console.log(`Payment completed for transaction: ${merchantOrderId}`);
         
         // Here you would typically:
         // 1. Create order in database
@@ -333,7 +339,7 @@ exports.phonePeCallback = async (req, res) => {
           status: 'COMPLETED'
         });
       } else if (response.data && response.data.state === 'FAILED') {
-
+        console.log(`Payment failed for transaction: ${merchantOrderId}`);
         return res.json({
           success: false,
           message: 'Payment failed',
@@ -344,7 +350,7 @@ exports.phonePeCallback = async (req, res) => {
           detailedErrorCode: response.data.detailedErrorCode
         });
       } else {
-
+        console.log(`Payment pending for transaction: ${merchantOrderId}`);
         return res.json({
           success: true,
           message: 'Payment is pending',
@@ -394,7 +400,8 @@ exports.getPhonePeStatus = async (req, res) => {
     
     const apiEndpoint = `/checkout/v2/order/${orderId}/status`;
     
-
+    console.log(`Checking PhonePe status for order: ${orderId}`);
+    console.log(`API URL: ${baseUrl}${apiEndpoint}`);
     
     const response = await axios.get(
       baseUrl + apiEndpoint,
@@ -407,7 +414,7 @@ exports.getPhonePeStatus = async (req, res) => {
       }
     );
     
-
+    console.log('PhonePe status response:', response.data);
     
     // According to PhonePe documentation, the response structure is:
     // {

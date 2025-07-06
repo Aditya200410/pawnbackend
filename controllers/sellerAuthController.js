@@ -208,10 +208,48 @@ exports.getProfile = async (req, res) => {
       bankDetails: withdrawal.bankDetails
     }));
 
+    // Calculate available commission using the new system
+    const CommissionHistory = require('../models/CommissionHistory');
+    
+    // Get all confirmed commissions
+    const confirmedCommissions = await CommissionHistory.find({
+      sellerId: seller._id,
+      status: 'confirmed',
+      type: 'earned'
+    });
+
+    const totalConfirmedCommissions = confirmedCommissions.reduce((sum, commission) => sum + commission.amount, 0);
+
+    // Get all completed withdrawals
+    const completedWithdrawals = await Withdraw.find({
+      seller: seller._id,
+      status: 'completed'
+    });
+
+    const totalWithdrawn = completedWithdrawals.reduce((sum, withdrawal) => sum + withdrawal.amount, 0);
+
+    // Get pending withdrawals (amounts that are already requested but not yet processed)
+    const pendingWithdrawals = await Withdraw.find({
+      seller: seller._id,
+      status: 'pending'
+    });
+
+    const totalPendingWithdrawals = pendingWithdrawals.reduce((sum, withdrawal) => sum + withdrawal.amount, 0);
+
+    // Calculate available commission
+    const availableCommission = Math.max(0, totalConfirmedCommissions - totalWithdrawn - totalPendingWithdrawals);
+
+    // Update seller's available commission in the database to match calculation
+    if (seller.availableCommission !== availableCommission) {
+      seller.availableCommission = availableCommission;
+      await seller.save();
+    }
+
     // Combine seller data with withdrawal data
     const sellerWithWithdrawals = {
       ...seller.toObject(),
-      withdrawals: mappedWithdrawals
+      withdrawals: mappedWithdrawals,
+      calculatedAvailableCommission: availableCommission
     };
 
     res.json({
@@ -670,9 +708,57 @@ exports.requestWithdraw = async (req, res) => {
         message: 'Your account is blocked. Please contact admin for assistance.' 
       });
     }
+
+    // Calculate available commission using the new system
+    const CommissionHistory = require('../models/CommissionHistory');
+    const Withdraw = require('../models/Withdraw');
+    
+    // Get all confirmed commissions
+    const confirmedCommissions = await CommissionHistory.find({
+      sellerId: seller._id,
+      status: 'confirmed',
+      type: 'earned'
+    });
+
+    const totalConfirmedCommissions = confirmedCommissions.reduce((sum, commission) => sum + commission.amount, 0);
+
+    // Get all completed withdrawals
+    const completedWithdrawals = await Withdraw.find({
+      seller: seller._id,
+      status: 'completed'
+    });
+
+    const totalWithdrawn = completedWithdrawals.reduce((sum, withdrawal) => sum + withdrawal.amount, 0);
+
+    // Get pending withdrawals (amounts that are already requested but not yet processed)
+    const pendingWithdrawals = await Withdraw.find({
+      seller: seller._id,
+      status: 'pending'
+    });
+
+    const totalPendingWithdrawals = pendingWithdrawals.reduce((sum, withdrawal) => sum + withdrawal.amount, 0);
+
+    // Calculate available commission
+    const availableCommission = Math.max(0, totalConfirmedCommissions - totalWithdrawn - totalPendingWithdrawals);
+
+    console.log('Withdrawal calculation:', {
+      sellerId: seller._id,
+      requestedAmount: amount,
+      availableCommission,
+      totalConfirmedCommissions,
+      totalWithdrawn,
+      totalPendingWithdrawals
+    });
+
+    // Check if seller has sufficient available commission
+    if (availableCommission < amount) {
+      return res.status(400).json({
+        success: false,
+        message: `Insufficient available commission for withdrawal. Available: ₹${availableCommission}, Requested: ₹${amount}`
+      });
+    }
     
     // Create Withdraw record
-    const Withdraw = require('../models/Withdraw');
     const withdraw = await Withdraw.create({
       seller: sellerId,
       amount,
@@ -684,6 +770,7 @@ exports.requestWithdraw = async (req, res) => {
         upi: bankDetails.upi || seller.upi || seller.bankDetails?.upi || ''
       }
     });
+
     // Add to seller's withdrawals array
     seller.withdrawals.push({
       amount,
@@ -691,9 +778,17 @@ exports.requestWithdraw = async (req, res) => {
       status: withdraw.status,
       processedAt: withdraw.processedAt
     });
-    seller.availableCommission = Math.max(0, (seller.availableCommission || 0) - amount);
+
+    // Update seller's available commission to match calculation
+    seller.availableCommission = availableCommission - amount;
     await seller.save();
-    res.json({ success: true, message: 'Withdrawal request submitted', withdraw });
+
+    res.json({ 
+      success: true, 
+      message: 'Withdrawal request submitted', 
+      withdraw,
+      availableCommission: availableCommission - amount
+    });
   } catch (error) {
     console.error('Withdraw request error:', error);
     res.status(500).json({ success: false, message: 'Error processing withdrawal request' });

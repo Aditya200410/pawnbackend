@@ -1,7 +1,51 @@
 const Withdraw = require('../models/Withdraw');
 const Seller = require('../models/Seller');
+const CommissionHistory = require('../models/CommissionHistory');
 
-// Request withdrawal (old system)
+// Function to calculate available commission based on commission history and withdrawals
+const calculateAvailableCommission = async (sellerId) => {
+  try {
+    // Get all confirmed commissions
+    const confirmedCommissions = await CommissionHistory.find({
+      sellerId,
+      status: 'confirmed',
+      type: 'earned'
+    });
+
+    const totalConfirmedCommissions = confirmedCommissions.reduce((sum, commission) => sum + commission.amount, 0);
+
+    // Get all completed withdrawals
+    const completedWithdrawals = await Withdraw.find({
+      seller: sellerId,
+      status: 'completed'
+    });
+
+    const totalWithdrawn = completedWithdrawals.reduce((sum, withdrawal) => sum + withdrawal.amount, 0);
+
+    // Get pending withdrawals (amounts that are already requested but not yet processed)
+    const pendingWithdrawals = await Withdraw.find({
+      seller: sellerId,
+      status: 'pending'
+    });
+
+    const totalPendingWithdrawals = pendingWithdrawals.reduce((sum, withdrawal) => sum + withdrawal.amount, 0);
+
+    // Available commission = confirmed commissions - completed withdrawals - pending withdrawals
+    const availableCommission = Math.max(0, totalConfirmedCommissions - totalWithdrawn - totalPendingWithdrawals);
+
+    return {
+      availableCommission,
+      totalConfirmedCommissions,
+      totalWithdrawn,
+      totalPendingWithdrawals
+    };
+  } catch (error) {
+    console.error('Error calculating available commission:', error);
+    throw error;
+  }
+};
+
+// Request withdrawal (updated to use proper calculation)
 exports.requestWithdrawal = async (req, res) => {
   try {
     const { amount, sellerNotes } = req.body;
@@ -24,11 +68,24 @@ exports.requestWithdrawal = async (req, res) => {
       });
     }
 
+    // Calculate available commission using the new system
+    const { availableCommission, totalConfirmedCommissions, totalWithdrawn, totalPendingWithdrawals } = 
+      await calculateAvailableCommission(sellerId);
+
+    console.log('Withdrawal calculation:', {
+      sellerId,
+      requestedAmount: amount,
+      availableCommission,
+      totalConfirmedCommissions,
+      totalWithdrawn,
+      totalPendingWithdrawals
+    });
+
     // Check if seller has sufficient available commission
-    if (seller.availableCommission < amount) {
+    if (availableCommission < amount) {
       return res.status(400).json({
         success: false,
-        message: 'Insufficient available commission for withdrawal'
+        message: `Insufficient available commission for withdrawal. Available: ₹${availableCommission}, Requested: ₹${amount}`
       });
     }
 
@@ -54,8 +111,8 @@ exports.requestWithdrawal = async (req, res) => {
 
     await withdrawal.save();
 
-    // Update seller's available commission
-    seller.availableCommission -= amount;
+    // Update seller's available commission in the database to match calculation
+    seller.availableCommission = availableCommission - amount;
     await seller.save();
 
     res.json({
@@ -66,7 +123,8 @@ exports.requestWithdrawal = async (req, res) => {
         amount: withdrawal.amount,
         status: withdrawal.status,
         requestDate: withdrawal.requestedAt
-      }
+      },
+      availableCommission: availableCommission - amount
     });
 
   } catch (error) {
@@ -172,14 +230,18 @@ exports.cancelWithdrawal = async (req, res) => {
     withdrawal.processedAt = new Date();
     await withdrawal.save();
 
-    // Refund the amount to seller's available commission
+    // Recalculate available commission after cancellation
+    const { availableCommission } = await calculateAvailableCommission(sellerId);
+    
+    // Update seller's available commission
     const seller = await Seller.findById(sellerId);
-    seller.availableCommission += withdrawal.amount;
+    seller.availableCommission = availableCommission;
     await seller.save();
 
     res.json({
       success: true,
-      message: 'Withdrawal request cancelled successfully'
+      message: 'Withdrawal request cancelled successfully',
+      availableCommission
     });
 
   } catch (error) {
@@ -403,11 +465,22 @@ exports.completeWithdrawal = async (req, res) => {
     withdrawal.processedAt = new Date();
     await withdrawal.save();
 
+    // Recalculate available commission after completion
+    const { availableCommission } = await calculateAvailableCommission(withdrawal.seller);
+    
+    // Update seller's available commission
+    const seller = await Seller.findById(withdrawal.seller);
+    if (seller) {
+      seller.availableCommission = availableCommission;
+      await seller.save();
+    }
+
     console.log('Withdrawal completed successfully');
 
     res.json({
       success: true,
-      message: 'Withdrawal marked as completed'
+      message: 'Withdrawal marked as completed',
+      availableCommission
     });
 
   } catch (error) {
@@ -415,6 +488,52 @@ exports.completeWithdrawal = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to complete withdrawal'
+    });
+  }
+};
+
+// Admin: Recalculate all sellers' available commission
+exports.recalculateAllSellersCommission = async (req, res) => {
+  try {
+    console.log('=== RECALCULATE ALL SELLERS COMMISSION ===');
+    
+    const sellers = await Seller.find({});
+    let updatedCount = 0;
+    let errors = [];
+
+    for (const seller of sellers) {
+      try {
+        const { availableCommission } = await calculateAvailableCommission(seller._id);
+        
+        if (seller.availableCommission !== availableCommission) {
+          seller.availableCommission = availableCommission;
+          await seller.save();
+          updatedCount++;
+          
+          console.log(`Updated seller ${seller.businessName}: ${seller.availableCommission} -> ${availableCommission}`);
+        }
+      } catch (error) {
+        console.error(`Error updating seller ${seller.businessName}:`, error);
+        errors.push({
+          sellerId: seller._id,
+          sellerName: seller.businessName,
+          error: error.message
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Recalculated commission for ${updatedCount} sellers`,
+      updatedCount,
+      errors: errors.length > 0 ? errors : undefined
+    });
+
+  } catch (error) {
+    console.error('Recalculate all sellers commission error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to recalculate sellers commission'
     });
   }
 };

@@ -17,4 +17,7 @@ router.patch('/admin/reject/:withdrawalId', authenticateToken, isAdmin, withdraw
 router.patch('/admin/complete/:withdrawalId', authenticateToken, isAdmin, withdrawalController.completeWithdrawal);
 router.get('/admin/by-seller/:sellerId', authenticateToken, isAdmin, withdrawalController.getWithdrawalsBySeller);
 
+// Admin: Recalculate all sellers' commission
+router.post('/admin/recalculate-commission', authenticateToken, isAdmin, withdrawalController.recalculateAllSellersCommission);
+
 module.exports = router; 
