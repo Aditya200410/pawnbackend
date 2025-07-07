@@ -89,3 +89,11 @@ exports.phonePeCallback = async (req, res) => {
   res.status(200).json({ success: true });
 };
 
+// Refund and refund status handlers (optional, stubbed)
+exports.refundPayment = (req, res) => {
+  res.status(501).json({ success: false, message: 'Refund not implemented' });
+};
+exports.getRefundStatus = (req, res) => {
+  res.status(501).json({ success: false, message: 'Refund status not implemented' });
+};
+
