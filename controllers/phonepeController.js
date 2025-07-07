@@ -172,7 +172,7 @@ exports.createPhonePeOrder = async (req, res) => {
           ? `Upfront payment ₹${upfrontAmount} for COD order ${merchantOrderId}`
           : `Payment for order ${merchantOrderId}`,
         merchantUrls: {
-          redirectUrl: `${frontendUrl.replace(/\/+$/, '')}/payment/success?transactionId=${merchantOrderId}`
+          redirectUrl: `${frontendUrl.replace(/\/+$/, '')}/payment/status?orderId=${merchantOrderId}`
         }
       }
     };
