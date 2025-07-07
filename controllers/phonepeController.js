@@ -71,35 +71,33 @@ async function getPhonePeToken() {
     throw new Error('Failed to get PhonePe OAuth token');
   }
 }
-
 exports.createPhonePeOrder = async (req, res) => {
   try {
-    const { 
-      amount, 
-      customerName, 
-      email, 
-      phone, 
-      items, 
-      totalAmount, 
-      shippingCost, 
-      codExtraCharge, 
-      finalTotal, 
-      paymentMethod, 
+    const {
+      amount,
+      customerName,
+      email,
+      phone,
+      items,
+      totalAmount,
+      shippingCost,
+      codExtraCharge,
+      finalTotal,
+      paymentMethod,
       upfrontAmount,
       remainingAmount,
       sellerToken,
-      couponCode 
+      couponCode
     } = req.body;
-    
+
     const env = process.env.PHONEPE_ENV || 'sandbox';
     const frontendUrl = process.env.FRONTEND_URL;
     const backendUrl = process.env.BACKEND_URL;
 
-    // Enhanced validation
     if (!frontendUrl || !backendUrl) {
-      console.error('URL configuration missing:', { 
-        frontendUrl: !!frontendUrl, 
-        backendUrl: !!backendUrl 
+      console.error('URL configuration missing:', {
+        frontendUrl: !!frontendUrl,
+        backendUrl: !!backendUrl
       });
       return res.status(500).json({
         success: false,
@@ -108,20 +106,19 @@ exports.createPhonePeOrder = async (req, res) => {
     }
 
     if (!amount || amount <= 0) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Invalid amount provided' 
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid amount provided'
       });
     }
 
     if (!customerName || !email || !phone) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Customer details are required' 
+      return res.status(400).json({
+        success: false,
+        message: 'Customer details are required'
       });
     }
 
-    // Validate phone number format
     const phoneRegex = /^[6-9]\d{9}$/;
     if (!phoneRegex.test(phone)) {
       return res.status(400).json({
@@ -130,7 +127,6 @@ exports.createPhonePeOrder = async (req, res) => {
       });
     }
 
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return res.status(400).json({
@@ -139,25 +135,20 @@ exports.createPhonePeOrder = async (req, res) => {
       });
     }
 
-    // Get OAuth token
     const accessToken = await getPhonePeToken();
 
-    // Set base URL for payment API based on PhonePe documentation
-    // Based on: https://developer.phonepe.com/v1/reference/create-payment-standard-checkout
-    const baseUrl = env === 'production' 
+    const baseUrl = env === 'production'
       ? 'https://api.phonepe.com/apis/pg'
-      : '	https://api-preprod.phonepe.com/apis/pg-sandbox';
+      : 'https://api-preprod.phonepe.com/apis/pg-sandbox';
 
     const apiEndpoint = '/checkout/v2/pay';
 
     const merchantOrderId = `MT${Date.now()}${Math.random().toString(36).substr(2, 6)}`;
 
-    // Prepare payload according to PhonePe API documentation
-    // Based on: https://developer.phonepe.com/v1/reference/create-payment-standard-checkout
     const payload = {
       merchantOrderId: merchantOrderId,
-      amount: Math.round(amount * 100), // Convert to paise
-      expireAfter: 1200, // 20 minutes expiry
+      amount: Math.round(amount * 100),
+      expireAfter: 1200,
       metaInfo: {
         udf1: customerName,
         udf2: email,
@@ -169,7 +160,7 @@ exports.createPhonePeOrder = async (req, res) => {
       },
       paymentFlow: {
         type: 'PG_CHECKOUT',
-        message: paymentMethod === 'cod' 
+        message: paymentMethod === 'cod'
           ? `Upfront payment ₹${upfrontAmount} for COD order ${merchantOrderId}`
           : `Payment for order ${merchantOrderId}`,
         merchantUrls: {
@@ -185,7 +176,7 @@ exports.createPhonePeOrder = async (req, res) => {
     });
 
     console.log(`Making PhonePe API request to: ${baseUrl}${apiEndpoint}`);
-    
+
     const response = await axios.post(
       baseUrl + apiEndpoint,
       payload,
@@ -200,56 +191,59 @@ exports.createPhonePeOrder = async (req, res) => {
 
     console.log('PhonePe API response:', response.data);
 
-    // Success response from PhonePe
     if (response.data && response.data.orderId) {
       const redirectUrl = response.data.redirectUrl;
       const orderId = response.data.orderId;
-      const state = response.data.state;
 
-      if (redirectUrl) {
-        const orderData = {
-          merchantOrderId,
-          orderId,
-          customerName,
-          email,
-          phone,
-          items,
-          totalAmount,
-          shippingCost,
-          codExtraCharge,
-          finalTotal,
-          paymentMethod,
-          upfrontAmount: upfrontAmount || 0,
-          remainingAmount: remainingAmount || 0,
-          sellerToken,
-          couponCode,
-          status: state || 'pending',
-          createdAt: new Date()
-        };
+      // ✅ NEW: Immediately call status API after order creation
+      const statusResponse = await axios.get(
+        `${baseUrl}/checkout/v2/order/${orderId}/status`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `O-Bearer ${accessToken}`
+          },
+          timeout: 30000
+        }
+      );
 
-        console.log('PhonePe order created successfully:', {
-          orderId: orderId,
-          merchantOrderId: merchantOrderId,
-          state: state,
-          redirectUrl: redirectUrl.substring(0, 100) + '...'
-        });
+      const state = statusResponse.data?.state || 'PENDING';
 
-        return res.json({ 
-          success: true, 
-          redirectUrl,
-          orderId: orderId,
-          merchantOrderId: merchantOrderId,
-          state: state,
-          orderData 
-        });
-      } else {
-        console.error('PhonePe did not return redirect URL:', response.data);
-        return res.status(500).json({ 
-          success: false, 
-          message: 'PhonePe did not return a redirect URL.',
-          data: response.data 
-        });
-      }
+      const orderData = {
+        merchantOrderId,
+        orderId,
+        customerName,
+        email,
+        phone,
+        items,
+        totalAmount,
+        shippingCost,
+        codExtraCharge,
+        finalTotal,
+        paymentMethod,
+        upfrontAmount: upfrontAmount || 0,
+        remainingAmount: remainingAmount || 0,
+        sellerToken,
+        couponCode,
+        status: state.toLowerCase(),
+        createdAt: new Date()
+      };
+
+      console.log('PhonePe order status checked immediately:', {
+        merchantOrderId,
+        orderId,
+        state,
+        redirectUrl: redirectUrl ? redirectUrl.substring(0, 100) + '...' : 'none'
+      });
+
+      return res.json({
+        success: true,
+        redirectUrl,
+        orderId,
+        merchantOrderId,
+        state,
+        orderData
+      });
     } else {
       console.error('PhonePe payment initiation failed:', response.data);
       return res.status(500).json({
@@ -285,6 +279,7 @@ exports.createPhonePeOrder = async (req, res) => {
     });
   }
 };
+
 
 // PhonePe payment callback: always check order status API before deciding payment status
 exports.phonePeCallback = async (req, res) => {
