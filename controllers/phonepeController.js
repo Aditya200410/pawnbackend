@@ -286,15 +286,15 @@ exports.createPhonePeOrder = async (req, res) => {
   }
 };
 
+// PhonePe payment callback: always check order status API before deciding payment status
 exports.phonePeCallback = async (req, res) => {
   try {
-    // Accept both merchantOrderId and orderId, but use orderId for status check
-    const { merchantOrderId, orderId, amount, status, code, merchantId } = req.body;
+    const { merchantOrderId, orderId } = req.body;
     console.log('PhonePe callback received:', req.body);
-    if (!merchantOrderId || !orderId || !status) {
+    if (!merchantOrderId || !orderId) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid callback data: merchantOrderId, orderId, and status are required'
+        message: 'Invalid callback data: merchantOrderId and orderId are required'
       });
     }
     try {
@@ -315,7 +315,7 @@ exports.phonePeCallback = async (req, res) => {
           timeout: 30000
         }
       );
-      console.log('PhonePe verification response:', response.data);
+      console.log('PhonePe order status response (callback):', response.data);
       if (response.data && response.data.state) {
         const isCompleted = typeof response.data.state === 'string' && response.data.state.toLowerCase() === 'completed';
         const isFailed = typeof response.data.state === 'string' && response.data.state.toLowerCase() === 'failed';
@@ -358,6 +358,73 @@ exports.phonePeCallback = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Failed to process callback'
+    });
+  }
+};
+
+// Retry verification endpoint for frontend: POST /api/payment/phonepe/callback/retry
+exports.phonePeCallbackRetry = async (req, res) => {
+  try {
+    const { merchantOrderId, orderId } = req.body;
+    if (!merchantOrderId || !orderId) {
+      return res.status(400).json({
+        success: false,
+        message: 'merchantOrderId and orderId are required'
+      });
+    }
+    // Always call order status API to get the latest state
+    const env = process.env.PHONEPE_ENV || 'sandbox';
+    const accessToken = await getPhonePeToken();
+    const baseUrl = env === 'production' 
+      ? 'https://api.phonepe.com/apis/pg'
+      : 'https://api-preprod.phonepe.com/apis/pg-sandbox';
+    const apiEndpoint = `/checkout/v2/order/${orderId}/status`;
+    const response = await axios.get(
+      baseUrl + apiEndpoint,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `O-Bearer ${accessToken}`
+        },
+        timeout: 30000
+      }
+    );
+    console.log('PhonePe order status response (retry):', response.data);
+    if (response.data && response.data.state) {
+      const isCompleted = typeof response.data.state === 'string' && response.data.state.toLowerCase() === 'completed';
+      const isFailed = typeof response.data.state === 'string' && response.data.state.toLowerCase() === 'failed';
+      return res.json({
+        success: isCompleted,
+        data: {
+          orderId: response.data.orderId,
+          merchantOrderId,
+          state: response.data.state,
+          amount: response.data.amount,
+          expireAt: response.data.expireAt,
+          paymentDetails: response.data.paymentDetails || [],
+          errorCode: response.data.errorCode,
+          detailedErrorCode: response.data.detailedErrorCode,
+          errorContext: response.data.errorContext
+        },
+        message: isCompleted ? 'Payment completed' : (isFailed ? 'Payment failed' : 'Payment pending')
+      });
+    } else if (response.data && response.data.success === false) {
+      return res.status(400).json({
+        success: false,
+        message: response.data.message || 'Failed to get transaction status',
+        code: response.data.code
+      });
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid response from PhonePe'
+      });
+    }
+  } catch (error) {
+    console.error('PhonePe callback retry error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to process callback retry'
     });
   }
 };
