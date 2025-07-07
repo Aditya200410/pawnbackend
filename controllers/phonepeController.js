@@ -1,6 +1,7 @@
 const axios = require('axios');
 const crypto = require('crypto');
 require('dotenv').config();
+const Order = require('../models/Order');
 
 // Cache for OAuth token
 let oauthToken = null;
@@ -390,12 +391,24 @@ exports.getPhonePeStatus = async (req, res) => {
       }
     );
     console.log('PhonePe status response:', response.data);
-    // Only COMPLETED, FAILED, PENDING are valid states
+    // Only COMPLETED is considered success; all others are not
+    // Try to extract merchantOrderId from metaInfo if available
+    let merchantOrderId = null;
+    if (response.data && response.data.metaInfo && response.data.metaInfo.merchantOrderId) {
+      merchantOrderId = response.data.metaInfo.merchantOrderId;
+    } else if (response.data && response.data.orderId) {
+      // Look up merchantOrderId from DB if not present in metaInfo
+      const orderDoc = await Order.findOne({ phonePeOrderId: response.data.orderId });
+      if (orderDoc && orderDoc.merchantOrderId) {
+        merchantOrderId = orderDoc.merchantOrderId;
+      }
+    }
     if (response.data && response.data.state) {
       return res.json({
         success: response.data.state === 'COMPLETED',
         data: {
           orderId: response.data.orderId,
+          merchantOrderId,
           state: response.data.state,
           amount: response.data.amount,
           expireAt: response.data.expireAt,
