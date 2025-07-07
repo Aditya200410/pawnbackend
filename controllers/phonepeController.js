@@ -298,12 +298,12 @@ exports.phonePeCallback = async (req, res) => {
       });
     }
     try {
-      const accessToken = await getPhonePeToken();
+      // Always call order status API to get the latest state
       const env = process.env.PHONEPE_ENV || 'sandbox';
+      const accessToken = await getPhonePeToken();
       const baseUrl = env === 'production' 
         ? 'https://api.phonepe.com/apis/pg'
         : 'https://api-preprod.phonepe.com/apis/pg-sandbox';
-      // Use orderId (PhonePe's transaction ID) for status check
       const apiEndpoint = `/checkout/v2/order/${orderId}/status`;
       const response = await axios.get(
         baseUrl + apiEndpoint,
@@ -316,34 +316,34 @@ exports.phonePeCallback = async (req, res) => {
         }
       );
       console.log('PhonePe verification response:', response.data);
-      if (response.data && response.data.state === 'COMPLETED') {
-        console.log(`Payment completed for transaction: ${merchantOrderId}`);
+      if (response.data && response.data.state) {
+        const isCompleted = typeof response.data.state === 'string' && response.data.state.toLowerCase() === 'completed';
+        const isFailed = typeof response.data.state === 'string' && response.data.state.toLowerCase() === 'failed';
         return res.json({
-          success: true,
-          message: 'Payment completed successfully',
-          orderId: orderId,
-          merchantOrderId: merchantOrderId,
-          status: 'COMPLETED'
+          success: isCompleted,
+          data: {
+            orderId: response.data.orderId,
+            merchantOrderId,
+            state: response.data.state,
+            amount: response.data.amount,
+            expireAt: response.data.expireAt,
+            paymentDetails: response.data.paymentDetails || [],
+            errorCode: response.data.errorCode,
+            detailedErrorCode: response.data.detailedErrorCode,
+            errorContext: response.data.errorContext
+          },
+          message: isCompleted ? 'Payment completed' : (isFailed ? 'Payment failed' : 'Payment pending')
         });
-      } else if (response.data && response.data.state === 'FAILED') {
-        console.log(`Payment failed for transaction: ${merchantOrderId}`);
-        return res.json({
+      } else if (response.data && response.data.success === false) {
+        return res.status(400).json({
           success: false,
-          message: 'Payment failed',
-          orderId: orderId,
-          merchantOrderId: merchantOrderId,
-          status: 'FAILED',
-          errorCode: response.data.errorCode,
-          detailedErrorCode: response.data.detailedErrorCode
+          message: response.data.message || 'Failed to get transaction status',
+          code: response.data.code
         });
       } else {
-        console.log(`Payment pending for transaction: ${merchantOrderId}`);
-        return res.json({
-          success: true,
-          message: 'Payment is pending',
-          orderId: orderId,
-          merchantOrderId: merchantOrderId,
-          status: 'PENDING'
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid response from PhonePe'
         });
       }
     } catch (verificationError) {
@@ -404,8 +404,10 @@ exports.getPhonePeStatus = async (req, res) => {
       }
     }
     if (response.data && response.data.state) {
+      const isCompleted = typeof response.data.state === 'string' && response.data.state.toLowerCase() === 'completed';
+      const isFailed = typeof response.data.state === 'string' && response.data.state.toLowerCase() === 'failed';
       return res.json({
-        success: response.data.state === 'COMPLETED',
+        success: isCompleted,
         data: {
           orderId: response.data.orderId,
           merchantOrderId,
@@ -417,7 +419,7 @@ exports.getPhonePeStatus = async (req, res) => {
           detailedErrorCode: response.data.detailedErrorCode,
           errorContext: response.data.errorContext
         },
-        message: response.data.state === 'COMPLETED' ? 'Payment completed' : (response.data.state === 'FAILED' ? 'Payment failed' : 'Payment pending')
+        message: isCompleted ? 'Payment completed' : (isFailed ? 'Payment failed' : 'Payment pending')
       });
     } else if (response.data && response.data.success === false) {
       return res.status(400).json({
