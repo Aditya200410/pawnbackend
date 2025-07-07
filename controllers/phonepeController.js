@@ -379,9 +379,9 @@ exports.phonePeCallback = async (req, res) => {
 
 exports.getPhonePeStatus = async (req, res) => {
   try {
-    const { orderId } = req.params;
+    const { merchantOrderId } = req.params;
     
-    if (!orderId) {
+    if (!merchantOrderId) {
       return res.status(400).json({
         success: false,
         message: 'Order ID is required'
@@ -398,9 +398,9 @@ exports.getPhonePeStatus = async (req, res) => {
       ? 'https://api.phonepe.com/apis/pg'
       : 'https://api-preprod.phonepe.com/apis/pg-sandbox';
     
-    const apiEndpoint = `/checkout/v2/order/${orderId}/status`;
+    const apiEndpoint = `/checkout/v2/order/${merchantOrderId}/status`;
     
-    console.log(`Checking PhonePe status for order: ${orderId}`);
+    console.log(`Checking PhonePe status for order: ${merchantOrderId}`);
     console.log(`API URL: ${baseUrl}${apiEndpoint}`);
     
     const response = await axios.get(
@@ -454,8 +454,19 @@ exports.getPhonePeStatus = async (req, res) => {
     }
     
   } catch (error) {
-    console.error('PhonePe status check error:', error.response?.data || error.message);
+    // Improved error handling: always surface PhonePe error message/code if available
+    const phonePeError = error.response?.data;
+    console.error('PhonePe status check error:', phonePeError || error.message);
     
+    if (phonePeError && typeof phonePeError === 'object') {
+      // If PhonePe returned a structured error, surface it
+      return res.status(error.response.status || 500).json({
+        success: false,
+        message: phonePeError.message || 'PhonePe error',
+        code: phonePeError.code,
+        data: phonePeError.data || null
+      });
+    }
     // Handle specific error cases
     if (error.response?.status === 404) {
       return res.status(404).json({
@@ -473,10 +484,10 @@ exports.getPhonePeStatus = async (req, res) => {
         message: 'Request timeout'
       });
     }
-    
+    // Fallback: generic error
     return res.status(500).json({
       success: false,
-      message: 'Failed to check transaction status'
+      message: error.message || 'Failed to check transaction status'
     });
   }
 };
