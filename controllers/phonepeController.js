@@ -287,28 +287,23 @@ exports.createPhonePeOrder = async (req, res) => {
 
 exports.phonePeCallback = async (req, res) => {
   try {
+    // Accept both merchantOrderId and orderId, but use orderId for status check
     const { merchantOrderId, orderId, amount, status, code, merchantId } = req.body;
-    
     console.log('PhonePe callback received:', req.body);
-    
-    // Verify the callback data
-    if (!merchantOrderId || !status) {
+    if (!merchantOrderId || !orderId || !status) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid callback data'
+        message: 'Invalid callback data: merchantOrderId, orderId, and status are required'
       });
     }
-    
-    // Verify the transaction with PhonePe
     try {
       const accessToken = await getPhonePeToken();
       const env = process.env.PHONEPE_ENV || 'sandbox';
       const baseUrl = env === 'production' 
         ? 'https://api.phonepe.com/apis/pg'
         : 'https://api-preprod.phonepe.com/apis/pg-sandbox';
-      
+      // Use orderId (PhonePe's transaction ID) for status check
       const apiEndpoint = `/checkout/v2/order/${orderId}/status`;
-      
       const response = await axios.get(
         baseUrl + apiEndpoint,
         {
@@ -319,18 +314,9 @@ exports.phonePeCallback = async (req, res) => {
           timeout: 30000
         }
       );
-      
       console.log('PhonePe verification response:', response.data);
-      
       if (response.data && response.data.state === 'COMPLETED') {
-        // Payment is successful, create order
         console.log(`Payment completed for transaction: ${merchantOrderId}`);
-        
-        // Here you would typically:
-        // 1. Create order in database
-        // 2. Send confirmation email/SMS
-        // 3. Update inventory
-        
         return res.json({
           success: true,
           message: 'Payment completed successfully',
@@ -359,7 +345,6 @@ exports.phonePeCallback = async (req, res) => {
           status: 'PENDING'
         });
       }
-      
     } catch (verificationError) {
       console.error('PhonePe verification error:', verificationError);
       return res.status(500).json({
@@ -367,7 +352,6 @@ exports.phonePeCallback = async (req, res) => {
         message: 'Failed to verify payment with PhonePe'
       });
     }
-    
   } catch (error) {
     console.error('PhonePe callback error:', error);
     return res.status(500).json({
@@ -379,30 +363,22 @@ exports.phonePeCallback = async (req, res) => {
 
 exports.getPhonePeStatus = async (req, res) => {
   try {
-    const { merchantOrderId } = req.params;
-    
-    if (!merchantOrderId) {
+    // Accept both merchantOrderId and orderId, but use orderId for status check
+    const { orderId } = req.params;
+    if (!orderId) {
       return res.status(400).json({
         success: false,
-        message: 'Order ID is required'
+        message: 'PhonePe orderId (transaction ID) is required'
       });
     }
-    
     const env = process.env.PHONEPE_ENV || 'sandbox';
-    
-    // Get OAuth token
     const accessToken = await getPhonePeToken();
-    
-    // Set base URL based on PhonePe documentation
     const baseUrl = env === 'production' 
       ? 'https://api.phonepe.com/apis/pg'
       : 'https://api-preprod.phonepe.com/apis/pg-sandbox';
-    
-    const apiEndpoint = `/checkout/v2/order/${merchantOrderId}/status`;
-    
-    console.log(`Checking PhonePe status for order: ${merchantOrderId}`);
+    const apiEndpoint = `/checkout/v2/order/${orderId}/status`;
+    console.log(`Checking PhonePe status for orderId: ${orderId}`);
     console.log(`API URL: ${baseUrl}${apiEndpoint}`);
-    
     const response = await axios.get(
       baseUrl + apiEndpoint,
       {
@@ -413,21 +389,11 @@ exports.getPhonePeStatus = async (req, res) => {
         timeout: 30000
       }
     );
-    
     console.log('PhonePe status response:', response.data);
-    
-    // According to PhonePe documentation, the response structure is:
-    // {
-    //   "orderId": "OMO2403282020198641071317",
-    //   "state": "COMPLETED",
-    //   "amount": 1000,
-    //   "expireAt": 1711867462542,
-    //   "paymentDetails": [...]
-    // }
-    
+    // Only COMPLETED, FAILED, PENDING are valid states
     if (response.data && response.data.state) {
       return res.json({
-        success: true,
+        success: response.data.state === 'COMPLETED',
         data: {
           orderId: response.data.orderId,
           state: response.data.state,
@@ -437,10 +403,10 @@ exports.getPhonePeStatus = async (req, res) => {
           errorCode: response.data.errorCode,
           detailedErrorCode: response.data.detailedErrorCode,
           errorContext: response.data.errorContext
-        }
+        },
+        message: response.data.state === 'COMPLETED' ? 'Payment completed' : (response.data.state === 'FAILED' ? 'Payment failed' : 'Payment pending')
       });
     } else if (response.data && response.data.success === false) {
-      // Handle error response from PhonePe
       return res.status(400).json({
         success: false,
         message: response.data.message || 'Failed to get transaction status',
@@ -452,14 +418,10 @@ exports.getPhonePeStatus = async (req, res) => {
         message: 'Invalid response from PhonePe'
       });
     }
-    
   } catch (error) {
-    // Improved error handling: always surface PhonePe error message/code if available
     const phonePeError = error.response?.data;
     console.error('PhonePe status check error:', phonePeError || error.message);
-    
     if (phonePeError && typeof phonePeError === 'object') {
-      // If PhonePe returned a structured error, surface it
       return res.status(error.response.status || 500).json({
         success: false,
         message: phonePeError.message || 'PhonePe error',
@@ -467,7 +429,6 @@ exports.getPhonePeStatus = async (req, res) => {
         data: phonePeError.data || null
       });
     }
-    // Handle specific error cases
     if (error.response?.status === 404) {
       return res.status(404).json({
         success: false,
@@ -484,7 +445,6 @@ exports.getPhonePeStatus = async (req, res) => {
         message: 'Request timeout'
       });
     }
-    // Fallback: generic error
     return res.status(500).json({
       success: false,
       message: error.message || 'Failed to check transaction status'
