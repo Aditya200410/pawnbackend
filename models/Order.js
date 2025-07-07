@@ -41,8 +41,6 @@ const orderSchema = new mongoose.Schema({
   commission: { type: Number, default: 0 }, // Commission amount for this order
   transactionId: { type: String, required: false }, // PhonePe transaction ID
   couponCode: { type: String, required: false }, // Coupon code if applied
-  merchantOrderId: { type: String, required: false }, // Our own merchant order ID for PhonePe
-  phonePeOrderId: { type: String, required: false }, // PhonePe's orderId (transaction ID)
 }, { timestamps: true });
 
 module.exports = mongoose.model('Order', orderSchema);
