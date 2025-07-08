@@ -37,6 +37,7 @@ const allowedOrigins = [
   'https://riko-craft.vercel.app',
   'https://riko-craft.vercel.app',
   'https://pawn-shop-admin.vercel.app',
+  'https://pawn-shop-iota.vercel.app/',
   'https://pawn-shop.vercel.app',
   'https://pawn-shop-git-main-adityas-projects.vercel.app',
   'https://pawn-shop-adityas-projects.vercel.app',
