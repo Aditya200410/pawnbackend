@@ -283,7 +283,8 @@ exports.createCommissionEntry = async (orderId, sellerId, orderAmount, commissio
       throw new Error('Order not found');
     }
 
-    const commissionAmount = orderAmount * commissionRate;
+    let commissionAmount = orderAmount * commissionRate;
+    commissionAmount = Math.round(commissionAmount / 10) * 10; // round to nearest 10
 
     
     const commissionEntry = new CommissionHistory({

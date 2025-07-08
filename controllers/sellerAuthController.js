@@ -218,7 +218,8 @@ exports.getProfile = async (req, res) => {
       type: 'earned'
     });
 
-    const totalConfirmedCommissions = confirmedCommissions.reduce((sum, commission) => sum + commission.amount, 0);
+    // Ensure all commission amounts are rounded to nearest 10 (for legacy data safety)
+    const totalConfirmedCommissions = confirmedCommissions.reduce((sum, commission) => sum + Math.round(commission.amount / 10) * 10, 0);
 
     // Get all completed withdrawals
     const completedWithdrawals = await Withdraw.find({
@@ -335,7 +336,8 @@ exports.updateProfile = async (req, res) => {
       type: 'earned'
     });
 
-    const totalConfirmedCommissions = confirmedCommissions.reduce((sum, commission) => sum + commission.amount, 0);
+    // Ensure all commission amounts are rounded to nearest 10 (for legacy data safety)
+    const totalConfirmedCommissions = confirmedCommissions.reduce((sum, commission) => sum + Math.round(commission.amount / 10) * 10, 0);
 
     // Get all completed withdrawals
     const completedWithdrawals = await Withdraw.find({
@@ -758,7 +760,8 @@ exports.requestWithdraw = async (req, res) => {
       type: 'earned'
     });
 
-    const totalConfirmedCommissions = confirmedCommissions.reduce((sum, commission) => sum + commission.amount, 0);
+    // Ensure all commission amounts are rounded to nearest 10 (for legacy data safety)
+    const totalConfirmedCommissions = confirmedCommissions.reduce((sum, commission) => sum + Math.round(commission.amount / 10) * 10, 0);
 
     // Get all completed withdrawals
     const completedWithdrawals = await Withdraw.find({
