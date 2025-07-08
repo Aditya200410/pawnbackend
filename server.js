@@ -152,6 +152,7 @@ app.use('/api/withdrawal', require('./routes/withdrawal'));
 app.use('/api/commission', require('./routes/commission'));
 app.use('/api/reviews', require('./routes/reviews'));
 app.use('/api/settings', require('./routes/settings'));
+app.use('/api/msg91', require('./routes/msg91'));
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -184,7 +185,7 @@ app.use((err, req, res, next) => {
 });
 
 // Port from environment variable
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, async () => {
     console.log(`Server is running on port ${PORT}`);
     

@@ -345,4 +345,28 @@ router.put('/update-profile', auth, async (req, res) => {
   }
 });
 
+// POST /register-phone
+router.post('/register-phone', async (req, res) => {
+  const { name, phone, password } = req.body;
+  // Validate phone: must be 12 digits, start with 91, and only digits
+  if (!name || !phone || !password) {
+    return res.status(400).json({ message: 'Name, phone, and password are required' });
+  }
+  if (!/^91[6-9][0-9]{9}$/.test(phone)) {
+    return res.status(400).json({ message: 'Phone must start with 91 and be a valid 10-digit Indian mobile number' });
+  }
+  try {
+    const existingUser = await User.findOne({ phone });
+    if (existingUser) {
+      return res.status(400).json({ message: 'Phone already registered' });
+    }
+    const user = new User({ name, phone, password });
+    await user.save();
+    return res.json({ message: 'Account created successfully! Please sign in.', user });
+  } catch (err) {
+    console.error('Register-phone error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 module.exports = router;
