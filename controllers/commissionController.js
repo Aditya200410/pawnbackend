@@ -294,7 +294,7 @@ exports.createCommissionEntry = async (orderId, sellerId, orderAmount, commissio
       commissionRate,
       orderAmount,
       description: `Commission earned from order #${order.orderNumber || orderId}`,
-      status: 'pending',
+      status: 'confirmed',
       orderDetails: {
         orderNumber: order.orderNumber || `Order-${orderId}`,
         customerName: order.customerName || 'Unknown Customer',
