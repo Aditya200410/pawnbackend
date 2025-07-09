@@ -7,6 +7,8 @@ const crypto = require('crypto');
 const User = require('../models/User');
 const TempUser = require('../models/TempUser');
 const nodemailer = require('nodemailer');
+const axios = require('axios');
+const MSG91_AUTHKEY = "458779TNIVxOl3qDwI6866bc33P1";
 
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
 
@@ -118,6 +120,32 @@ Team Rikocraft
   }
 };
 
+async function sendOTPSMS(phone, otp) {
+  if (!phone) return;
+  const message = `Your OTP for Rikocraft is: ${otp}`;
+  try {
+    await axios.post('https://api.msg91.com/api/v2/sendsms', {
+      sender: "RIKOCR",
+      route: "4",
+      country: "91",
+      sms: [
+        {
+          message,
+          to: [phone]
+        }
+      ]
+    }, {
+      headers: {
+        authkey: MSG91_AUTHKEY,
+        'Content-Type': 'application/json'
+      }
+    });
+    console.log(`OTP SMS sent to ${phone}`);
+  } catch (smsErr) {
+    console.error('Error sending OTP SMS:', smsErr.response?.data || smsErr.message);
+  }
+}
+
 // Middleware to protect routes
 const auth = (req, res, next) => {
   // Check for token in Authorization header first
@@ -166,7 +194,7 @@ router.get('/validate-token', auth, async (req, res) => {
 
 // POST /register (alias for /signup)
 router.post('/register', async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, phone } = req.body;
   if (!name || !email || !password) {
     return res.status(400).json({ message: 'Name, email, and password are required' });
   }
@@ -180,7 +208,7 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ message: 'OTP already sent to this email. Please verify OTP or wait 10 min.' });
     }
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    await TempUser.create({ username: name, email, password, otp });
+    await TempUser.create({ username: name, email, password, otp, phone });
     console.log(`OTP for ${email}: ${otp}`);
     
     // Send OTP via email with new template
@@ -190,8 +218,15 @@ router.post('/register', async (req, res) => {
       console.error('Error sending OTP email:', mailErr);
       // Don't fail the request if email fails
     }
+    // Send OTP via SMS
+    try {
+      await sendOTPSMS(phone, otp);
+    } catch (smsErr) {
+      console.error('Error sending OTP SMS:', smsErr);
+      // Don't fail the request if SMS fails
+    }
     
-    return res.json({ message: 'OTP sent to your email', email });
+    return res.json({ message: 'OTP sent to your email and phone', email });
   } catch (err) {
     console.error('Register error:', err);
     res.status(500).json({ message: 'Server error' });
