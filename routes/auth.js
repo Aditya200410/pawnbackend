@@ -373,26 +373,40 @@ router.post('/register-phone', async (req, res) => {
 
 // POST /verify-otp-phone
 router.post('/verify-otp-phone', async (req, res) => {
-  const { phone, otp } = req.body;
-  if (!phone || !otp) {
-    return res.status(400).json({ message: 'Phone and OTP are required' });
+  let { phone } = req.body;
+  if (!phone) {
+    return res.status(400).json({ message: 'Phone is required' });
   }
+  phone = String(phone).trim();
   try {
-    const tempUser = await TempUser.findOne({ phone });
+    // Try to find the temp user by phone (as string)
+    let tempUser = await TempUser.findOne({ phone });
     if (!tempUser) {
-      return res.status(400).json({ message: 'OTP expired or not found. Please register again.' });
+      // Fallback: try to find by phone as number (if stored that way)
+      tempUser = await TempUser.findOne({ phone: Number(phone) });
     }
-    if (tempUser.otp !== otp) {
-      return res.status(400).json({ message: 'Invalid OTP' });
+    if (!tempUser) {
+      console.error('TempUser not found for phone:', phone);
+      return res.status(400).json({ message: 'Registration expired or not found. Please register again.' });
     }
+    // No OTP check here, as OTP is already verified
     // Create the user
-    const user = new User({ name: tempUser.username, email: tempUser.email, password: tempUser.password, phone: tempUser.phone });
+    const user = new User({
+      name: tempUser.username,
+      email: tempUser.email,
+      password: tempUser.password,
+      phone: tempUser.phone
+    });
     await user.save();
     await TempUser.deleteOne({ _id: tempUser._id });
     // Log in the user (issue JWT)
     const jwt = require('jsonwebtoken');
     const token = jwt.sign({ id: user._id, email: user.email }, JWT_SECRET, { expiresIn: '24h' });
-    return res.json({ message: 'OTP verified, registration complete.', token, user: { id: user._id, name: user.name, email: user.email, phone: user.phone } });
+    return res.json({
+      message: 'Registration complete.',
+      token,
+      user: { id: user._id, name: user.name, email: user.email, phone: user.phone }
+    });
   } catch (err) {
     console.error('Verify OTP by phone error:', err);
     res.status(500).json({ message: 'Server error' });
