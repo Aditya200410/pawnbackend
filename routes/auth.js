@@ -210,23 +210,14 @@ router.post('/register', async (req, res) => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     await TempUser.create({ username: name, email, password, otp, phone });
     console.log(`OTP for ${email}: ${otp}`);
-    
-    // Send OTP via email with new template
-    try {
-      await sendOTPEmail(email, otp, name, 'signup');
-    } catch (mailErr) {
-      console.error('Error sending OTP email:', mailErr);
-      // Don't fail the request if email fails
-    }
-    // Send OTP via SMS
+    // Send OTP via SMS only
     try {
       await sendOTPSMS(phone, otp);
     } catch (smsErr) {
       console.error('Error sending OTP SMS:', smsErr);
       // Don't fail the request if SMS fails
     }
-    
-    return res.json({ message: 'OTP sent to your email and phone', email });
+    return res.json({ message: 'OTP sent to your phone', email });
   } catch (err) {
     console.error('Register error:', err);
     res.status(500).json({ message: 'Server error' });
@@ -247,10 +238,14 @@ router.post('/verify-otp', async (req, res) => {
     if (tempUser.otp !== otp) {
       return res.status(400).json({ message: 'Invalid OTP' });
     }
-    const user = new User({ name: tempUser.username, email: tempUser.email, password: tempUser.password });
+    // Create the user
+    const user = new User({ name: tempUser.username, email: tempUser.email, password: tempUser.password, phone: tempUser.phone });
     await user.save();
     await TempUser.deleteOne({ _id: tempUser._id });
-    return res.json({ message: 'OTP verified, registration complete. Please login.' });
+    // Log in the user (issue JWT)
+    const jwt = require('jsonwebtoken');
+    const token = jwt.sign({ id: user._id, email: user.email }, JWT_SECRET, { expiresIn: '24h' });
+    return res.json({ message: 'OTP verified, registration complete.', token, user: { id: user._id, name: user.name, email: user.email, phone: user.phone } });
   } catch (err) {
     console.error('Verify OTP error:', err);
     res.status(500).json({ message: 'Server error' });
