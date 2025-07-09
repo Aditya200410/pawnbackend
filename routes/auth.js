@@ -217,12 +217,19 @@ router.post('/register', async (req, res) => {
 
 // POST /login
 router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
-    return res.status(400).json({ message: 'Email and password are required' });
+  const { identifier, password } = req.body;
+  if (!identifier || !password) {
+    return res.status(400).json({ message: 'Identifier and password are required' });
   }
   try {
-    const user = await User.findOne({ email });
+    // Check if identifier is an email
+    let user;
+    const emailPattern = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+    if (emailPattern.test(identifier)) {
+      user = await User.findOne({ email: identifier });
+    } else {
+      user = await User.findOne({ phone: identifier });
+    }
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
@@ -231,7 +238,7 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
     const token = jwt.sign({ id: user._id, email: user.email }, JWT_SECRET, { expiresIn: '24h' });
-    res.json({ token, user: { id: user._id, name: user.name, email: user.email } });
+    res.json({ token, user: { id: user._id, name: user.name, email: user.email, phone: user.phone } });
   } catch (err) {
     console.error('Login error:', err);
     res.status(500).json({ message: 'Server error' });
