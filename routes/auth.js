@@ -195,29 +195,20 @@ router.get('/validate-token', auth, async (req, res) => {
 // POST /register (alias for /signup)
 router.post('/register', async (req, res) => {
   const { name, email, password, phone } = req.body;
-  if (!name || !email || !password) {
-    return res.status(400).json({ message: 'Name, email, and password are required' });
+  if (!name || !email || !password || !phone) {
+    return res.status(400).json({ message: 'Name, email, password, and phone are required' });
   }
   try {
-    const existingUser = await User.findOne({ email });
-    const existingTemp = await TempUser.findOne({ email });
+    const existingUser = await User.findOne({ $or: [{ email }, { phone }] });
     if (existingUser) {
-      return res.status(400).json({ message: 'Email already registered' });
+      return res.status(400).json({ message: 'Email or phone already registered' });
     }
-    if (existingTemp) {
-      return res.status(400).json({ message: 'OTP already sent to this email. Please verify OTP or wait 10 min.' });
-    }
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    await TempUser.create({ username: name, email, password, otp, phone });
-    console.log(`OTP for ${email}: ${otp}`);
-    // Send OTP via SMS only
-    try {
-      await sendOTPSMS(phone, otp);
-    } catch (smsErr) {
-      console.error('Error sending OTP SMS:', smsErr);
-      // Don't fail the request if SMS fails
-    }
-    return res.json({ message: 'OTP sent to your phone', email });
+    // Save user directly after OTP is verified
+    const user = new User({ name, email, password, phone });
+    await user.save();
+    // Log in the user (issue JWT)
+    const token = jwt.sign({ id: user._id, email: user.email }, JWT_SECRET, { expiresIn: '24h' });
+    return res.json({ message: 'Registration complete.', token, user: { id: user._id, name: user.name, email: user.email, phone: user.phone } });
   } catch (err) {
     console.error('Register error:', err);
     res.status(500).json({ message: 'Server error' });
@@ -367,48 +358,6 @@ router.post('/register-phone', async (req, res) => {
     return res.json({ message: 'Account created successfully! Please sign in.', user });
   } catch (err) {
     console.error('Register-phone error:', err);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// POST /verify-otp-phone
-router.post('/verify-otp-phone', async (req, res) => {
-  let { phone } = req.body;
-  if (!phone) {
-    return res.status(400).json({ message: 'Phone is required' });
-  }
-  phone = String(phone).trim();
-  try {
-    // Try to find the temp user by phone (as string)
-    let tempUser = await TempUser.findOne({ phone });
-    if (!tempUser) {
-      // Fallback: try to find by phone as number (if stored that way)
-      tempUser = await TempUser.findOne({ phone: Number(phone) });
-    }
-    if (!tempUser) {
-      console.error('TempUser not found for phone:', phone);
-      return res.status(400).json({ message: 'Registration expired or not found. Please register again.' });
-    }
-    // No OTP check here, as OTP is already verified
-    // Create the user
-    const user = new User({
-      name: tempUser.username,
-      email: tempUser.email,
-      password: tempUser.password,
-      phone: tempUser.phone
-    });
-    await user.save();
-    await TempUser.deleteOne({ _id: tempUser._id });
-    // Log in the user (issue JWT)
-    const jwt = require('jsonwebtoken');
-    const token = jwt.sign({ id: user._id, email: user.email }, JWT_SECRET, { expiresIn: '24h' });
-    return res.json({
-      message: 'Registration complete.',
-      token,
-      user: { id: user._id, name: user.name, email: user.email, phone: user.phone }
-    });
-  } catch (err) {
-    console.error('Verify OTP by phone error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 });
