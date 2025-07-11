@@ -35,17 +35,6 @@ const createReview = async (req, res) => {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    // Check if user already reviewed this product with this email
-    const existingReview = await Review.findOne({ 
-      userEmail: userEmail.toLowerCase(), 
-      product: productId 
-    });
-    if (existingReview) {
-      return res.status(400).json({ 
-        message: "You have already reviewed this product with this email" 
-      });
-    }
-
     // Create the review
     const newReview = new Review({
       userEmail: userEmail.toLowerCase(),

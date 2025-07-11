@@ -45,7 +45,7 @@ const reviewSchema = new mongoose.Schema({
 });
 
 // Ensure one review per email per product
-reviewSchema.index({ userEmail: 1, product: 1 }, { unique: true });
+// reviewSchema.index({ userEmail: 1, product: 1 }, { unique: true }); // Removed unique index for admin multi-review
 
 // Create and export the Review model
 const Review = mongoose.model('Review', reviewSchema);
