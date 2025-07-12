@@ -53,7 +53,16 @@ const isAdmin = (req, res, next) => {
   }
 };
 
+// Combined middleware for admin authentication
+const auth = (req, res, next) => {
+  authenticateToken(req, res, (err) => {
+    if (err) return next(err);
+    isAdmin(req, res, next);
+  });
+};
+
 module.exports = {
   authenticateToken,
-  isAdmin
+  isAdmin,
+  auth
 }; 

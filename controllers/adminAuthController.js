@@ -78,6 +78,69 @@ const adminLogin = async (req, res) => {
   }
 };
 
+// Update admin credentials
+const updateAdminCredentials = async (req, res) => {
+  try {
+    const { username, email, currentPassword, newPassword } = req.body;
+    const adminId = req.user.id; // From JWT token
+
+    // Find the admin
+    const admin = await Admin.findById(adminId);
+    if (!admin) {
+      return res.status(404).json({ message: 'Admin not found' });
+    }
+
+    // Verify current password
+    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, admin.password);
+    if (!isCurrentPasswordValid) {
+      return res.status(401).json({ message: 'Current password is incorrect' });
+    }
+
+    // Prepare update object
+    const updateData = {};
+    
+    if (username && username.trim() !== '') {
+      updateData.username = username.trim();
+    }
+    
+    if (email && email.trim() !== '') {
+      // Check if email is already taken by another admin
+      const existingAdmin = await Admin.findOne({ email: email.trim(), _id: { $ne: adminId } });
+      if (existingAdmin) {
+        return res.status(409).json({ message: 'Email is already taken by another admin' });
+      }
+      updateData.email = email.trim().toLowerCase();
+    }
+    
+    if (newPassword && newPassword.trim() !== '') {
+      // Hash new password
+      updateData.password = await bcrypt.hash(newPassword, 10);
+    }
+
+    // Update admin
+    const updatedAdmin = await Admin.findByIdAndUpdate(
+      adminId,
+      updateData,
+      { new: true, runValidators: true }
+    );
+
+    res.json({
+      success: true,
+      message: 'Admin credentials updated successfully',
+      user: {
+        id: updatedAdmin._id,
+        username: updatedAdmin.username,
+        email: updatedAdmin.email,
+        isAdmin: true,
+        role: 'admin',
+      }
+    });
+  } catch (error) {
+    console.error('Update admin credentials error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
 // Admin token verification endpoint
 const verifyAdminToken = async (req, res) => {
   try {
@@ -115,5 +178,6 @@ const verifyAdminToken = async (req, res) => {
 module.exports = {
   adminLogin,
   adminSignup,
+  updateAdminCredentials,
   verifyAdminToken
 }; 
