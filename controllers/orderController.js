@@ -323,8 +323,105 @@ async function sendOrderConfirmationEmail(order) {
   }
 }
 
+// Helper to send order status update email
+async function sendOrderStatusUpdateEmail(order) {
+  const { email, customerName, orderStatus, items, totalAmount, address } = order;
+  const subject = `Your Rikocraft Order Status Update: ${orderStatus.charAt(0).toUpperCase() + orderStatus.slice(1)}`;
+
+  // Build order items table
+  const itemsHtml = items.map(item => `
+    <tr>
+      <td style="padding: 8px; border: 1px solid #eee;">${item.name}</td>
+      <td style="padding: 8px; border: 1px solid #eee; text-align: center;">${item.quantity}</td>
+      <td style="padding: 8px; border: 1px solid #eee; text-align: right;">₹${item.price}</td>
+    </tr>
+  `).join('');
+
+  const addressHtml = `
+    <div style="margin-bottom: 10px;">
+      <strong>Delivery Address:</strong><br/>
+      ${address.street || ''}<br/>
+      ${address.city || ''}, ${address.state || ''} - ${address.pincode || ''}<br/>
+      ${address.country || ''}
+    </div>
+  `;
+
+  const htmlBody = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
+      <div style="background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #333; margin: 0; font-size: 24px;">Rikocraft</h1>
+          <p style="color: #666; margin: 5px 0; font-size: 14px;">Where heritage meets craftsmanship</p>
+        </div>
+        <div style="margin-bottom: 25px;">
+          <p style="color: #333; font-size: 16px; line-height: 1.6; margin: 0;">
+            Dear <strong>${customerName}</strong>,
+          </p>
+          <p style="color: #333; font-size: 16px; line-height: 1.6; margin: 15px 0;">
+            We wanted to let you know that the status of your order has been updated to:
+            <span style="color: #007bff; font-weight: bold;">${orderStatus.charAt(0).toUpperCase() + orderStatus.slice(1)}</span>
+          </p>
+        </div>
+        ${addressHtml}
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+          <thead>
+            <tr>
+              <th style="padding: 8px; border: 1px solid #eee; background: #f8f9fa;">Item</th>
+              <th style="padding: 8px; border: 1px solid #eee; background: #f8f9fa;">Qty</th>
+              <th style="padding: 8px; border: 1px solid #eee; background: #f8f9fa;">Price</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemsHtml}
+          </tbody>
+        </table>
+        <div style="text-align: right; margin-bottom: 20px;">
+          <strong>Total: ₹${totalAmount}</strong>
+        </div>
+        <div style="margin: 25px 0;">
+          <p style="color: #333; font-size: 16px; line-height: 1.6; margin: 0;">
+            Your order is currently <strong>${orderStatus}</strong>. We will keep you updated on the next steps. If you have any questions, feel free to reply to this email.
+          </p>
+        </div>
+        <div style="margin: 25px 0;">
+          <p style="color: #333; font-size: 16px; line-height: 1.6; margin: 0;">
+            Thank you for shopping with Rikocraft! We hope you enjoy your purchase. Don’t forget to check out our other unique handmade products at <a href="https://www.rikocraft.com" style="color: #007bff;">rikocraft.com</a>.
+          </p>
+        </div>
+        <div style="border-top: 1px solid #eee; padding-top: 20px; margin-top: 30px;">
+          <p style="color: #666; font-size: 14px; margin: 0; line-height: 1.6;">
+            <strong>Warm regards,</strong><br>
+            Team Rikocraft
+          </p>
+          <div style="margin-top: 15px; color: #666; font-size: 12px;">
+            <p style="margin: 5px 0;">🌐 www.rikocraft.com</p>
+            <p style="margin: 5px 0;">📩 Email: Care@Rikocraft.com</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const textBody = `Dear ${customerName},\n\nThe status of your Rikocraft order has been updated to: ${orderStatus}.\n\nOrder Summary:\n${items.map(item => `- ${item.name} x${item.quantity} (₹${item.price})`).join('\n')}\nTotal: ₹${totalAmount}\n\nDelivery Address:\n${address.street || ''}\n${address.city || ''}, ${address.state || ''} - ${address.pincode || ''}\n${address.country || ''}\n\nThank you for shopping with Rikocraft! Check out more at rikocraft.com\n\nWarm regards,\nTeam Rikocraft\nwww.rikocraft.com\nCare@Rikocraft.com`;
+
+  try {
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject,
+      text: textBody,
+      html: htmlBody,
+    });
+    console.log(`Order status update email sent to ${email}`);
+  } catch (mailErr) {
+    console.error('Error sending order status update email:', mailErr);
+    // Don't throw, so status update isn't blocked by email failure
+  }
+}
+
 module.exports = {
   createOrder,
   getOrdersByEmail,
   getOrderById,
+  sendOrderStatusUpdateEmail,
 }; 

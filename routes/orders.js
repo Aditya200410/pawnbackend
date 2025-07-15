@@ -4,7 +4,7 @@ const Order = require("../models/Order");
 const router = express.Router();
 const fs = require('fs');
 const path = require('path');
-const { createOrder, getOrdersByEmail, getOrderById } = require('../controllers/orderController');
+const { createOrder, getOrdersByEmail, getOrderById, sendOrderStatusUpdateEmail } = require('../controllers/orderController');
 const { authenticateToken, isAdmin } = require('../middleware/auth');
 
 const ordersFilePath = path.join(__dirname, '../data/orders.json');
@@ -79,6 +79,9 @@ router.put("/:id/status", authenticateToken, isAdmin, async (req, res) => {
       orders[orderIndex] = updatedOrder.toObject({ virtuals: true });
       writeOrders(orders);
     }
+
+    // Send status update email (non-blocking)
+    sendOrderStatusUpdateEmail(updatedOrder).catch(err => console.error('Order status update email error:', err));
 
     res.json({ success: true, order: updatedOrder });
   } catch (error) {
