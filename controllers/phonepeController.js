@@ -1,6 +1,8 @@
 const axios = require('axios');
 const crypto = require('crypto');
 require('dotenv').config();
+const Order = require('../models/Order');
+const { sendOrderConfirmationEmail } = require('./orderController');
 
 // Cache for OAuth token
 let oauthToken = null;
@@ -317,6 +319,17 @@ exports.phonePeCallback = async (req, res) => {
       console.log('PhonePe verification response:', response.data);
       if (response.data && response.data.state === 'COMPLETED') {
         console.log(`Payment completed for transaction: ${merchantOrderId}`);
+        // Update order in DB and send confirmation email
+        const order = await Order.findOneAndUpdate(
+          { transactionId: orderId },
+          { paymentStatus: 'completed' },
+          { new: true }
+        );
+        if (order) {
+          await sendOrderConfirmationEmail(order);
+        } else {
+          console.warn('Order not found for transactionId:', orderId);
+        }
         return res.json({
           success: true,
           message: 'Payment completed successfully',
