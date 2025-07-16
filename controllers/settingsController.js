@@ -49,7 +49,8 @@ const upsertSetting = async (req, res) => {
     // Convert value to number for numeric settings
     let processedValue = value;
     if (key === 'cod_upfront_amount') {
-      processedValue = Number(value) || 39;
+      // Allow 0 as a valid value
+      processedValue = value === '' || value === null || value === undefined ? 39 : Number(value);
     }
     
     // Use findOneAndUpdate with upsert to create or update
@@ -131,8 +132,8 @@ const getCodUpfrontAmount = async (req, res) => {
     let amount = 39; // Default to 39 if not found
     
     if (setting) {
-      // Ensure the value is a number
-      amount = Number(setting.value) || 39;
+      // Ensure the value is a number and allow 0 as valid
+      amount = (setting.value === '' || setting.value === null || setting.value === undefined) ? 39 : Number(setting.value);
     }
     
     res.status(200).json({ 
