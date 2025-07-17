@@ -114,7 +114,7 @@ app.use('/pawnbackend/data', (req, res, next) => {
 }));
 
 // MongoDB Connection URL from environment variable
-const MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/pawn";
+const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://rikoenterprises25:2EKCeowE0NtO9d2q@cluster0.g68doth.mongodb.net/rikocraft?retryWrites=true&w=majority&appName=Cluster0";
 
 // Connect to MongoDB
 mongoose.connect(MONGODB_URI, {
