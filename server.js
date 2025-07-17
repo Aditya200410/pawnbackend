@@ -30,26 +30,15 @@ if (!process.env.JWT_SECRET_SELLER) {
 
 // CORS configuration - Allow specific origins for production
 const allowedOrigins = [
-  
   'http://localhost:5173',
   'http://localhost:5174',
   'https://www.rikocraft.com',
-  'https://riko-craft.vercel.app',
-  'https://riko-craft.vercel.app',
-  'https://pawn-shop-admin.vercel.app',
-  'https://pawn-shop-iota.vercel.app/',
-  'https://pawn-shop.vercel.app',
-  'https://pawn-shop-git-main-adityas-projects.vercel.app',
-  'https://pawn-shop-adityas-projects.vercel.app',
-  'https://pawn-shop-git-local-host-api-used-aditya200410s-projects.vercel.app',
   'https://pawnadmin-thnt.vercel.app',
-  'https://pawnadmin-thnt-n414tz6mc-aditya200410s-projects.vercel.app',
-  'https://pawnadmin-thnt.vercel.app',
-  
-  'https://pawnadmin-thnt-n414tz6mc-aditya200410s-projects.vercel.app'
+  'https://pawn-shop-git-local-host-api-used-aditya200410s-projects.vercel.app'
 ];
 
 function isVercelPreview(origin) {
+  // If you want to allow all Vercel preview deploys for this project, keep this regex:
   return /^https:\/\/pawn-shop-git-.*-aditya200410s-projects\.vercel\.app$/.test(origin);
 }
 
