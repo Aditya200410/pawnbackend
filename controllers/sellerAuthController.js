@@ -34,7 +34,7 @@ exports.register = async (req, res) => {
     // Generate unique sellerToken
     const sellerToken = uuidv4();
     // Create websiteLink with sellerToken
-    const websiteLink = `${'https://rikocraft.com'}?seller=${sellerToken}`;
+    const websiteLink = `${'https://pawn-shop-git-local-host-api-used-aditya200410s-projects.vercel.app/'}?seller=${sellerToken}`;
     // Generate QR code for websiteLink
     const qrCode = await QRCode.toDataURL(websiteLink);
     // Create seller with all info including images
