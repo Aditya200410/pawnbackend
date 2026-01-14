@@ -334,7 +334,7 @@ exports.createCommissionEntry = async (orderId, sellerId, orderAmount, commissio
         amount: agentCommissionAmount,
         commissionRate: agentRate,
         orderAmount,
-        description: `Commission earned from order #${order.orderNumber || orderId} (Agent Split)`,
+        description: `Commission earned from order #${order.orderNumber || orderId}`,
         status: 'confirmed',
         orderDetails: {
           orderNumber: order.orderNumber || `Order-${orderId}`,

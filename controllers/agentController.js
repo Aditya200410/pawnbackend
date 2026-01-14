@@ -216,7 +216,7 @@ exports.getProfile = async (req, res) => {
 
         // Generate Dynamic Link and QR if linked seller exists
         if (agent.linkedSeller && agent.linkedSeller.sellerToken) {
-            agentObj.websiteLink = `https://www.rikocraft.com/?seller=${agent.linkedSeller.sellerToken}&agent=${agent.personalAgentCode}`;
+            agentObj.websiteLink = `https://www.rikocraft.com/?agent=${agent.linkedSeller.sellerToken}&seller=${agent.personalAgentCode}`;
             try {
                 agentObj.qrCode = await QRCode.toDataURL(agentObj.websiteLink);
             } catch (err) {
