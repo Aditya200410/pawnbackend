@@ -96,9 +96,14 @@ exports.createPhonePeOrder = async (req, res) => {
     } = req.body;
 
     // ... validation ...
-    const requiredFields = ['amount', 'customerName', 'email', 'phone', 'totalAmount'];
-    const missingFields = requiredFields.filter(field => !req.body[field]);
+    const requiredFields = ['amount', 'customerName', 'email', 'phone', 'totalAmount', 'finalTotal'];
+    const missingFields = requiredFields.filter(field => {
+      const val = req.body[field];
+      return val === undefined || val === null || val === '';
+    });
+
     if (missingFields.length > 0) {
+      console.error('PhonePe Create Order - Missing Fields:', missingFields);
       return res.status(400).json({ success: false, message: `Missing required fields: ${missingFields.join(', ')}` });
     }
 
