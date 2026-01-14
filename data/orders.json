@@ -93,5 +93,151 @@
     "updatedAt": "2025-06-10T13:39:03.734Z",
     "__v": 0,
     "id": "6848357742ce5dbada4f5ef8"
+  },
+  {
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "9114703231",
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "items": [
+      {
+        "name": "Majestic Brass Owl – Symbol of Wisdom & Protection",
+        "price": 249,
+        "quantity": 2,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1750927270/pawnshop-products/c3x3kjvnglesfnuthxvk.jpg"
+      },
+      {
+        "name": "Divine Brass Ganesha Idol – Bless Your Space with Auspicious Energy",
+        "price": 749,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1750920623/pawnshop-products/ibed2cntvle1zhq4bzbn.jpg"
+      }
+    ],
+    "totalAmount": 1247,
+    "paymentMethod": "cod",
+    "orderStatus": "processing",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 1247,
+    "sellerToken": "6a6dd776-16ae-49c8-84cf-c038e83adfc3",
+    "commission": 0,
+    "_id": "6966b146575c41a6b7fbafe7",
+    "createdAt": "2026-01-13T20:55:34.353Z",
+    "updatedAt": "2026-01-13T20:55:34.353Z",
+    "__v": 0,
+    "id": "6966b146575c41a6b7fbafe7"
+  },
+  {
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "919114703231",
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "items": [
+      {
+        "name": "Majestic Brass Owl – Symbol of Wisdom & Protection",
+        "price": 249,
+        "quantity": 2,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1750927270/pawnshop-products/c3x3kjvnglesfnuthxvk.jpg"
+      },
+      {
+        "name": "Divine Brass Ganesha Idol – Bless Your Space with Auspicious Energy",
+        "price": 749,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1750920623/pawnshop-products/ibed2cntvle1zhq4bzbn.jpg"
+      }
+    ],
+    "totalAmount": 1247,
+    "paymentMethod": "cod",
+    "orderStatus": "processing",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 1247,
+    "sellerToken": null,
+    "commission": 0,
+    "_id": "6966b1a9f878b1cd4f58d528",
+    "createdAt": "2026-01-13T20:57:13.772Z",
+    "updatedAt": "2026-01-13T20:57:13.772Z",
+    "__v": 0,
+    "id": "6966b1a9f878b1cd4f58d528"
+  },
+  {
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "919114703231",
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "items": [
+      {
+        "name": "Handmade Tribal Art Earrings",
+        "price": 99,
+        "quantity": 2,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751478046/pawnshop-products/vmudkyozv1rtwrgkk7gg.jpg"
+      }
+    ],
+    "totalAmount": 198,
+    "paymentMethod": "cod",
+    "orderStatus": "processing",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 198,
+    "sellerToken": "6a6dd776-16ae-49c8-84cf-c038e83adfc3",
+    "agentCode": "ADITYAKUMAR032",
+    "commission": 0,
+    "_id": "69677482dd82ff2ea08751c1",
+    "createdAt": "2026-01-14T10:48:34.758Z",
+    "updatedAt": "2026-01-14T10:48:34.758Z",
+    "__v": 0,
+    "id": "69677482dd82ff2ea08751c1"
+  },
+  {
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "919114703231",
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "items": [
+      {
+        "name": "Handmade Tribal Art Earrings",
+        "price": 99,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751478046/pawnshop-products/vmudkyozv1rtwrgkk7gg.jpg"
+      }
+    ],
+    "totalAmount": 99,
+    "paymentMethod": "cod",
+    "orderStatus": "processing",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 99,
+    "sellerToken": "6a6dd776-16ae-49c8-84cf-c038e83adfc3",
+    "agentCode": "ADITYAKUMAR032",
+    "commission": 0,
+    "_id": "69679bd1a7ed99df66e7148d",
+    "createdAt": "2026-01-14T13:36:17.173Z",
+    "updatedAt": "2026-01-14T13:36:17.173Z",
+    "__v": 0,
+    "id": "69679bd1a7ed99df66e7148d"
   }
 ]

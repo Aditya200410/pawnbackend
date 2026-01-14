@@ -1,8 +1,6 @@
 const express = require("express");
 const router = express.Router();
 const multer = require('multer');
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
-const cloudinary = require('cloudinary').v2;
 const { isAdmin, authenticateToken } = require('../middleware/auth');
 const {
   getAllBestSellers,
@@ -12,25 +10,26 @@ const {
   deleteBestSeller
 } = require('../controllers/bestSellerController');
 
-// Configure Cloudinary
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET
-});
-
 // Configure storage
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'bestseller-products',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
-    transformation: [{ width: 800, height: 800, crop: 'limit' }],
-    resource_type: 'auto'
+const fs = require('fs');
+const path = require('path');
+
+// Ensure upload directory exists
+const uploadDir = path.join(__dirname, '../public/uploads/bestsellers');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'bestseller-' + uniqueSuffix + path.extname(file.originalname));
   }
 });
 
-// Configure multer
 const upload = multer({
   storage: storage,
   limits: {
@@ -48,7 +47,7 @@ const uploadFields = upload.fields([
 
 // Middleware to handle multer upload
 const handleUpload = (req, res, next) => {
-  uploadFields(req, res, function(err) {
+  uploadFields(req, res, function (err) {
     if (err instanceof multer.MulterError) {
       return res.status(400).json({ error: 'File upload error', details: err.message });
     } else if (err) {

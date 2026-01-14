@@ -25,19 +25,20 @@ const orderSchema = new mongoose.Schema({
   items: [orderItemSchema], // Use the correct schema for items
   totalAmount: { type: Number, required: true },
   paymentMethod: { type: String, required: true },
-  orderStatus: { 
-    type: String, 
+  orderStatus: {
+    type: String,
     default: 'processing',
     enum: ['processing', 'confirmed', 'manufacturing', 'shipped', 'delivered']
   },
-  paymentStatus: { 
-    type: String, 
+  paymentStatus: {
+    type: String,
     required: true,
     enum: ['pending', 'completed', 'failed', 'pending_upfront']
   },
   upfrontAmount: { type: Number, default: 0 }, // Upfront payment amount for COD orders
   remainingAmount: { type: Number, default: 0 }, // Remaining amount to be paid on delivery
   sellerToken: { type: String, required: false }, // Track which seller referred this order
+  agentCode: { type: String, required: false }, // Track which agent referred this order
   commission: { type: Number, default: 0 }, // Commission amount for this order
   transactionId: { type: String, required: false }, // PhonePe transaction ID
   couponCode: { type: String, required: false }, // Coupon code if applied

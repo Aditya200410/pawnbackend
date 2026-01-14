@@ -40,17 +40,24 @@ exports.createCategory = async (req, res) => {
     let imageUrl = '';
     let videoUrl = '';
 
+    // Helper to construct URL
+    const getFullUrl = (filename) => {
+      const protocol = req.protocol;
+      const host = req.get('host');
+      return `${protocol}://${host}/uploads/categories/${filename}`;
+    };
+
     // Process uploaded files if present
     if (req.files) {
       // Handle image upload
       if (req.files.image && req.files.image[0]) {
-        imageUrl = req.files.image[0].path; // Cloudinary URL
+        imageUrl = getFullUrl(req.files.image[0].filename);
         console.log('Added category image:', imageUrl);
       }
 
       // Handle video upload
       if (req.files.video && req.files.video[0]) {
-        videoUrl = req.files.video[0].path; // Cloudinary URL
+        videoUrl = getFullUrl(req.files.video[0].filename);
         console.log('Added category video:', videoUrl);
       }
     }
@@ -73,17 +80,17 @@ exports.createCategory = async (req, res) => {
 
     const savedCategory = await newCategory.save();
     console.log('Category saved successfully:', savedCategory);
-    
-    res.status(201).json({ 
-      message: "Category created successfully", 
+
+    res.status(201).json({
+      message: "Category created successfully",
       category: savedCategory,
       uploadedFiles: req.files
     });
   } catch (error) {
     console.error('=== Error creating category ===');
     console.error('Error details:', error);
-    res.status(500).json({ 
-      message: "Error creating category", 
+    res.status(500).json({
+      message: "Error creating category",
       error: error.message
     });
   }
@@ -97,11 +104,18 @@ exports.updateCategory = async (req, res) => {
 
     const id = req.params.id;
     const categoryData = req.body;
-    
+
     const existingCategory = await Category.findById(id);
     if (!existingCategory) {
       return res.status(404).json({ message: "Category not found" });
     }
+
+    // Helper to construct URL
+    const getFullUrl = (filename) => {
+      const protocol = req.protocol;
+      const host = req.get('host');
+      return `${protocol}://${host}/uploads/categories/${filename}`;
+    };
 
     // Handle file updates
     let imageUrl = existingCategory.image;
@@ -110,13 +124,13 @@ exports.updateCategory = async (req, res) => {
     if (req.files) {
       // Handle image update
       if (req.files.image && req.files.image[0]) {
-        imageUrl = req.files.image[0].path;
+        imageUrl = getFullUrl(req.files.image[0].filename);
         console.log('Updated category image:', imageUrl);
       }
 
       // Handle video update
       if (req.files.video && req.files.video[0]) {
-        videoUrl = req.files.video[0].path;
+        videoUrl = getFullUrl(req.files.video[0].filename);
         console.log('Updated category video:', videoUrl);
       }
     }
@@ -140,8 +154,8 @@ exports.updateCategory = async (req, res) => {
 
     const savedCategory = await Category.findByIdAndUpdate(id, updatedCategory, { new: true });
 
-    res.json({ 
-      message: "Category updated successfully", 
+    res.json({
+      message: "Category updated successfully",
       category: savedCategory,
       uploadedFiles: req.files
     });

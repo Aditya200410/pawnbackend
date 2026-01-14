@@ -61,6 +61,10 @@ const sellerSchema = new mongoose.Schema({
     type: String,
     required: false
   },
+  sellerAgentCode: {
+    type: String,
+    required: false
+  },
   qrCode: {
     type: String // Base64 encoded QR code image
   },
@@ -126,9 +130,9 @@ const sellerSchema = new mongoose.Schema({
 });
 
 // Hash password before saving
-sellerSchema.pre('save', async function(next) {
+sellerSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
-  
+
   try {
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
@@ -139,23 +143,36 @@ sellerSchema.pre('save', async function(next) {
 });
 
 // Method to compare password
-sellerSchema.methods.comparePassword = async function(candidatePassword) {
+sellerSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
 // Method to add commission
-sellerSchema.methods.addCommission = async function(orderAmount) {
-  const commission = orderAmount * 0.30; // 30% commission
-  console.log(`Seller.addCommission - Order amount: ${orderAmount}, Commission: ${commission}`);
+// Method to add commission
+sellerSchema.methods.addCommission = async function (orderAmount) {
+  // Fetch commission percentage from settings or default to 30%
+  let commissionPercentage = 30;
+  try {
+    const Settings = require('./Settings');
+    const commissionSetting = await Settings.findOne({ key: 'seller_commission_percentage' });
+    if (commissionSetting && commissionSetting.value !== undefined) {
+      commissionPercentage = Number(commissionSetting.value);
+    }
+  } catch (err) {
+    console.error('Error fetching commission setting:', err);
+  }
+
+  const commission = orderAmount * (commissionPercentage / 100);
+  console.log(`Seller.addCommission - Order amount: ${orderAmount}, Commission: ${commission} (${commissionPercentage}%)`);
   console.log(`Seller.addCommission - Before update - Total: ${this.totalCommission}, Available: ${this.availableCommission}, Orders: ${this.totalOrders}`);
-  
+
   this.totalCommission += commission;
   // Note: availableCommission should not be updated here as commissions start as pending
   // and only become available when confirmed by admin
   this.totalOrders += 1;
-  
+
   console.log(`Seller.addCommission - After update - Total: ${this.totalCommission}, Available: ${this.availableCommission}, Orders: ${this.totalOrders}`);
-  
+
   await this.save();
   return commission;
 };

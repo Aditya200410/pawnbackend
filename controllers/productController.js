@@ -19,8 +19,8 @@ const getProductsBySection = async (req, res) => {
   try {
     const { section } = req.params;
     let query = {};
-    
-    switch(section) {
+
+    switch (section) {
       case 'bestsellers':
         query = { isBestSeller: true };
         break;
@@ -33,12 +33,12 @@ const getProductsBySection = async (req, res) => {
       default:
         return res.status(400).json({ message: "Invalid section" });
     }
-    
+
     const products = await Product.find(query);
     res.json(products);
   } catch (error) {
-    console.error(`Error fetching ${section} products:`, error);
-    res.status(500).json({ message: `Error fetching ${section} products`, error: error.message });
+    console.error(`Error fetching ${req.params.section} products:`, error);
+    res.status(500).json({ message: `Error fetching ${req.params.section} products`, error: error.message });
   }
 };
 
@@ -67,14 +67,14 @@ const createProductWithFiles = async (req, res) => {
 
     if (!req.files || !req.files.mainImage) {
       console.log('Error: Missing main image');
-      return res.status(400).json({ 
-        error: 'Main image is required. Make sure you are uploading as multipart/form-data and the main image field is named "mainImage".' 
+      return res.status(400).json({
+        error: 'Main image is required. Make sure you are uploading as multipart/form-data and the main image field is named "mainImage".'
       });
     }
 
     const files = req.files;
     const productData = req.body;
-    
+
     // Validate required fields
     const requiredFields = [
       "name",
@@ -107,10 +107,17 @@ const createProductWithFiles = async (req, res) => {
     // Process uploaded files
     console.log('Processing uploaded files...');
     const imagePaths = [];
-    
+
+    // Helper to construct URL
+    const getFullUrl = (filename) => {
+      const protocol = req.protocol;
+      const host = req.get('host');
+      return `${protocol}://${host}/uploads/products/${filename}`;
+    };
+
     // Main image
     if (files.mainImage && files.mainImage[0]) {
-      const mainImageUrl = files.mainImage[0].path; // Cloudinary URL
+      const mainImageUrl = getFullUrl(files.mainImage[0].filename);
       imagePaths.push(mainImageUrl);
       console.log('Added main image:', mainImageUrl);
     }
@@ -118,7 +125,7 @@ const createProductWithFiles = async (req, res) => {
     // Additional images
     for (let i = 1; i <= 3; i++) {
       if (files[`image${i}`] && files[`image${i}`][0]) {
-        const imageUrl = files[`image${i}`][0].path; // Cloudinary URL
+        const imageUrl = getFullUrl(files[`image${i}`][0].filename);
         imagePaths.push(imageUrl);
         console.log(`Added image${i}:`, imageUrl);
       }
@@ -143,8 +150,8 @@ const createProductWithFiles = async (req, res) => {
       care: productData.care,
       price: parseFloat(productData.price),
       regularPrice: parseFloat(productData.regularPrice),
-      image: imagePaths[0], // Main image Cloudinary URL
-      images: imagePaths, // All Cloudinary URLs
+      image: imagePaths[0], // Main image URL
+      images: imagePaths, // All URLs
       inStock: productData.inStock === 'true' || productData.inStock === true,
       isBestSeller: productData.isBestSeller === 'true' || productData.isBestSeller === true,
       isFeatured: productData.isFeatured === 'true' || productData.isFeatured === true,
@@ -152,13 +159,13 @@ const createProductWithFiles = async (req, res) => {
       codAvailable: productData.codAvailable === 'false' ? false : true,
       stock: typeof productData.stock !== 'undefined' ? Number(productData.stock) : 0
     });
-    
+
     console.log('Saving product to database...');
     const savedProduct = await newProduct.save();
     console.log('Product saved successfully:', savedProduct);
-    
-    res.status(201).json({ 
-      message: "Product created successfully", 
+
+    res.status(201).json({
+      message: "Product created successfully",
       product: savedProduct,
       uploadedFiles: files
     });
@@ -166,8 +173,8 @@ const createProductWithFiles = async (req, res) => {
     console.error('=== Error creating product ===');
     console.error('Error details:', error);
     console.error('Stack trace:', error.stack);
-    res.status(500).json({ 
-      message: "Error creating product", 
+    res.status(500).json({
+      message: "Error creating product",
       error: error.message,
       details: error.stack
     });
@@ -183,7 +190,7 @@ const updateProductWithFiles = async (req, res) => {
     const id = req.params.id;
     const files = req.files || {};
     const productData = req.body;
-    
+
     const existingProduct = await Product.findById(id);
     if (!existingProduct) {
       return res.status(404).json({ message: "Product not found" });
@@ -196,9 +203,16 @@ const updateProductWithFiles = async (req, res) => {
       imagePaths = existingProduct.image ? [existingProduct.image] : [];
     }
 
+    // Helper to construct URL
+    const getFullUrl = (filename) => {
+      const protocol = req.protocol;
+      const host = req.get('host');
+      return `${protocol}://${host}/uploads/products/${filename}`;
+    };
+
     // Handle main image update
     if (files.mainImage && files.mainImage[0]) {
-      const mainImageUrl = files.mainImage[0].path;
+      const mainImageUrl = getFullUrl(files.mainImage[0].filename);
       if (imagePaths.length === 0) {
         imagePaths.push(mainImageUrl);
       } else {
@@ -209,7 +223,7 @@ const updateProductWithFiles = async (req, res) => {
     // Handle additional images
     for (let i = 1; i <= 3; i++) {
       if (files[`image${i}`] && files[`image${i}`][0]) {
-        const imageUrl = files[`image${i}`][0].path;
+        const imageUrl = getFullUrl(files[`image${i}`][0].filename);
         if (i < imagePaths.length) {
           imagePaths[i] = imageUrl;
         } else {
@@ -312,8 +326,8 @@ const updateProductSections = async (req, res) => {
     console.error('=== Error Updating Sections ===');
     console.error('Error details:', error);
     console.error('Stack trace:', error.stack);
-    res.status(500).json({ 
-      message: "Error updating product sections", 
+    res.status(500).json({
+      message: "Error updating product sections",
       error: error.message,
       details: error.stack
     });

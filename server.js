@@ -95,7 +95,7 @@ const userProductDir = path.join(dataDir, 'userproduct');
 app.use('/pawnbackend/data', (req, res, next) => {
   const filePath = path.join(__dirname, 'data', req.path);
   const ext = path.extname(filePath).toLowerCase();
-  
+
   // Set proper content type for videos and images
   if (ext === '.mp4') {
     res.setHeader('Content-Type', 'video/mp4');
@@ -106,20 +106,28 @@ app.use('/pawnbackend/data', (req, res, next) => {
   } else if (ext === '.gif') {
     res.setHeader('Content-Type', 'image/gif');
   }
-  
+
   next();
 }, express.static(path.join(__dirname, 'data'), {
   fallthrough: true,
   maxAge: '1h'
 }));
 
+// Serve uploads directory
+const uploadsDir = path.join(__dirname, 'public', 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+app.use('/uploads', express.static(uploadsDir));
+
 // MongoDB Connection URL from environment variable
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://rikoenterprises25:2EKCeowE0NtO9d2q@cluster0.g68doth.mongodb.net/rikocraft?retryWrites=true&w=majority&appName=Cluster0";
 
 // Connect to MongoDB
 mongoose.connect(MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
+  useNewUrlParser: true,
+  useUnifiedTopology: true
 }).then(() => console.log("MongoDB connected to:", MONGODB_URI))
   .catch(err => console.error("MongoDB connection error:", err));
 
@@ -143,6 +151,9 @@ app.use('/api/commission', require('./routes/commission'));
 app.use('/api/reviews', require('./routes/reviews'));
 app.use('/api/settings', require('./routes/settings'));
 app.use('/api/msg91', require('./routes/msg91'));
+app.use('/api/bookings', require('./routes/bookings'));
+app.use('/api/agent', require('./routes/agent'));
+
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -166,27 +177,27 @@ app.get('/test-cors', (req, res) => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-    console.error('Error:', err);
-    console.error('Stack:', err.stack);
-    res.status(500).json({ 
-        message: 'Something went wrong!',
-        error: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
-    });
+  console.error('Error:', err);
+  console.error('Stack:', err.stack);
+  res.status(500).json({
+    message: 'Something went wrong!',
+    error: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
+  });
 });
 
 // Port from environment variable
 const PORT = process.env.PORT || 5175;
 app.listen(PORT, async () => {
-    console.log(`Server is running on port ${PORT}`);
-    
-    // Initialize default settings
-    try {
-        await settingsController.initializeDefaultSettings();
-        console.log('Default settings initialized successfully');
-    } catch (error) {
-        console.error('Failed to initialize default settings:', error);
-    }
-}); 
+  console.log(`Server is running on port ${PORT}`);
+
+  // Initialize default settings
+  try {
+    await settingsController.initializeDefaultSettings();
+    console.log('Default settings initialized successfully');
+  } catch (error) {
+    console.error('Failed to initialize default settings:', error);
+  }
+});
 
 
 

@@ -4,7 +4,12 @@ const commissionHistorySchema = new mongoose.Schema({
   sellerId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Seller',
-    required: true
+    required: false
+  },
+  agentId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Agent',
+    required: false
   },
   orderId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -81,28 +86,30 @@ const commissionHistorySchema = new mongoose.Schema({
 // Indexes for efficient queries
 commissionHistorySchema.index({ sellerId: 1, type: 1 });
 commissionHistorySchema.index({ sellerId: 1, createdAt: -1 });
+commissionHistorySchema.index({ agentId: 1, type: 1 });
+commissionHistorySchema.index({ agentId: 1, createdAt: -1 });
 commissionHistorySchema.index({ orderId: 1 });
 commissionHistorySchema.index({ withdrawalId: 1 });
 
 // Pre-save middleware
-commissionHistorySchema.pre('save', function(next) {
+commissionHistorySchema.pre('save', function (next) {
   this.updatedAt = new Date();
   next();
 });
 
 // Virtual for formatted amount
-commissionHistorySchema.virtual('formattedAmount').get(function() {
+commissionHistorySchema.virtual('formattedAmount').get(function () {
   const prefix = this.type === 'deducted' || this.type === 'withdrawn' ? '-' : '+';
   return `${prefix}₹${Math.abs(this.amount).toFixed(2)}`;
 });
 
 // Virtual for formatted order amount
-commissionHistorySchema.virtual('formattedOrderAmount').get(function() {
+commissionHistorySchema.virtual('formattedOrderAmount').get(function () {
   return `₹${this.orderAmount.toFixed(2)}`;
 });
 
 // Method to confirm commission
-commissionHistorySchema.methods.confirm = function(adminId) {
+commissionHistorySchema.methods.confirm = function (adminId) {
   this.status = 'confirmed';
   this.processedBy = adminId;
   this.confirmedAt = new Date();
@@ -110,7 +117,7 @@ commissionHistorySchema.methods.confirm = function(adminId) {
 };
 
 // Method to cancel commission
-commissionHistorySchema.methods.cancel = function(adminId, reason) {
+commissionHistorySchema.methods.cancel = function (adminId, reason) {
   this.status = 'cancelled';
   this.processedBy = adminId;
   this.notes = reason;
@@ -118,7 +125,7 @@ commissionHistorySchema.methods.cancel = function(adminId, reason) {
 };
 
 // Method to refund commission
-commissionHistorySchema.methods.refund = function(adminId, reason) {
+commissionHistorySchema.methods.refund = function (adminId, reason) {
   this.status = 'refunded';
   this.processedBy = adminId;
   this.notes = reason;
@@ -126,7 +133,7 @@ commissionHistorySchema.methods.refund = function(adminId, reason) {
 };
 
 // Static method to get seller's total earnings
-commissionHistorySchema.statics.getTotalEarnings = function(sellerId) {
+commissionHistorySchema.statics.getTotalEarnings = function (sellerId) {
   return this.aggregate([
     { $match: { sellerId: sellerId, status: 'confirmed' } },
     {
@@ -156,7 +163,7 @@ commissionHistorySchema.statics.getTotalEarnings = function(sellerId) {
 };
 
 // Static method to get seller's commission summary
-commissionHistorySchema.statics.getCommissionSummary = function(sellerId) {
+commissionHistorySchema.statics.getCommissionSummary = function (sellerId) {
   return this.aggregate([
     { $match: { sellerId: sellerId } },
     {

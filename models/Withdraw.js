@@ -4,7 +4,12 @@ const withdrawSchema = new mongoose.Schema({
   seller: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Seller',
-    required: true
+    required: false
+  },
+  agent: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Agent',
+    required: false
   },
   amount: {
     type: Number,

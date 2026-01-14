@@ -1,28 +1,26 @@
 const HeroCarousel = require('../models/heroCarousel');
 const fs = require('fs').promises;
+const fsSync = require('fs');
 const path = require('path');
 const multer = require('multer');
-const cloudinary = require('cloudinary').v2;
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
 // Path to JSON file where carousel items are stored
 const dataFilePath = path.join(__dirname, '../data/hero-carousel.json');
 
-// Cloudinary config
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+// Ensure upload directory exists
+const uploadDir = path.join(__dirname, '../public/uploads/hero-carousel');
+if (!fsSync.existsSync(uploadDir)) {
+  fsSync.mkdirSync(uploadDir, { recursive: true });
+}
 
 // Configure storage
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'hero-carousel',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'mp4', 'webp'],
-    transformation: [{ width: 1920, height: 1080, crop: 'limit' }],
-    resource_type: 'auto'
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'hero-' + uniqueSuffix + path.extname(file.originalname));
   }
 });
 
@@ -96,14 +94,13 @@ const getActiveCarouselItems = async (req, res) => {
 const createCarouselItemWithFiles = async (req, res) => {
   try {
     console.log('=== Starting Hero Carousel Item Creation ===');
-    console.log('Headers:', req.headers);
     console.log('Files received:', req.files);
     console.log('Body data:', req.body);
 
     // Require image
     if (!req.files || !req.files.image) {
-      return res.status(400).json({ 
-        error: 'Image is required. Make sure you are uploading as multipart/form-data and the file field is named "image".' 
+      return res.status(400).json({
+        error: 'Image is required. Make sure you are uploading as multipart/form-data and the file field is named "image".'
       });
     }
     const files = req.files;
@@ -119,8 +116,12 @@ const createCarouselItemWithFiles = async (req, res) => {
     if (missingFields.length > 0) {
       return res.status(400).json({ error: `Missing required fields: ${missingFields.join(', ')}` });
     }
+
     // Process uploaded file
-    const imageUrl = files.image[0].path;
+    const protocol = req.protocol;
+    const host = req.get('host');
+    const imageUrl = `${protocol}://${host}/uploads/hero-carousel/${files.image[0].filename}`;
+
     // Get current max order
     const maxOrderItem = await HeroCarousel.findOne().sort('-order');
     const newOrder = maxOrderItem ? maxOrderItem.order + 1 : 0;
@@ -139,20 +140,18 @@ const createCarouselItemWithFiles = async (req, res) => {
     console.log('Saving carousel item to database...');
     const savedItem = await newItem.save();
     console.log('Carousel item saved successfully:', savedItem);
-    
-    res.status(201).json({ 
-      message: "Carousel item created successfully", 
+
+    res.status(201).json({
+      message: "Carousel item created successfully",
       item: savedItem,
       uploadedFiles: files
     });
   } catch (error) {
     console.error('=== Error creating carousel item ===');
     console.error('Error details:', error);
-    console.error('Stack trace:', error.stack);
-    res.status(500).json({ 
-      message: "Error creating carousel item", 
-      error: error.message,
-      details: error.stack
+    res.status(500).json({
+      message: "Error creating carousel item",
+      error: error.message
     });
   }
 };
@@ -170,7 +169,7 @@ const updateCarouselItemWithFiles = async (req, res) => {
 
     const files = req.files || {};
     const itemData = req.body;
-    
+
     const existingItem = await HeroCarousel.findById(id);
     if (!existingItem) {
       return res.status(404).json({ message: "Carousel item not found" });
@@ -179,8 +178,18 @@ const updateCarouselItemWithFiles = async (req, res) => {
     // Update logic
     let imageUrl = existingItem.image;
     if (files.image && files.image[0]) {
-      imageUrl = files.image[0].path;
+      const protocol = req.protocol;
+      const host = req.get('host');
+      imageUrl = `${protocol}://${host}/uploads/hero-carousel/${files.image[0].filename}`;
+
+      // Attempt to delete old image if it was local
+      if (existingItem.image && existingItem.image.includes('/uploads/hero-carousel/')) {
+        const oldFilename = existingItem.image.split('/').pop();
+        const oldPath = path.join(uploadDir, oldFilename);
+        fs.unlink(oldPath).catch(err => console.error('Error deleting old image:', err));
+      }
     }
+
     const updatedItem = {
       title: (itemData.title || existingItem.title).trim(),
       subtitle: (itemData.subtitle || existingItem.subtitle || '').trim(),
@@ -193,17 +202,10 @@ const updateCarouselItemWithFiles = async (req, res) => {
       order: typeof itemData.order !== 'undefined' ? itemData.order : existingItem.order
     };
 
-    // Log the update operation
-    console.log('Updating carousel item with data:', {
-      id,
-      imageUrl: imageUrl,
-      filesReceived: Object.keys(files)
-    });
-
     const savedItem = await HeroCarousel.findByIdAndUpdate(id, updatedItem, { new: true });
 
-    res.json({ 
-      message: "Carousel item updated successfully", 
+    res.json({
+      message: "Carousel item updated successfully",
       item: savedItem,
       uploadedFiles: files
     });
@@ -219,6 +221,13 @@ const deleteCarouselItem = async (req, res) => {
     const item = await HeroCarousel.findByIdAndDelete(req.params.id);
     if (!item) {
       return res.status(404).json({ message: "Carousel item not found" });
+    }
+
+    // Delete image file if it exists
+    if (item.image && item.image.includes('/uploads/hero-carousel/')) {
+      const filename = item.image.split('/').pop();
+      const filePath = path.join(uploadDir, filename);
+      fs.unlink(filePath).catch(err => console.error('Error deleting image file:', err));
     }
 
     // Reorder remaining items
@@ -275,4 +284,4 @@ module.exports = {
   deleteCarouselItem,
   toggleCarouselActive,
   updateCarouselOrder
-}; 
+};

@@ -20,7 +20,7 @@ exports.register = async (req, res) => {
     if (missingFields.length > 0) {
       return res.status(400).json({ success: false, message: `Missing required fields: ${missingFields.join(', ')}` });
     }
-    
+
     // Process uploaded images
     let images = [];
     if (req.files && req.files.length > 0) {
@@ -30,13 +30,31 @@ exports.register = async (req, res) => {
         alt: 'Business image'
       }));
     }
-    
+
     // Generate unique sellerToken
     const sellerToken = uuidv4();
     // Create websiteLink with sellerToken
     const websiteLink = `${'https://www.rikocraft.com/'}?seller=${sellerToken}`;
     // Generate QR code for websiteLink
     const qrCode = await QRCode.toDataURL(websiteLink);
+
+    // Generate sellerAgentCode (BusinessName + 3 random digits from phone)
+    const cleanName = businessName.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+    let phoneDigits = '';
+    if (phone) {
+      const cleanPhone = phone.replace(/\D/g, '');
+      if (cleanPhone.length >= 3) {
+        for (let i = 0; i < 3; i++) {
+          phoneDigits += cleanPhone[Math.floor(Math.random() * cleanPhone.length)];
+        }
+      } else {
+        phoneDigits = Math.floor(100 + Math.random() * 900).toString();
+      }
+    } else {
+      phoneDigits = Math.floor(100 + Math.random() * 900).toString();
+    }
+    const sellerAgentCode = `${cleanName}${phoneDigits}`;
+
     // Create seller with all info including images
     const seller = await Seller.create({
       businessName,
@@ -46,6 +64,7 @@ exports.register = async (req, res) => {
       address,
       businessType,
       sellerToken,
+      sellerAgentCode,
       websiteLink,
       qrCode,
       images
@@ -74,6 +93,7 @@ exports.register = async (req, res) => {
         address: seller.address,
         businessType: seller.businessType,
         sellerToken: seller.sellerToken,
+        sellerAgentCode: seller.sellerAgentCode,
         websiteLink: seller.websiteLink,
         qrCode: seller.qrCode,
         images: seller.images || [],
@@ -155,6 +175,7 @@ exports.login = async (req, res) => {
         ifscCode: seller.ifscCode,
         bankName: seller.bankName,
         sellerToken: seller.sellerToken,
+        sellerAgentCode: seller.sellerAgentCode,
         websiteLink: seller.websiteLink,
         qrCode: seller.qrCode,
         images: seller.images || [],
@@ -210,7 +231,7 @@ exports.getProfile = async (req, res) => {
 
     // Calculate available commission using the new system
     const CommissionHistory = require('../models/CommissionHistory');
-    
+
     // Get all confirmed commissions
     const confirmedCommissions = await CommissionHistory.find({
       sellerId: seller._id,
@@ -250,7 +271,8 @@ exports.getProfile = async (req, res) => {
     const sellerWithWithdrawals = {
       ...seller.toObject(),
       withdrawals: mappedWithdrawals,
-      calculatedAvailableCommission: availableCommission
+      calculatedAvailableCommission: availableCommission,
+      sellerAgentCode: seller.sellerAgentCode // Explicitly include sellerAgentCode
     };
 
     res.json({
@@ -328,7 +350,7 @@ exports.updateProfile = async (req, res) => {
 
     // Calculate available commission using the new system (same as getProfile)
     const CommissionHistory = require('../models/CommissionHistory');
-    
+
     // Get all confirmed commissions
     const confirmedCommissions = await CommissionHistory.find({
       sellerId: seller._id,
@@ -368,7 +390,8 @@ exports.updateProfile = async (req, res) => {
     const sellerWithWithdrawals = {
       ...seller.toObject(),
       withdrawals: mappedWithdrawals,
-      calculatedAvailableCommission: availableCommission
+      calculatedAvailableCommission: availableCommission,
+      sellerAgentCode: seller.sellerAgentCode // Explicitly include sellerAgentCode
     };
 
     res.json({
@@ -460,8 +483,6 @@ exports.uploadProfileImage = async (req, res) => {
 exports.deleteImage = async (req, res) => {
   try {
     const { imageId } = req.params;
-    const { cloudinary } = require('../middleware/sellerUpload');
-
     // Find the image in the seller's images array
     const seller = await Seller.findById(req.seller.id);
     const image = seller.images.id(imageId);
@@ -473,15 +494,30 @@ exports.deleteImage = async (req, res) => {
       });
     }
 
-    // Delete from Cloudinary if available
-    if (cloudinary) {
+    // Delete local file
+    const fs = require('fs');
+    const path = require('path');
+
+    // Check if it's a local file (public_id is filename)
+    if (image.public_id && !image.public_id.includes('/')) {
+      const filePath = path.join(__dirname, '../public/uploads/seller-images', image.public_id);
       try {
-        await cloudinary.uploader.destroy(image.public_id);
-      } catch (cloudinaryError) {
-        console.error('Cloudinary delete error:', cloudinaryError);
-        // Continue with database deletion even if Cloudinary fails
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+          console.log('Deleted local file:', filePath);
+        }
+      } catch (err) {
+        console.error('Error deleting local file:', err);
       }
     }
+
+    // Legacy Cloudinary delete if needed
+    /* 
+    const { cloudinary } = require('../middleware/sellerUpload');
+    if (cloudinary) {
+       // ...
+    }
+    */
 
     // Remove from database
     seller.images.pull(imageId);
@@ -506,10 +542,10 @@ exports.getAllSellers = async (req, res) => {
     console.log('=== GET ALL SELLERS REQUEST ===');
     console.log('Request headers:', req.headers);
     console.log('Request user:', req.user);
-    
+
     const sellers = await Seller.find({}, '-password');
     console.log('Found sellers count:', sellers.length);
-    
+
     // Get withdrawal data for each seller
     const Withdraw = require('../models/Withdraw');
     const sellersWithWithdrawals = await Promise.all(
@@ -517,9 +553,9 @@ exports.getAllSellers = async (req, res) => {
         const withdrawals = await Withdraw.find({ seller: seller._id })
           .sort({ requestedAt: -1 })
           .select('amount status requestedAt processedAt bankDetails');
-        
+
         console.log(`Seller ${seller.businessName} has ${withdrawals.length} withdrawals`);
-        
+
         // Map withdrawal data to match expected format
         const mappedWithdrawals = withdrawals.map(withdrawal => ({
           _id: withdrawal._id,
@@ -531,7 +567,7 @@ exports.getAllSellers = async (req, res) => {
           rejectionReason: null,
           bankDetails: withdrawal.bankDetails
         }));
-        
+
         return {
           ...seller.toObject(),
           withdrawals: mappedWithdrawals
@@ -565,7 +601,7 @@ exports.getAllSellers = async (req, res) => {
 exports.updateUniqueFields = async (req, res) => {
   try {
     const { email } = req.query;
-    
+
     if (!email) {
       return res.status(400).json({
         success: false,
@@ -586,7 +622,7 @@ exports.updateUniqueFields = async (req, res) => {
     if (!seller.sellerToken || !seller.websiteLink) {
       const sellerToken = `seller_${seller._id.toString().slice(-8)}_${Date.now()}`;
       const websiteLink = `${'https://rikocraft.com'}?seller=${sellerToken}`;
-      
+
       const updatedSeller = await Seller.findByIdAndUpdate(
         seller._id,
         { sellerToken, websiteLink },
@@ -649,7 +685,7 @@ exports.test = async (req, res) => {
       2: 'connecting',
       3: 'disconnecting'
     };
-    
+
     res.json({
       success: true,
       message: 'Seller controller is working',
@@ -732,27 +768,27 @@ exports.requestWithdraw = async (req, res) => {
     if (!seller) {
       return res.status(404).json({ success: false, message: 'Seller not found' });
     }
-    
+
     // Check if seller is approved
     if (!seller.approved) {
-      return res.status(403).json({ 
-        success: false, 
-        message: 'Your account is not yet approved. Please wait for admin approval before making withdrawal requests.' 
+      return res.status(403).json({
+        success: false,
+        message: 'Your account is not yet approved. Please wait for admin approval before making withdrawal requests.'
       });
     }
-    
+
     // Check if seller is blocked
     if (seller.blocked) {
-      return res.status(403).json({ 
-        success: false, 
-        message: 'Your account is blocked. Please contact admin for assistance.' 
+      return res.status(403).json({
+        success: false,
+        message: 'Your account is blocked. Please contact admin for assistance.'
       });
     }
 
     // Calculate available commission using the new system
     const CommissionHistory = require('../models/CommissionHistory');
     const Withdraw = require('../models/Withdraw');
-    
+
     // Get all confirmed commissions
     const confirmedCommissions = await CommissionHistory.find({
       sellerId: seller._id,
@@ -798,7 +834,7 @@ exports.requestWithdraw = async (req, res) => {
         message: `Insufficient available commission for withdrawal. Available: ₹${availableCommission}, Requested: ₹${amount}`
       });
     }
-    
+
     // Create Withdraw record
     const withdraw = await Withdraw.create({
       seller: sellerId,
@@ -824,9 +860,9 @@ exports.requestWithdraw = async (req, res) => {
     seller.availableCommission = availableCommission - amount;
     await seller.save();
 
-    res.json({ 
-      success: true, 
-      message: 'Withdrawal request submitted', 
+    res.json({
+      success: true,
+      message: 'Withdrawal request submitted',
       withdraw,
       availableCommission: availableCommission - amount
     });

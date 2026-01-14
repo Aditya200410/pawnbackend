@@ -1,75 +1,63 @@
 const multer = require('multer');
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
-const cloudinary = require('cloudinary').v2;
+const path = require('path');
+const fs = require('fs');
 
-// Check if Cloudinary credentials are available
-const hasCloudinaryCredentials = process.env.CLOUDINARY_CLOUD_NAME && 
-                                process.env.CLOUDINARY_API_KEY && 
-                                process.env.CLOUDINARY_API_SECRET;
+// Create directories
+const uploadsDir = path.join(__dirname, '../public/uploads');
+const sellerImagesDir = path.join(uploadsDir, 'seller-images');
+const sellerProfilesDir = path.join(uploadsDir, 'seller-profiles');
 
-if (hasCloudinaryCredentials) {
-  // Configure Cloudinary
-  cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET
-  });
-} else {
-  console.warn('Cloudinary credentials not found. Image uploads will be disabled.');
-}
+[sellerImagesDir, sellerProfilesDir].forEach(dir => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+});
 
 // Configure storage for multiple images
-const storage = hasCloudinaryCredentials ? new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'seller-images',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
-    transformation: [
-      { width: 800, height: 600, crop: 'fill' },
-      { quality: 'auto' }
-    ]
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, sellerImagesDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'seller-' + uniqueSuffix + path.extname(file.originalname));
   }
-}) : multer.memoryStorage();
+});
 
 // Configure storage for profile image
-const profileStorage = hasCloudinaryCredentials ? new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'seller-profiles',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
-    transformation: [
-      { width: 400, height: 400, crop: 'fill' },
-      { quality: 'auto' }
-    ]
+const profileStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, sellerProfilesDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'profile-' + uniqueSuffix + path.extname(file.originalname));
   }
-}) : multer.memoryStorage();
+});
 
-// Multer configuration for multiple images
+// Multer configuration
 const uploadMultipleImages = multer({
   storage: storage,
   limits: {
     fileSize: 5 * 1024 * 1024, // 5MB limit
-    files: 10 // Maximum 10 images
+    files: 10
   },
   fileFilter: (req, file, cb) => {
-    // Check file type
     if (file.mimetype.startsWith('image/')) {
       cb(null, true);
     } else {
       cb(new Error('Only image files are allowed!'), false);
     }
   }
-}).array('images', 10); // 'images' is the field name, max 10 files
+}).array('images', 10);
 
-// Multer configuration for single profile image
 const uploadProfileImage = multer({
   storage: profileStorage,
   limits: {
     fileSize: 2 * 1024 * 1024, // 2MB limit
-    files: 1 // Only 1 file
+    files: 1
   },
   fileFilter: (req, file, cb) => {
-    // Check file type
     if (file.mimetype.startsWith('image/')) {
       cb(null, true);
     } else {
@@ -78,67 +66,39 @@ const uploadProfileImage = multer({
   }
 }).single('profileImage');
 
-// Middleware for handling multiple image uploads
-const handleMultipleImages = (req, res, next) => {
-  if (!hasCloudinaryCredentials) {
-    // Skip image upload if Cloudinary is not configured
-    req.files = [];
-    return next();
-  }
+// Helper to construct URL
+const getFullUrl = (req, folder, filename) => {
+  const protocol = req.protocol;
+  const host = req.get('host');
+  return `${protocol}://${host}/uploads/${folder}/${filename}`;
+};
 
+// Middleware wrappers
+const handleMultipleImages = (req, res, next) => {
   uploadMultipleImages(req, res, (err) => {
-    if (err instanceof multer.MulterError) {
-      if (err.code === 'LIMIT_FILE_SIZE') {
-        return res.status(400).json({
-          success: false,
-          message: 'File too large. Maximum size is 5MB.'
-        });
-      }
-      if (err.code === 'LIMIT_FILE_COUNT') {
-        return res.status(400).json({
-          success: false,
-          message: 'Too many files. Maximum is 10 images.'
-        });
-      }
-      return res.status(400).json({
-        success: false,
-        message: 'File upload error: ' + err.message
-      });
-    } else if (err) {
-      return res.status(400).json({
-        success: false,
-        message: err.message
+    if (err) {
+      return res.status(400).json({ success: false, message: err.message });
+    }
+
+    // Fix file paths to be URLs
+    if (req.files) {
+      req.files.forEach(file => {
+        file.path = getFullUrl(req, 'seller-images', file.filename);
       });
     }
     next();
   });
 };
 
-// Middleware for handling profile image upload
 const handleProfileImage = (req, res, next) => {
-  if (!hasCloudinaryCredentials) {
-    // Skip image upload if Cloudinary is not configured
-    req.file = null;
-    return next();
-  }
-
   uploadProfileImage(req, res, (err) => {
-    if (err instanceof multer.MulterError) {
-      if (err.code === 'LIMIT_FILE_SIZE') {
-        return res.status(400).json({
-          success: false,
-          message: 'File too large. Maximum size is 2MB.'
-        });
-      }
-      return res.status(400).json({
-        success: false,
-        message: 'File upload error: ' + err.message
-      });
-    } else if (err) {
-      return res.status(400).json({
-        success: false,
-        message: err.message
-      });
+    if (err) {
+      return res.status(400).json({ success: false, message: err.message });
+    }
+
+    // Fix file path to be URL
+    if (req.file) {
+      req.file.path = getFullUrl(req, 'seller-profiles', req.file.filename);
     }
     next();
   });
@@ -147,5 +107,5 @@ const handleProfileImage = (req, res, next) => {
 module.exports = {
   handleMultipleImages,
   handleProfileImage,
-  cloudinary: hasCloudinaryCredentials ? cloudinary : null
+  cloudinary: null // Deprecated but kept for compatibility check
 }; 

@@ -1,6 +1,7 @@
 const Withdraw = require('../models/Withdraw');
 const Seller = require('../models/Seller');
 const CommissionHistory = require('../models/CommissionHistory');
+const Agent = require('../models/Agent');
 
 // Function to calculate available commission based on commission history and withdrawals
 exports.calculateAvailableCommission = async (sellerId) => {
@@ -45,7 +46,155 @@ exports.calculateAvailableCommission = async (sellerId) => {
   }
 };
 
-// Request withdrawal (updated to use proper calculation)
+// Function to calculate available commission for AGENTS
+exports.calculateAvailableAgentCommission = async (agentId) => {
+  try {
+    // Get all confirmed commissions for agent
+    const confirmedCommissions = await CommissionHistory.find({
+      agentId,
+      status: 'confirmed',
+      type: 'earned'
+    });
+
+    const totalConfirmedCommissions = confirmedCommissions.reduce((sum, commission) => sum + commission.amount, 0);
+
+    // Get all completed withdrawals for agent
+    const completedWithdrawals = await Withdraw.find({
+      agent: agentId,
+      status: 'completed'
+    });
+
+    const totalWithdrawn = completedWithdrawals.reduce((sum, withdrawal) => sum + withdrawal.amount, 0);
+
+    // Get pending withdrawals
+    const pendingWithdrawals = await Withdraw.find({
+      agent: agentId,
+      status: 'pending'
+    });
+
+    const totalPendingWithdrawals = pendingWithdrawals.reduce((sum, withdrawal) => sum + withdrawal.amount, 0);
+
+    // Available = Earned - Withdrawn - Pending
+    const availableCommission = Math.max(0, totalConfirmedCommissions - totalWithdrawn - totalPendingWithdrawals);
+
+    return {
+      availableCommission,
+      totalConfirmedCommissions,
+      totalWithdrawn,
+      totalPendingWithdrawals
+    };
+  } catch (error) {
+    console.error('Error calculating available agent commission:', error);
+    throw error;
+  }
+};
+
+// Request Agent Withdrawal
+exports.requestAgentWithdrawal = async (req, res) => {
+  try {
+    const { amount, bankDetails } = req.body;
+    const agentId = req.user.id; // From agentAuth middleware
+
+    // Validate amount
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ success: false, message: 'Invalid withdrawal amount' });
+    }
+
+    // Get agent details
+    const agent = await Agent.findById(agentId);
+    if (!agent) {
+      return res.status(404).json({ success: false, message: 'Agent not found' });
+    }
+
+    // Calculate available commission
+    const { availableCommission } = await exports.calculateAvailableAgentCommission(agentId);
+
+    if (availableCommission < amount) {
+      return res.status(400).json({
+        success: false,
+        message: `Insufficient available commission. Available: ₹${availableCommission}`
+      });
+    }
+
+    // Validate bank details (Must match Withdraw Schema requirements)
+    // We prioritize body details, then fall back to profile details
+    let finalBankDetails = bankDetails || agent.bankDetails;
+
+    // Ensure it's a plain object if it came from mongoose
+    if (finalBankDetails && typeof finalBankDetails.toObject === 'function') {
+      finalBankDetails = finalBankDetails.toObject();
+    }
+
+    if (!finalBankDetails ||
+      !finalBankDetails.accountName ||
+      !finalBankDetails.accountNumber ||
+      !finalBankDetails.ifsc ||
+      !finalBankDetails.bankName) {
+      return res.status(400).json({
+        success: false,
+        message: 'Incomplete bank details. Please provide Account Name, Number, IFSC, and Bank Name.'
+      });
+    }
+
+    // Create withdrawal
+    const withdrawal = new Withdraw({
+      agent: agentId,
+      amount,
+      bankDetails: {
+        accountName: finalBankDetails.accountName,
+        accountNumber: finalBankDetails.accountNumber,
+        ifsc: finalBankDetails.ifsc,
+        bankName: finalBankDetails.bankName,
+        upi: finalBankDetails.upi || ''
+      }
+    });
+
+    await withdrawal.save();
+
+    // Save bank details to agent profile if provided in request
+    // This helps next time
+    if (bankDetails) {
+      agent.bankDetails = {
+        accountName: finalBankDetails.accountName,
+        accountNumber: finalBankDetails.accountNumber,
+        ifsc: finalBankDetails.ifsc,
+        bankName: finalBankDetails.bankName,
+        upi: finalBankDetails.upi || ''
+      };
+    }
+
+    // Update agent's pending commission tracking
+    agent.pendingCommission = (agent.pendingCommission || 0) + amount;
+    await agent.save();
+
+    res.json({
+      success: true,
+      message: 'Withdrawal request submitted successfully',
+      withdrawal,
+      availableCommission: availableCommission - amount
+    });
+
+  } catch (error) {
+    console.error('Agent withdrawal request error:', error);
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ success: false, message: error.message });
+    }
+    res.status(500).json({ success: false, message: 'Failed to submit withdrawal request: ' + error.message });
+  }
+};
+
+// Get Agent Withdrawal History
+exports.getAgentWithdrawalHistory = async (req, res) => {
+  try {
+    const agentId = req.user.id;
+    const withdrawals = await Withdraw.find({ agent: agentId }).sort({ requestedAt: -1 });
+    res.json({ success: true, withdrawals });
+  } catch (error) {
+    console.error('Get agent withdrawal history error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch history' });
+  }
+};
+
 exports.requestWithdrawal = async (req, res) => {
   try {
     const { amount, sellerNotes } = req.body;
@@ -69,7 +218,7 @@ exports.requestWithdrawal = async (req, res) => {
     }
 
     // Calculate available commission using the new system
-    const { availableCommission, totalConfirmedCommissions, totalWithdrawn, totalPendingWithdrawals } = 
+    const { availableCommission, totalConfirmedCommissions, totalWithdrawn, totalPendingWithdrawals } =
       await calculateAvailableCommission(sellerId);
 
     console.log('Withdrawal calculation:', {
@@ -232,7 +381,7 @@ exports.cancelWithdrawal = async (req, res) => {
 
     // Recalculate available commission after cancellation
     const { availableCommission } = await calculateAvailableCommission(sellerId);
-    
+
     // Update seller's available commission
     const seller = await Seller.findById(sellerId);
     seller.availableCommission = availableCommission;
@@ -260,7 +409,7 @@ exports.getAllWithdrawals = async (req, res) => {
     console.log('Request headers:', req.headers);
     console.log('Request user:', req.user);
     console.log('Query params:', req.query);
-    
+
     const { page = 1, limit = 20, status, sellerId } = req.query;
 
     const query = {};
@@ -273,7 +422,8 @@ exports.getAllWithdrawals = async (req, res) => {
     const Withdraw = require('../models/Withdraw');
     let withdrawals = await Withdraw.find(query)
       .sort({ requestedAt: -1 })
-      .populate('seller', 'businessName email phone');
+      .populate('seller', 'businessName email phone')
+      .populate('agent', 'name email phone personalAgentCode');
 
     console.log('Withdrawals count:', withdrawals.length);
     console.log('Withdrawals:', withdrawals.map(w => ({
@@ -281,7 +431,9 @@ exports.getAllWithdrawals = async (req, res) => {
       amount: w.amount,
       status: w.status,
       sellerId: w.seller,
-      sellerName: w.seller?.businessName || 'Unknown'
+      sellerName: w.seller?.businessName || 'Unknown',
+      agentId: w.agent,
+      agentName: w.agent?.name || 'Unknown'
     })));
 
     // Apply pagination
@@ -359,14 +511,44 @@ exports.approveWithdrawal = async (req, res) => {
       });
     }
 
-    // Old system approval
+    // Handle AGENT withdrawal approval
+    if (withdrawal.agent) {
+      withdrawal.status = 'completed';
+      withdrawal.processedAt = new Date();
+      await withdrawal.save();
+
+      // Update Agent stats
+      const agent = await Agent.findById(withdrawal.agent);
+      if (agent) {
+        agent.paidCommission = (agent.paidCommission || 0) + withdrawal.amount;
+        agent.pendingCommission = Math.max(0, (agent.pendingCommission || 0) - withdrawal.amount);
+        await agent.save();
+      }
+
+      // Calculate available commission for response
+      const { availableCommission } = await exports.calculateAvailableAgentCommission(withdrawal.agent);
+
+      console.log('Agent Withdrawal approved successfully');
+      return res.json({
+        success: true,
+        message: 'Agent Withdrawal approved successfully.',
+        withdrawal: {
+          id: withdrawal._id,
+          status: withdrawal.status,
+          processedDate: withdrawal.processedAt
+        },
+        availableCommission
+      });
+    }
+
+    // SELLER withdrawal approval (old logic)
     withdrawal.status = 'completed';
     withdrawal.processedAt = new Date();
     await withdrawal.save();
 
     // Recalculate available commission after approval
     const { availableCommission } = await calculateAvailableCommission(withdrawal.seller);
-    
+
     // Update seller's available commission
     const seller = await Seller.findById(withdrawal.seller);
     if (seller) {
@@ -424,14 +606,36 @@ exports.rejectWithdrawal = async (req, res) => {
       });
     }
 
-    // Old system rejection
+    // Handle AGENT withdrawal rejection
+    if (withdrawal.agent) {
+      withdrawal.status = 'rejected';
+      withdrawal.processedAt = new Date();
+      await withdrawal.save();
+
+      // Update Agent stats (remove from pending)
+      const agent = await Agent.findById(withdrawal.agent);
+      if (agent) {
+        agent.pendingCommission = Math.max(0, (agent.pendingCommission || 0) - withdrawal.amount);
+        await agent.save();
+      }
+
+      const { availableCommission } = await exports.calculateAvailableAgentCommission(withdrawal.agent);
+
+      return res.json({
+        success: true,
+        message: 'Agent Withdrawal rejected successfully',
+        availableCommission
+      });
+    }
+
+    // SELLER withdrawal rejection (old logic)
     withdrawal.status = 'rejected';
     withdrawal.processedAt = new Date();
     await withdrawal.save();
 
     // Recalculate available commission after rejection (pending amount is freed up)
     const { availableCommission } = await calculateAvailableCommission(withdrawal.seller);
-    
+
     // Update seller's available commission
     const seller = await Seller.findById(withdrawal.seller);
     if (seller) {
@@ -482,6 +686,29 @@ exports.completeWithdrawal = async (req, res) => {
       });
     }
 
+    // Handle AGENT withdrawal completion
+    if (withdrawal.agent) {
+      withdrawal.status = 'completed';
+      withdrawal.processedAt = new Date();
+      await withdrawal.save();
+
+      // Update Agent stats
+      const agent = await Agent.findById(withdrawal.agent);
+      if (agent) {
+        agent.paidCommission = (agent.paidCommission || 0) + withdrawal.amount;
+        agent.pendingCommission = Math.max(0, (agent.pendingCommission || 0) - withdrawal.amount);
+        await agent.save();
+      }
+
+      const { availableCommission } = await exports.calculateAvailableAgentCommission(withdrawal.agent);
+
+      return res.json({
+        success: true,
+        message: 'Agent Withdrawal marked as completed',
+        availableCommission
+      });
+    }
+
     // Mark as completed
     withdrawal.status = 'completed';
     withdrawal.processedAt = new Date();
@@ -489,7 +716,7 @@ exports.completeWithdrawal = async (req, res) => {
 
     // Recalculate available commission after completion
     const { availableCommission } = await exports.calculateAvailableCommission(withdrawal.seller);
-    
+
     // Update seller's available commission
     const seller = await Seller.findById(withdrawal.seller);
     if (seller) {
@@ -518,7 +745,7 @@ exports.completeWithdrawal = async (req, res) => {
 exports.recalculateAllSellersCommission = async (req, res) => {
   try {
     console.log('=== RECALCULATE ALL SELLERS COMMISSION ===');
-    
+
     const sellers = await Seller.find({});
     let updatedCount = 0;
     let errors = [];
@@ -526,12 +753,12 @@ exports.recalculateAllSellersCommission = async (req, res) => {
     for (const seller of sellers) {
       try {
         const { availableCommission } = await exports.calculateAvailableCommission(seller._id);
-        
+
         if (seller.availableCommission !== availableCommission) {
           seller.availableCommission = availableCommission;
           await seller.save();
           updatedCount++;
-          
+
           console.log(`Updated seller ${seller.businessName}: ${seller.availableCommission} -> ${availableCommission}`);
         }
       } catch (error) {

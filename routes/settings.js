@@ -12,6 +12,12 @@ router.post('/', authenticateToken, settingsController.upsertSetting);
 // Public endpoint to get COD upfront amount (must come before /:key route)
 router.get('/cod-upfront-amount', settingsController.getCodUpfrontAmount);
 
+// Public endpoint to get seller commission percentage
+router.get('/seller-commission-percentage', settingsController.getSellerCommissionPercentage);
+
+// Public endpoint to get agent commission percentage
+router.get('/agent-commission-percentage', settingsController.getAgentCommissionPercentage);
+
 // Get a specific setting by key
 router.get('/:key', authenticateToken, settingsController.getSettingByKey);
 

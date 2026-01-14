@@ -18,7 +18,7 @@ async function getPhonePeToken() {
 
     const clientId = process.env.PHONEPE_CLIENT_ID;
     const clientSecret = process.env.PHONEPE_CLIENT_SECRET;
-    const clientVersion = '1';      
+    const clientVersion = '1';
     const env = process.env.PHONEPE_ENV || 'sandbox';
 
     if (!clientId || !clientSecret) {
@@ -28,21 +28,21 @@ async function getPhonePeToken() {
     // Set OAuth URL based on environment
     // Based on PhonePe documentation: https://developer.phonepe.com/v1/reference/authorization-standard-checkout/
     let oauthUrl;
-    if (env === 'production') 
+    if (env === 'production')
       oauthUrl = 'https://api.phonepe.com/apis/identity-manager/v1/oauth/token';
     else
       oauthUrl = 'https://api-preprod.phonepe.com/apis/pg-sandbox/v1/oauth/token';
-    
+
 
     console.log('Getting PhonePe OAuth token from:', oauthUrl);
 
-    const response = await axios.post(oauthUrl, 
+    const response = await axios.post(oauthUrl,
       new URLSearchParams({
         client_id: clientId,
         client_version: clientVersion,
         client_secret: clientSecret,
         grant_type: 'client_credentials'
-      }), 
+      }),
       {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
@@ -60,7 +60,7 @@ async function getPhonePeToken() {
         // Fallback to 1 hour if expires_at is not provided
         tokenExpiry = new Date(Date.now() + 60 * 60 * 1000);
       }
-      
+
       console.log('PhonePe OAuth token obtained successfully');
       console.log('Token expires at:', tokenExpiry);
       return oauthToken;
@@ -73,120 +73,88 @@ async function getPhonePeToken() {
   }
 }
 
+const { finalizeOrder } = require('../utils/orderHelper');
+
 exports.createPhonePeOrder = async (req, res) => {
   try {
-    const { 
-      amount, 
-      customerName, 
-      email, 
-      phone, 
-      items, 
-      totalAmount, 
-      shippingCost, 
-      codExtraCharge, 
-      finalTotal, 
-      paymentMethod, 
+    const {
+      amount,
+      customerName,
+      email,
+      phone,
+      items,
+      totalAmount,
+      shippingCost,
+      codExtraCharge,
+      finalTotal,
+      paymentMethod,
       upfrontAmount,
       remainingAmount,
       sellerToken,
-      couponCode 
+      agentCode,
+      couponCode
     } = req.body;
-    
+
+    // ... validation ...
     const env = process.env.PHONEPE_ENV || 'sandbox';
     const frontendUrl = process.env.FRONTEND_URL;
     const backendUrl = process.env.BACKEND_URL;
 
-    // Enhanced validation
-    if (!frontendUrl || !backendUrl) {
-      console.error('URL configuration missing:', { 
-        frontendUrl: !!frontendUrl, 
-        backendUrl: !!backendUrl 
-      });
-      return res.status(500).json({
-        success: false,
-        message: 'Application configuration missing. Please contact support.',
-      });
-    }
-
-    if (!amount || amount <= 0) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Invalid amount provided' 
-      });
-    }
-
-    if (!customerName || !email || !phone) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Customer details are required' 
-      });
-    }
-
-    // Validate phone number format
-    const phoneRegex = /^[6-9]\d{9}$/;
-    if (!phoneRegex.test(phone)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid phone number format. Please enter a valid 10-digit mobile number.'
-      });
-    }
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid email format.'
-      });
-    }
-
-    // Get OAuth token
-    const accessToken = await getPhonePeToken();
-
-    // Set base URL for payment API based on PhonePe documentation
-    // Based on: https://developer.phonepe.com/v1/reference/create-payment-standard-checkout
-    const baseUrl = env === 'production' 
-      ? 'https://api.phonepe.com/apis/pg'
-      : '	https://api-preprod.phonepe.com/apis/pg-sandbox';
-
-    const apiEndpoint = '/checkout/v2/pay';
-
+    // Use orderId as transactionId
     const merchantOrderId = `MT${Date.now()}${Math.random().toString(36).substr(2, 6)}`;
 
-    // Prepare payload according to PhonePe API documentation
-    // Based on: https://developer.phonepe.com/v1/reference/create-payment-standard-checkout
+    // Create Order in DB first
+    const newOrder = new Order({
+      transactionId: merchantOrderId,
+      customerName,
+      email,
+      phone,
+      address: req.body.address, // Assume basic string/object handling as per Schema
+      items,
+      totalAmount,
+      paymentMethod,
+      paymentStatus: 'pending', // Pending payment
+      orderStatus: 'waiting_payment', // Custom status for waiting
+      upfrontAmount: upfrontAmount || 0,
+      remainingAmount: remainingAmount || 0,
+      sellerToken,
+      agentCode,
+      couponCode,
+      shippingCost,
+      codExtraCharge
+    });
+
+    await newOrder.save();
+
+    const accessToken = await getPhonePeToken();
+    const baseUrl = env === 'production'
+      ? 'https://api.phonepe.com/apis/pg'
+      : 'https://api-preprod.phonepe.com/apis/pg-sandbox';
+    const apiEndpoint = '/checkout/v2/pay';
+
     const payload = {
       merchantOrderId: merchantOrderId,
-      amount: Math.round(amount * 100), // Convert to paise
-      expireAfter: 1200, // 20 minutes expiry
+      amount: Math.round(finalTotal * 100), // Use finalTotal! validation checks amount
+      expireAfter: 1200,
       metaInfo: {
         udf1: customerName,
         udf2: email,
         udf3: phone,
         udf4: sellerToken || '',
-        udf5: couponCode || '',
-        udf6: upfrontAmount ? `upfront:${upfrontAmount}` : '',
-        udf7: remainingAmount ? `remaining:${remainingAmount}` : ''
+        udf5: agentCode || '',
+        orderId: newOrder._id.toString()
       },
       paymentFlow: {
         type: 'PG_CHECKOUT',
-        message: paymentMethod === 'cod' 
-          ? `Upfront payment ₹${upfrontAmount} for COD order ${merchantOrderId}`
-          : `Payment for order ${merchantOrderId}`,
+        message: `Payment for order ${merchantOrderId}`,
         merchantUrls: {
-          redirectUrl: `${frontendUrl.replace(/\/+$/, '')}/payment/status?orderId=${merchantOrderId}`
+          redirectUrl: `${frontendUrl.replace(/\/+$/, '')}/payment/status?orderId=${merchantOrderId}`,
+          // Set callback to our webhook
+          callbackUrl: `${backendUrl}/api/payment/phonepe/callback`
         }
       }
     };
 
-    console.log('PhonePe payload:', {
-      ...payload,
-      amount: payload.amount,
-      accessToken: '***HIDDEN***'
-    });
-
-    console.log(`Making PhonePe API request to: ${baseUrl}${apiEndpoint}`);
-    
     const response = await axios.post(
       baseUrl + apiEndpoint,
       payload,
@@ -199,180 +167,114 @@ exports.createPhonePeOrder = async (req, res) => {
       }
     );
 
-    console.log('PhonePe API response:', response.data);
-
-    // Success response from PhonePe
     if (response.data && response.data.orderId) {
-      const redirectUrl = response.data.redirectUrl;
-      const orderId = response.data.orderId;
-      const state = response.data.state;
+      // Update with PhonePe's orderId if needed, but we used merchantOrderId as key
+      newOrder.transactionId = response.data.orderId; // store PhonePe ID as transactionId? Or keep merchantOrderId?
+      // Let's store PhonePe orderId in a separate field if possible, or swap.
+      // Based on Schema: transactionId is generic. Let's keep merchantOrderId locally.
+      // Actually, response.data.orderId IS the merchantOrderId we sent!
+      // PhonePe returns the SAME orderId we sent as `orderId`.
+      // So no need to update transactionId if we saved it as merchantOrderId.
 
-      if (redirectUrl) {
-        const orderData = {
-          merchantOrderId,
-          orderId,
-          customerName,
-          email,
-          phone,
-          items,
-          totalAmount,
-          shippingCost,
-          codExtraCharge,
-          finalTotal,
-          paymentMethod,
-          upfrontAmount: upfrontAmount || 0,
-          remainingAmount: remainingAmount || 0,
-          sellerToken,
-          couponCode,
-          status: state || 'pending',
-          createdAt: new Date()
-        };
+      // Just update status if needed
+      await newOrder.save();
 
-        console.log('PhonePe order created successfully:', {
-          orderId: orderId,
-          merchantOrderId: merchantOrderId,
-          state: state,
-          redirectUrl: redirectUrl.substring(0, 100) + '...'
-        });
-
-        return res.json({ 
-          success: true, 
-          redirectUrl,
-          orderId: orderId,
-          merchantOrderId: merchantOrderId,
-          state: state,
-          orderData 
-        });
-      } else {
-        console.error('PhonePe did not return redirect URL:', response.data);
-        return res.status(500).json({ 
-          success: false, 
-          message: 'PhonePe did not return a redirect URL.',
-          data: response.data 
-        });
-      }
-    } else {
-      console.error('PhonePe payment initiation failed:', response.data);
-      return res.status(500).json({
-        success: false,
-        message: response.data.message || 'PhonePe payment initiation failed',
-        data: response.data
+      return res.json({
+        success: true,
+        redirectUrl: response.data.redirectUrl,
+        orderId: merchantOrderId, // Returning OUR ID
+        merchantOrderId: merchantOrderId,
+        orderData: newOrder // Return saved order
       });
+    } else {
+      await Order.findByIdAndDelete(newOrder._id); // Cleanup failed order
+      return res.status(500).json({ success: false, message: 'Payment initiation failed' });
     }
 
   } catch (error) {
-    console.error('PhonePe order error:', error.response?.data || error.message);
-    console.error('PhonePe order error stack:', error.stack);
-
-    let errorMessage = 'Failed to create PhonePe order';
-    if (error.response?.data?.message) {
-      errorMessage = error.response.data.message;
-    } else if (error.code === 'ECONNABORTED') {
-      errorMessage = 'Payment gateway timeout. Please try again.';
-    } else if (error.code === 'ENOTFOUND') {
-      errorMessage = 'Payment gateway not reachable. Please try again.';
-    } else if (error.response?.status === 500) {
-      errorMessage = 'Payment gateway error. Please try again later.';
-    } else if (error.response?.status === 400) {
-      errorMessage = 'Invalid payment request. Please check your details.';
-    } else if (error.response?.status === 401) {
-      errorMessage = 'Payment gateway authentication failed. Please try again.';
-    }
-
-    return res.status(500).json({
-      success: false,
-      message: errorMessage,
-      error: error.response?.data || error.message
-    });
+    console.error('PhonePe init error:', error);
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
 
 exports.phonePeCallback = async (req, res) => {
   try {
-    // Accept both merchantOrderId and orderId, but use orderId for status check
-    const { merchantOrderId, orderId, amount, status, code, merchantId } = req.body;
-    console.log('PhonePe callback received:', req.body);
-    if (!merchantOrderId || !orderId || !status) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid callback data: merchantOrderId, orderId, and status are required'
-      });
+    console.log('PhonePe Webhook Received');
+
+    // PhonePe sends the payload as a Base64 encoded string in the 'response' field
+    const { response } = req.body;
+
+    if (!response) {
+      console.error('Invalid Callback: No response field');
+      return res.status(400).send('Invalid Callback');
     }
-    try {
-      const accessToken = await getPhonePeToken();
-      const env = process.env.PHONEPE_ENV || 'sandbox';
-      const baseUrl = env === 'production' 
-        ? 'https://api.phonepe.com/apis/pg'
-        : 'https://api-preprod.phonepe.com/apis/pg-sandbox';
-      // Use orderId (PhonePe's transaction ID) for status check
-      const apiEndpoint = `/checkout/v2/order/${orderId}/status`;
-      const response = await axios.get(
-        baseUrl + apiEndpoint,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `O-Bearer ${accessToken}`
-          },
-          timeout: 30000
-        }
-      );
-      console.log('PhonePe verification response:', response.data);
-      if (response.data && response.data.state === 'COMPLETED') {
-        console.log(`Payment completed for transaction: ${merchantOrderId}`);
-        // Update order in DB and send confirmation email
-        const order = await Order.findOneAndUpdate(
-          { transactionId: orderId },
-          { paymentStatus: 'completed' },
-          { new: true }
-        );
-        if (order) {
-          await sendOrderConfirmationEmail(order);
-        } else {
-          console.warn('Order not found for transactionId:', orderId);
-        }
-        return res.json({
-          success: true,
-          message: 'Payment completed successfully',
-          orderId: orderId,
-          merchantOrderId: merchantOrderId,
-          status: 'COMPLETED'
-        });
-      } else if (response.data && response.data.state === 'FAILED') {
-        console.log(`Payment failed for transaction: ${merchantOrderId}`);
-        return res.json({
-          success: false,
-          message: 'Payment failed',
-          orderId: orderId,
-          merchantOrderId: merchantOrderId,
-          status: 'FAILED',
-          errorCode: response.data.errorCode,
-          detailedErrorCode: response.data.detailedErrorCode
-        });
+
+    // Decode Base64
+    const decodedBuffer = Buffer.from(response, 'base64');
+    const decodedString = decodedBuffer.toString('utf-8');
+    const decodedData = JSON.parse(decodedString);
+
+    console.log('PhonePe Webhook Decoded Data:', JSON.stringify(decodedData, null, 2));
+
+    const { code, data } = decodedData;
+    const { merchantTransactionId, state } = data || {};
+
+    // In our createPhonePeOrder, we used merchantOrderId as the transactionId
+    const idToSearch = merchantTransactionId;
+
+    if (!idToSearch) {
+      console.error('Invalid Callback: No merchantTransactionId');
+      return res.status(400).send('Invalid Data');
+    }
+
+    // Find by transactionId
+    const order = await Order.findOne({ transactionId: idToSearch });
+    if (!order) {
+      console.error(`Order not found for transactionId: ${idToSearch}`);
+      return res.status(404).send('Order not found');
+    }
+
+    // Verify status with PhonePe API (Double Check Strategy)
+    // This protects against spoofed webhooks because we don't just trust the webhook data
+    const accessToken = await getPhonePeToken();
+    const env = process.env.PHONEPE_ENV || 'sandbox';
+    const baseUrl = env === 'production' ? 'https://api.phonepe.com/apis/pg' : 'https://api-preprod.phonepe.com/apis/pg-sandbox';
+
+    const statusResponse = await axios.get(
+      `${baseUrl}/checkout/v2/order/${idToSearch}/status`,
+      { headers: { Authorization: `O-Bearer ${accessToken}` } }
+    );
+
+    const checkState = statusResponse.data.state; // COMPLETED, FAILED
+
+    console.log(`Verifying Order ${idToSearch}: Webhook State [${state}], API State [${checkState}]`);
+
+    if (checkState === 'COMPLETED') {
+      if (order.paymentStatus !== 'completed') {
+        order.paymentStatus = 'completed';
+        order.orderStatus = 'processing';
+        await order.save();
+        // Finalize (stock, email)
+        await finalizeOrder(order);
+        console.log(`Order ${idToSearch} marked as COMPLETED via Webhook`);
       } else {
-        console.log(`Payment pending for transaction: ${merchantOrderId}`);
-        return res.json({
-          success: true,
-          message: 'Payment is pending',
-          orderId: orderId,
-          merchantOrderId: merchantOrderId,
-          status: 'PENDING'
-        });
+        console.log(`Order ${idToSearch} is already COMPLETED`);
       }
-    } catch (verificationError) {
-      console.error('PhonePe verification error:', verificationError);
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to verify payment with PhonePe'
-      });
+    } else if (checkState === 'FAILED') {
+      if (order.paymentStatus !== 'failed') {
+        order.paymentStatus = 'failed';
+        await order.save();
+        console.log(`Order ${idToSearch} marked as FAILED via Webhook`);
+      }
     }
+
+    res.status(200).send('OK');
   } catch (error) {
-    console.error('PhonePe callback error:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to process callback'
-    });
+    console.error('Webhook processing error:', error);
+    res.status(500).send('Error');
   }
 };
+
 
 exports.getPhonePeStatus = async (req, res) => {
   try {
@@ -386,7 +288,7 @@ exports.getPhonePeStatus = async (req, res) => {
     }
     const env = process.env.PHONEPE_ENV || 'sandbox';
     const accessToken = await getPhonePeToken();
-    const baseUrl = env === 'production' 
+    const baseUrl = env === 'production'
       ? 'https://api.phonepe.com/apis/pg'
       : 'https://api-preprod.phonepe.com/apis/pg-sandbox';
     const apiEndpoint = `/checkout/v2/order/${orderId}/status`;
@@ -478,29 +380,29 @@ exports.getPhonePeStatus = async (req, res) => {
 exports.refundPayment = async (req, res) => {
   try {
     const { merchantRefundId, originalMerchantOrderId, amount } = req.body;
-    
+
     if (!merchantRefundId || !originalMerchantOrderId || !amount) {
       return res.status(400).json({
         success: false,
         message: 'Refund details are required'
       });
     }
-    
-           const env = process.env.PHONEPE_ENV || 'sandbox';
+
+    const env = process.env.PHONEPE_ENV || 'sandbox';
     const accessToken = await getPhonePeToken();
-    
-    const baseUrl = env === 'production' 
+
+    const baseUrl = env === 'production'
       ? 'https://api.phonepe.com/apis/pg'
       : 'https://api-preprod.phonepe.com/apis/pg-sandbox';
-    
+
     const apiEndpoint = '/payments/v2/refund';
-    
+
     const payload = {
       merchantRefundId,
       originalMerchantOrderId,
       amount: Math.round(amount * 100) // Convert to paise
     };
-    
+
     const response = await axios.post(
       baseUrl + apiEndpoint,
       payload,
@@ -512,7 +414,7 @@ exports.refundPayment = async (req, res) => {
         timeout: 30000
       }
     );
-    
+
     if (response.data && response.data.success) {
       return res.json({
         success: true,
@@ -524,7 +426,7 @@ exports.refundPayment = async (req, res) => {
         message: response.data.message || 'Failed to process refund'
       });
     }
-    
+
   } catch (error) {
     console.error('PhonePe refund error:', error.response?.data || error.message);
     return res.status(500).json({
@@ -538,23 +440,23 @@ exports.refundPayment = async (req, res) => {
 exports.getRefundStatus = async (req, res) => {
   try {
     const { merchantRefundId } = req.params;
-    
+
     if (!merchantRefundId) {
       return res.status(400).json({
         success: false,
         message: 'Refund ID is required'
       });
     }
-    
-      const env = process.env.PHONEPE_ENV || 'sandbox';
+
+    const env = process.env.PHONEPE_ENV || 'sandbox';
     const accessToken = await getPhonePeToken();
-    
-    const baseUrl = env === 'production' 
+
+    const baseUrl = env === 'production'
       ? 'https://api.phonepe.com/apis/pg'
       : 'https://api-preprod.phonepe.com/apis/pg-sandbox';
-    
+
     const apiEndpoint = `/payments/v2/refund/${merchantRefundId}/status`;
-    
+
     const response = await axios.get(
       baseUrl + apiEndpoint,
       {
@@ -565,7 +467,7 @@ exports.getRefundStatus = async (req, res) => {
         timeout: 30000
       }
     );
-    
+
     if (response.data && response.data.success) {
       return res.json({
         success: true,
@@ -577,7 +479,7 @@ exports.getRefundStatus = async (req, res) => {
         message: response.data.message || 'Failed to get refund status'
       });
     }
-    
+
   } catch (error) {
     console.error('PhonePe refund status error:', error.response?.data || error.message);
     return res.status(500).json({

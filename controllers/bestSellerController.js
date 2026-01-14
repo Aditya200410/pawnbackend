@@ -7,10 +7,12 @@ const path = require('path');
 const getAllBestSellers = async (req, res) => {
   try {
     const products = await BestSeller.find();
-    res.json({ products: products.map(product => ({
-      ...product.toObject(),
-      id: product._id
-    }))});
+    res.json({
+      products: products.map(product => ({
+        ...product.toObject(),
+        id: product._id
+      }))
+    });
   } catch (error) {
     console.error('Error fetching best sellers:', error);
     res.status(500).json({ message: "Error fetching best sellers", error: error.message });
@@ -25,7 +27,7 @@ const getBestSeller = async (req, res) => {
       return res.status(404).json({ message: "Best seller product not found" });
     }
     const productObj = product.toObject();
-    res.json({ 
+    res.json({
       product: {
         ...productObj,
         id: productObj._id
@@ -48,14 +50,14 @@ const createBestSellerWithFiles = async (req, res) => {
 
     if (!req.files || !req.files.mainImage) {
       console.log('Error: Missing main image');
-      return res.status(400).json({ 
-        error: 'Main image is required. Make sure you are uploading as multipart/form-data and the main image field is named "mainImage".' 
+      return res.status(400).json({
+        error: 'Main image is required. Make sure you are uploading as multipart/form-data and the main image field is named "mainImage".'
       });
     }
 
     const files = req.files;
     const productData = req.body;
-    
+
     // Validate required fields
     const requiredFields = [
       "name",
@@ -85,13 +87,20 @@ const createBestSellerWithFiles = async (req, res) => {
       return res.status(400).json({ error: `Missing required fields: ${missingFields.join(', ')}` });
     }
 
+    // Helper to construct URL
+    const getFullUrl = (filename) => {
+      const protocol = req.protocol;
+      const host = req.get('host');
+      return `${protocol}://${host}/uploads/bestsellers/${filename}`;
+    };
+
     // Process uploaded files
     console.log('Processing uploaded files...');
     const imagePaths = [];
-    
+
     // Main image
     if (files.mainImage && files.mainImage[0]) {
-      const mainImageUrl = files.mainImage[0].path; // Cloudinary URL
+      const mainImageUrl = getFullUrl(files.mainImage[0].filename);
       imagePaths.push(mainImageUrl);
       console.log('Added main image:', mainImageUrl);
     }
@@ -99,7 +108,7 @@ const createBestSellerWithFiles = async (req, res) => {
     // Additional images
     for (let i = 1; i <= 3; i++) {
       if (files[`image${i}`] && files[`image${i}`][0]) {
-        const imageUrl = files[`image${i}`][0].path; // Cloudinary URL
+        const imageUrl = getFullUrl(files[`image${i}`][0].filename);
         imagePaths.push(imageUrl);
         console.log(`Added image${i}:`, imageUrl);
       }
@@ -124,19 +133,19 @@ const createBestSellerWithFiles = async (req, res) => {
       care: productData.care,
       price: parseFloat(productData.price),
       regularPrice: parseFloat(productData.regularPrice),
-      image: imagePaths[0], // Main image Cloudinary URL
-      images: imagePaths, // All Cloudinary URLs
+      image: imagePaths[0], // Main image URL
+      images: imagePaths, // All URLs
       inStock: productData.inStock === 'true' || productData.inStock === true,
       rating: 0,
       reviews: 0
     });
-    
+
     console.log('Saving best seller product to database...');
     const savedProduct = await newProduct.save();
     console.log('Best seller product saved successfully:', savedProduct);
-    
-    res.status(201).json({ 
-      message: "Best seller product created successfully", 
+
+    res.status(201).json({
+      message: "Best seller product created successfully",
       product: savedProduct,
       uploadedFiles: files
     });
@@ -144,8 +153,8 @@ const createBestSellerWithFiles = async (req, res) => {
     console.error('=== Error creating best seller product ===');
     console.error('Error details:', error);
     console.error('Stack trace:', error.stack);
-    res.status(500).json({ 
-      message: "Error creating best seller product", 
+    res.status(500).json({
+      message: "Error creating best seller product",
       error: error.message,
       details: error.stack
     });
@@ -161,7 +170,7 @@ const updateBestSellerWithFiles = async (req, res) => {
     const id = req.params.id;
     const files = req.files || {};
     const productData = req.body;
-    
+
     const existingProduct = await BestSeller.findById(id);
     if (!existingProduct) {
       return res.status(404).json({ message: "Best seller product not found" });
@@ -174,9 +183,16 @@ const updateBestSellerWithFiles = async (req, res) => {
       imagePaths = existingProduct.image ? [existingProduct.image] : [];
     }
 
+    // Helper to construct URL
+    const getFullUrl = (filename) => {
+      const protocol = req.protocol;
+      const host = req.get('host');
+      return `${protocol}://${host}/uploads/bestsellers/${filename}`;
+    };
+
     // Handle main image update
     if (files.mainImage && files.mainImage[0]) {
-      const mainImageUrl = files.mainImage[0].path;
+      const mainImageUrl = getFullUrl(files.mainImage[0].filename);
       if (imagePaths.length === 0) {
         imagePaths.push(mainImageUrl);
       } else {
@@ -187,7 +203,7 @@ const updateBestSellerWithFiles = async (req, res) => {
     // Handle additional images
     for (let i = 1; i <= 3; i++) {
       if (files[`image${i}`] && files[`image${i}`][0]) {
-        const imageUrl = files[`image${i}`][0].path;
+        const imageUrl = getFullUrl(files[`image${i}`][0].filename);
         if (i < imagePaths.length) {
           imagePaths[i] = imageUrl;
         } else {
@@ -229,8 +245,8 @@ const updateBestSellerWithFiles = async (req, res) => {
 
     const savedProduct = await BestSeller.findByIdAndUpdate(id, updatedProduct, { new: true });
 
-    res.json({ 
-      message: "Best seller product updated successfully", 
+    res.json({
+      message: "Best seller product updated successfully",
       product: savedProduct,
       uploadedFiles: files
     });

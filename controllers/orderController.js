@@ -35,6 +35,7 @@ const createOrder = async (req, res) => {
       upfrontAmount,
       remainingAmount,
       sellerToken, // Get seller token from request
+      agentCode,    // Get agent code from request
       transactionId, // PhonePe transaction ID
       couponCode, // Coupon code if applied
     } = req.body;
@@ -42,19 +43,19 @@ const createOrder = async (req, res) => {
     // Comprehensive validation
     const requiredFields = ['customerName', 'email', 'phone', 'address', 'city', 'state', 'pincode', 'country', 'items', 'totalAmount', 'paymentMethod', 'paymentStatus'];
     const missingFields = requiredFields.filter(field => !req.body[field]);
-    
+
     if (missingFields.length > 0) {
-      return res.status(400).json({ 
-        success: false, 
-        message: `Missing required fields: ${missingFields.join(', ')}` 
+      return res.status(400).json({
+        success: false,
+        message: `Missing required fields: ${missingFields.join(', ')}`
       });
     }
 
     // Validate items array
     if (!Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Items array is required and must not be empty.' 
+      return res.status(400).json({
+        success: false,
+        message: 'Items array is required and must not be empty.'
       });
     }
 
@@ -63,11 +64,11 @@ const createOrder = async (req, res) => {
       const item = items[i];
       const itemRequiredFields = ['name', 'price', 'quantity'];
       const missingItemFields = itemRequiredFields.filter(field => !item[field]);
-      
+
       if (missingItemFields.length > 0) {
-        return res.status(400).json({ 
-          success: false, 
-          message: `Item ${i + 1} is missing required fields: ${missingItemFields.join(', ')}` 
+        return res.status(400).json({
+          success: false,
+          message: `Item ${i + 1} is missing required fields: ${missingItemFields.join(', ')}`
         });
       }
     }
@@ -113,6 +114,7 @@ const createOrder = async (req, res) => {
       upfrontAmount: upfrontAmount || 0,
       remainingAmount: remainingAmount || 0,
       sellerToken,
+      agentCode,
       transactionId,
       couponCode,
     });
@@ -122,25 +124,44 @@ const createOrder = async (req, res) => {
     // Calculate commission if seller token is provided
     let commission = 0;
     let seller = null;
-    
+    let agent = null;
+
     console.log('Order creation - sellerToken received:', sellerToken);
-    
+
     if (sellerToken) {
       seller = await Seller.findOne({ sellerToken });
       console.log('Seller found:', seller ? seller.businessName : 'Not found');
-      
+
       if (seller) {
-        commission = totalAmount * 0.30; // 30% commission
-        
-        // Create commission history entry
+        // Check for agent if code is provided
+        if (agentCode) {
+          const Agent = require('../models/Agent');
+          // Update: Find agent by their unique personalAgentCode, not the shared usedAgentCode
+          // Use regex for case-insensitive match to be safe
+          agent = await Agent.findOne({
+            personalAgentCode: { $regex: new RegExp(`^${agentCode}$`, 'i') },
+            linkedSeller: seller._id
+          });
+
+          if (agent) {
+            console.log(`Agent found: ${agent.name} for seller ${seller.businessName}`);
+          } else {
+            console.log(`Invalid agent code ${agentCode} for seller ${seller.businessName} (or code is for generic seller link)`);
+          }
+        }
+
+        commission = totalAmount * 0.30; // 30% commission (base reference)
+
+        // Create commission history entry (handles split if agent exists)
         try {
           await commissionController.createCommissionEntry(
-            savedOrder._id, 
-            seller._id, 
-            totalAmount, 
-            0.30 // 30% commission rate
+            savedOrder._id,
+            seller._id,
+            totalAmount,
+            null, // Let controller fetch rates
+            agent ? agent._id : null
           );
-          console.log(`Commission entry created for seller ${seller.businessName}: ₹${commission}`);
+          console.log(`Commission entry created for seller ${seller.businessName} (Agent: ${agent ? agent.name : 'None'})`);
         } catch (commissionError) {
           console.error('Failed to create commission entry:', commissionError);
           // Continue with order creation even if commission entry fails
@@ -171,10 +192,10 @@ const createOrder = async (req, res) => {
 
     // Send order confirmation email (non-blocking)
     sendOrderConfirmationEmail(savedOrder);
-    
-    res.status(201).json({ 
-      success: true, 
-      message: 'Order created successfully!', 
+
+    res.status(201).json({
+      success: true,
+      message: 'Order created successfully!',
       order: savedOrder,
       commission: seller ? { amount: commission, sellerName: seller.businessName } : null
     });
