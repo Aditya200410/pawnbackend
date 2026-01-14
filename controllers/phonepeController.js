@@ -96,6 +96,12 @@ exports.createPhonePeOrder = async (req, res) => {
     } = req.body;
 
     // ... validation ...
+    const requiredFields = ['amount', 'customerName', 'email', 'phone', 'totalAmount'];
+    const missingFields = requiredFields.filter(field => !req.body[field]);
+    if (missingFields.length > 0) {
+      return res.status(400).json({ success: false, message: `Missing required fields: ${missingFields.join(', ')}` });
+    }
+
     const env = process.env.PHONEPE_ENV || 'sandbox';
     const frontendUrl = process.env.FRONTEND_URL;
     const backendUrl = process.env.BACKEND_URL;
@@ -104,12 +110,35 @@ exports.createPhonePeOrder = async (req, res) => {
     const merchantOrderId = `MT${Date.now()}${Math.random().toString(36).substr(2, 6)}`;
 
     // Create Order in DB first
+    // Map paymentStatus to valid enum values (if provided), or default to Pending
+    let statusToUse = 'pending';
+
+    // Support both address as string (street) and as object
+    let addressObj;
+    if (typeof req.body.address === 'object' && req.body.address !== null) {
+      addressObj = {
+        street: req.body.address.street || '',
+        city: req.body.address.city || req.body.city || '',
+        state: req.body.address.state || req.body.state || '',
+        pincode: req.body.address.pincode || req.body.pincode || '',
+        country: req.body.address.country || req.body.country || '',
+      };
+    } else {
+      addressObj = {
+        street: req.body.address || '',
+        city: req.body.city || '',
+        state: req.body.state || '',
+        pincode: req.body.pincode || '',
+        country: req.body.country || '',
+      };
+    }
+
     const newOrder = new Order({
       transactionId: merchantOrderId,
       customerName,
       email,
       phone,
-      address: req.body.address, // Assume basic string/object handling as per Schema
+      address: addressObj,
       items,
       totalAmount,
       paymentMethod,
@@ -193,7 +222,10 @@ exports.createPhonePeOrder = async (req, res) => {
 
   } catch (error) {
     console.error('PhonePe init error:', error);
-    return res.status(500).json({ success: false, message: error.message });
+    // Return detailed error if available, else generic
+    const errorMessage = error.message || 'Payment initiation failed';
+    const statusCode = error.name === 'ValidationError' ? 400 : 500;
+    return res.status(statusCode).json({ success: false, message: errorMessage, error: error.toString() });
   }
 };
 
