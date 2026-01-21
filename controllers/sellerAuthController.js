@@ -6,7 +6,7 @@ const { v4: uuidv4 } = require('uuid');
 // Register a new seller
 exports.register = async (req, res) => {
   try {
-    const { businessName, email, password, phone, address, businessType } = req.body;
+    const { businessName, email, password, phone, address, businessType, planType } = req.body;
     const normalizedEmail = email && email.toLowerCase().trim();
     if (!normalizedEmail) {
       return res.status(400).json({ success: false, message: 'Email is required' });
@@ -55,6 +55,43 @@ exports.register = async (req, res) => {
     }
     const sellerAgentCode = `${cleanName}${phoneDigits}`;
 
+    // Determine agent plan details
+    let agentPlan = {
+      planType: 'none',
+      agentLimit: 0,
+      amountPaid: 0,
+      purchaseDate: new Date()
+    };
+
+    if (planType) {
+      switch (planType) {
+        case 'starter':
+          agentPlan = {
+            planType: 'starter',
+            agentLimit: 50,
+            amountPaid: 15000,
+            purchaseDate: new Date()
+          };
+          break;
+        case 'pro':
+          agentPlan = {
+            planType: 'pro',
+            agentLimit: 100,
+            amountPaid: 20000,
+            purchaseDate: new Date()
+          };
+          break;
+        case 'unlimited':
+          agentPlan = {
+            planType: 'unlimited',
+            agentLimit: 999999, // Effectively unlimited
+            amountPaid: 25000,
+            purchaseDate: new Date()
+          };
+          break;
+      }
+    }
+
     // Create seller with all info including images
     const seller = await Seller.create({
       businessName,
@@ -67,7 +104,8 @@ exports.register = async (req, res) => {
       sellerAgentCode,
       websiteLink,
       qrCode,
-      images
+      images,
+      agentPlan
     });
     // Create JWT token for seller
     const token = jwt.sign(
