@@ -10,14 +10,25 @@ exports.register = async (req, res) => {
     try {
         const { name, email, phone, password, agentCode } = req.body;
 
-        if (!agentCode) {
-            return res.status(400).json({ success: false, message: 'Agent Code is required' });
-        }
+        let seller = null;
+        if (agentCode) {
+            // 1. Verify Agent Code / Find Seller
+            seller = await Seller.findOne({ sellerAgentCode: agentCode });
+            if (!seller) {
+                return res.status(404).json({ success: false, message: 'Invalid Agent Code. No seller found.' });
+            }
 
-        // 1. Verify Agent Code / Find Seller
-        const seller = await Seller.findOne({ sellerAgentCode: agentCode });
-        if (!seller) {
-            return res.status(404).json({ success: false, message: 'Invalid Agent Code. No seller found.' });
+            // Check if seller has reached their agent limit
+            const currentAgentCount = await Agent.countDocuments({ linkedSeller: seller._id });
+            const agentPlan = seller.agentPlan || { agentLimit: 0, planType: 'none' };
+
+            // If plan is NOT unlimited and count >= limit, block registration
+            if (agentPlan.planType !== 'unlimited' && currentAgentCount >= agentPlan.agentLimit) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'This distributor has reached their agent limit. Please contact them for assistance.'
+                });
+            }
         }
 
         // 2. Check if agent email already exists
@@ -48,15 +59,20 @@ exports.register = async (req, res) => {
         const personalAgentCode = `${codePrefix}${phoneDigits}`;
 
         // 3. Create Agent
-        const newAgent = await Agent.create({
+        const agentData = {
             name,
             email,
             phone,
             password,
-            linkedSeller: seller._id,
-            usedAgentCode: agentCode,
             personalAgentCode // Save the new unique code
-        });
+        };
+
+        if (seller) {
+            agentData.linkedSeller = seller._id;
+            agentData.usedAgentCode = agentCode;
+        }
+
+        const newAgent = await Agent.create(agentData);
 
         // 4. Generate Token
         const token = jwt.sign(
@@ -75,10 +91,10 @@ exports.register = async (req, res) => {
                 email: newAgent.email,
                 phone: newAgent.phone,
                 personalAgentCode: newAgent.personalAgentCode,
-                linkedSeller: {
+                linkedSeller: seller ? {
                     id: seller._id,
                     businessName: seller.businessName
-                }
+                } : null
             }
         });
 

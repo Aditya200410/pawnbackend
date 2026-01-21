@@ -128,7 +128,51 @@ async function finalizeOrder(order) {
   try {
     console.log(`Finalizing order ${order._id}...`);
 
-    // 1. Calculate commission
+    // 1. Handle Plan Purchase
+    if (order.orderType === 'plan_purchase') {
+      console.log('Finalizing Plan Purchase Order:', order._id);
+      try {
+        const Seller = require('../models/Seller');
+        // Find seller by email (customerName was passed as seller name, email as seller email)
+        const seller = await Seller.findOne({ email: order.email });
+        if (seller) {
+          // Determine limits based on amount
+          let limit = 0;
+          let planType = 'none';
+          if (order.totalAmount >= 25000) {
+            limit = 999999; // Unlimited
+            planType = 'unlimited';
+          } else if (order.totalAmount >= 20000) {
+            limit = 100;
+            planType = 'pro';
+          } else if (order.totalAmount >= 15000) {
+            limit = 50;
+            planType = 'starter';
+          }
+
+          seller.agentPlan = {
+            planType: planType,
+            agentLimit: limit,
+            amountPaid: order.totalAmount,
+            purchaseDate: new Date()
+          };
+
+          await seller.save();
+          console.log(`Updated Seller ${seller.businessName} plan to ${planType} (Limit: ${limit})`);
+        } else {
+          console.error(`Seller not found for plan purchase with email: ${order.email}`);
+        }
+        await appendOrderToJson(order);
+        // Maybe send a specific plan confirmation email? For now reusing standard.
+        await sendOrderConfirmationEmail(order);
+        return true;
+      } catch (err) {
+        console.error('Error finalizing plan purchase:', err);
+        return false;
+      }
+    }
+
+    // 2. Calculate commission
     if (order.sellerToken || order.agentCode) {
       try {
         const Agent = require('../models/Agent');

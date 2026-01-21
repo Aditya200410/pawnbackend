@@ -126,6 +126,24 @@ const sellerSchema = new mongoose.Schema({
     type: String,
     required: false,
     trim: true
+  },
+  agentPlan: {
+    planType: {
+      type: String,
+      enum: ['none', 'starter', 'pro', 'unlimited'],
+      default: 'none'
+    },
+    agentLimit: {
+      type: Number,
+      default: 0
+    },
+    amountPaid: {
+      type: Number,
+      default: 0
+    },
+    purchaseDate: {
+      type: Date
+    }
   }
 });
 

@@ -26,12 +26,12 @@ const agentSchema = new mongoose.Schema({
     linkedSeller: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Seller',
-        required: true
+        required: false
     },
     // We store the agent code used just for record, though linkedSeller is the real link
     usedAgentCode: {
         type: String,
-        required: true
+        required: false
     },
     // The unique code for this agent to share with customers
     personalAgentCode: {

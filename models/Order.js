@@ -25,6 +25,11 @@ const orderSchema = new mongoose.Schema({
   items: [orderItemSchema], // Use the correct schema for items
   totalAmount: { type: Number, required: true },
   paymentMethod: { type: String, required: true },
+  orderType: {
+    type: String,
+    enum: ['product_order', 'plan_purchase'],
+    default: 'product_order'
+  },
   orderStatus: {
     type: String,
     default: 'processing',
