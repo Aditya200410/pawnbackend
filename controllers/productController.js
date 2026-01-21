@@ -110,9 +110,7 @@ const createProductWithFiles = async (req, res) => {
 
     // Helper to construct URL
     const getFullUrl = (filename) => {
-      const protocol = req.protocol;
-      const host = req.get('host');
-      return `${protocol}://${host}/uploads/products/${filename}`;
+      return `uploads/products/${filename}`;
     };
 
     // Main image
@@ -205,9 +203,7 @@ const updateProductWithFiles = async (req, res) => {
 
     // Helper to construct URL
     const getFullUrl = (filename) => {
-      const protocol = req.protocol;
-      const host = req.get('host');
-      return `${protocol}://${host}/uploads/products/${filename}`;
+      return `uploads/products/${filename}`;
     };
 
     // Handle main image update

@@ -68,9 +68,7 @@ const uploadProfileImage = multer({
 
 // Helper to construct URL
 const getFullUrl = (req, folder, filename) => {
-  const protocol = req.protocol;
-  const host = req.get('host');
-  return `${protocol}://${host}/uploads/${folder}/${filename}`;
+  return `uploads/${folder}/${filename}`;
 };
 
 // Middleware wrappers
