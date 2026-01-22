@@ -27,7 +27,7 @@ exports.register = async (req, res) => {
     if (req.files && req.files.length > 0) {
       images = req.files.map(file => ({
         public_id: file.filename,
-        url: file.path,
+        url: `uploads/seller-images/${file.filename}`,
         alt: 'Business image'
       }));
     }
@@ -306,12 +306,17 @@ exports.getProfile = async (req, res) => {
       await seller.save();
     }
 
+    // Get shop count (Distribution network)
+    const Agent = require('../models/Agent');
+    const shopCount = await Agent.countDocuments({ linkedSeller: seller._id });
+
     // Combine seller data with withdrawal data
     const sellerWithWithdrawals = {
       ...seller.toObject(),
       withdrawals: mappedWithdrawals,
       calculatedAvailableCommission: availableCommission,
-      sellerAgentCode: seller.sellerAgentCode // Explicitly include sellerAgentCode
+      sellerAgentCode: seller.sellerAgentCode, // Explicitly include sellerAgentCode
+      shopCount // Add shop count
     };
 
     res.json({
@@ -458,7 +463,7 @@ exports.uploadImages = async (req, res) => {
 
     const images = req.files.map(file => ({
       public_id: file.filename,
-      url: file.path,
+      url: `uploads/seller-images/${file.filename}`,
       alt: 'Seller image'
     }));
 
@@ -494,7 +499,7 @@ exports.uploadProfileImage = async (req, res) => {
 
     const profileImage = {
       public_id: req.file.filename,
-      url: req.file.path,
+      url: `uploads/seller-images/${req.file.filename}`,
       alt: 'Profile image'
     };
 
