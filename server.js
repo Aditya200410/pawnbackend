@@ -33,6 +33,7 @@ const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:5174',
   'https://www.rikocraft.com',
+  'https://rikocraft.com',
   "https://admin.rikocraft.com",
   'https://pawnadmin-thnt.vercel.app',
   'https://pawn-shop-git-local-host-api-used-aditya200410s-projects.vercel.app'

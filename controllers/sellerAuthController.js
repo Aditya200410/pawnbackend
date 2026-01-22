@@ -2,6 +2,7 @@ const Seller = require('../models/Seller');
 const QRCode = require('qrcode');
 const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
+const Agent = require('../models/Agent');
 
 // Register a new seller
 exports.register = async (req, res) => {
@@ -606,9 +607,12 @@ exports.getAllSellers = async (req, res) => {
           bankDetails: withdrawal.bankDetails
         }));
 
+        const shopCount = await Agent.countDocuments({ linkedSeller: seller._id });
+
         return {
           ...seller.toObject(),
-          withdrawals: mappedWithdrawals
+          withdrawals: mappedWithdrawals,
+          shopCount
         };
       })
     );

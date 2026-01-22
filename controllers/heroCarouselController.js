@@ -177,13 +177,27 @@ const updateCarouselItemWithFiles = async (req, res) => {
 
     // Update logic
     let imageUrl = existingItem.image;
+
+    // Check if image deletion is requested
+    if (req.body.deleteImage === 'true' || req.body.deleteImage === true) {
+      // Delete old image if it exists locally
+      if (existingItem.image && existingItem.image.includes('/uploads/hero-carousel/')) {
+        const oldFilename = existingItem.image.split('/').pop();
+        const oldPath = path.join(uploadDir, oldFilename);
+        fs.unlink(oldPath).catch(err => console.error('Error deleting old image:', err));
+      }
+      imageUrl = ""; // Clear image URL
+    }
+
     if (files.image && files.image[0]) {
       const protocol = req.protocol;
       const host = req.get('host');
       imageUrl = `${protocol}://${host}/uploads/hero-carousel/${files.image[0].filename}`;
 
-      // Attempt to delete old image if it was local
-      if (existingItem.image && existingItem.image.includes('/uploads/hero-carousel/')) {
+      // Attempt to delete old image if it was local and NOT already deleted by the block above
+      // Note: If deleteImage was true, imageUrl is "", so existingItem.image is already handled.
+      // But if user didn't check delete but just uploaded new one, we still delete old one.
+      if (existingItem.image && existingItem.image !== imageUrl && existingItem.image.includes('/uploads/hero-carousel/') && (!req.body.deleteImage || req.body.deleteImage !== 'true')) {
         const oldFilename = existingItem.image.split('/').pop();
         const oldPath = path.join(uploadDir, oldFilename);
         fs.unlink(oldPath).catch(err => console.error('Error deleting old image:', err));

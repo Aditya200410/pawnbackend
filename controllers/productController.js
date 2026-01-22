@@ -201,6 +201,25 @@ const updateProductWithFiles = async (req, res) => {
       imagePaths = existingProduct.image ? [existingProduct.image] : [];
     }
 
+    // Handle deleted images
+    if (req.body.deletedImages) {
+      const deletedImages = JSON.parse(req.body.deletedImages);
+      // Map field names to indices
+      const fieldToIndex = {
+        'mainImage': 0,
+        'image1': 1,
+        'image2': 2,
+        'image3': 3
+      };
+
+      deletedImages.forEach(field => {
+        const index = fieldToIndex[field];
+        if (index !== undefined && index < imagePaths.length) {
+          imagePaths[index] = null; // Mark for removal
+        }
+      });
+    }
+
     // Helper to construct URL
     const getFullUrl = (filename) => {
       return `uploads/products/${filename}`;
@@ -223,15 +242,18 @@ const updateProductWithFiles = async (req, res) => {
         if (i < imagePaths.length) {
           imagePaths[i] = imageUrl;
         } else {
+          // Fill gaps if necessary
+          while (imagePaths.length < i) imagePaths.push(null);
           imagePaths.push(imageUrl);
         }
       }
     }
 
-    // Ensure we have at least one image
-    if (imagePaths.length === 0 && existingProduct.image) {
-      imagePaths.push(existingProduct.image);
-    }
+    // Filter out null values (deleted images) and update existingProduct.image
+    imagePaths = imagePaths.filter(img => img !== null);
+
+    // Ensure we have at least one image if not all were deleted
+    // If all were deleted, imagePaths is empty []
 
     // Update product object
     const updatedProduct = {
