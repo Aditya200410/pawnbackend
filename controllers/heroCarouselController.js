@@ -120,7 +120,7 @@ const createCarouselItemWithFiles = async (req, res) => {
     // Process uploaded file
     const protocol = req.protocol;
     const host = req.get('host');
-    const imageUrl = `${protocol}://${host}/uploads/hero-carousel/${files.image[0].filename}`;
+    const imageUrl = `${protocol}://${host}/api/uploads/hero-carousel/${files.image[0].filename}`;
 
     // Get current max order
     const maxOrderItem = await HeroCarousel.findOne().sort('-order');
@@ -192,7 +192,7 @@ const updateCarouselItemWithFiles = async (req, res) => {
     if (files.image && files.image[0]) {
       const protocol = req.protocol;
       const host = req.get('host');
-      imageUrl = `${protocol}://${host}/uploads/hero-carousel/${files.image[0].filename}`;
+      imageUrl = `${protocol}://${host}/api/uploads/hero-carousel/${files.image[0].filename}`;
 
       // Attempt to delete old image if it was local and NOT already deleted by the block above
       // Note: If deleteImage was true, imageUrl is "", so existingItem.image is already handled.

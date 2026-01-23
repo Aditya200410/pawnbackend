@@ -44,7 +44,7 @@ exports.createCategory = async (req, res) => {
     const getFullUrl = (filename) => {
       const protocol = req.protocol;
       const host = req.get('host');
-      return `${protocol}://${host}/uploads/categories/${filename}`;
+      return `${protocol}://${host}/api/uploads/categories/${filename}`;
     };
 
     // Process uploaded files if present
@@ -114,7 +114,7 @@ exports.updateCategory = async (req, res) => {
     const getFullUrl = (filename) => {
       const protocol = req.protocol;
       const host = req.get('host');
-      return `${protocol}://${host}/uploads/categories/${filename}`;
+      return `${protocol}://${host}/api/uploads/categories/${filename}`;
     };
 
     // Handle file updates
