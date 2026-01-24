@@ -105,37 +105,33 @@ exports.register = async (req, res) => {
       }
     }
 
-    // Mark as unverified until payment is done if payment is required
-    const isVerified = !needsPayment;
-    const isApproved = !needsPayment;
-
-    // Create seller with all info including images
-    const seller = await Seller.create({
-      businessName,
-      email: normalizedEmail,
-      password,
-      phone,
-      address,
-      businessType,
-      sellerToken,
-      sellerAgentCode,
-      websiteLink,
-      qrCode,
-      images,
-      agentPlan,
-      verified: isVerified,
-      approved: isApproved,
-      blocked: needsPayment // Block access until payment
-    });
-
     if (needsPayment) {
-      // Initiate Payment Logic - Directly call PhonePe controller logic or mimic it here for custom Redirect
-      // We will reuse the phonepeController's internal logic structure but customized for this flow
-      // Actually, cleaner to rely on the Order system for payment tracking and Webhook to update Seller.
-
       // 1. Create a "Plan Purchase Order"
       const Order = require('../models/Order');
+      const PendingRegistration = require('../models/PendingRegistration');
+
       const merchantOrderId = `PLANREG${Date.now()}${Math.random().toString(36).substr(2, 6)}`;
+
+      // Hash password for pending storage
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(password, salt);
+
+      const pendingReg = new PendingRegistration({
+        merchantTransactionId: merchantOrderId,
+        businessName,
+        email: normalizedEmail,
+        password: hashedPassword,
+        phone,
+        address,
+        businessType,
+        images,
+        agentPlan,
+        sellerToken, // Store generated sellerToken
+        sellerAgentCode, // Store generated sellerAgentCode
+        websiteLink, // Store generated websiteLink
+        qrCode // Store generated qrCode
+      });
+      await pendingReg.save();
 
       const newOrder = new Order({
         transactionId: merchantOrderId,
@@ -163,14 +159,14 @@ exports.register = async (req, res) => {
         upfrontAmount: 0,
         remainingAmount: 0,
         shippingCost: 0,
-        sellerToken: seller._id.toString() // Link order to this newly created seller ID
+        // sellerToken linked to pendingReg is tricky, usually we link via merchantId
       });
 
       await newOrder.save();
 
       // 2. Initiate PhonePe Payment
       // We need to fetch the token here
-      const { getPhonePeToken } = require('./phonepeController'); // We might need to un-export this helper or move it to utils
+      // We might need to un-export this helper or move it to utils
       // Since it's not exported, we'll import the controller and use a new helper if needed, 
       // OR mostly copy the token fetching logic if we can't access it easily.
       // Better: Use internal call to `phonepeController.initiateAgentPayment` by passing a mocked req/res? 
@@ -211,7 +207,7 @@ exports.register = async (req, res) => {
           udf3: phone,
           udf4: 'plan_purchase_registration', // Tag it
           orderId: newOrder._id.toString(),
-          sellerId: seller._id.toString() // IMPORTANT: Store sellerId
+          // sellerId is NOT available yet
         },
         paymentFlow: {
           type: 'PG_CHECKOUT',
@@ -240,6 +236,30 @@ exports.register = async (req, res) => {
       }
 
     }
+
+    // Mark as unverified until payment is done if payment is required
+    const isVerified = !needsPayment;
+    const isApproved = !needsPayment;
+
+    // Create seller with all info including images (ONLY IF NOT PAYMENT FLOW)
+    // This block will only execute if needsPayment is false
+    const seller = await Seller.create({
+      businessName,
+      email: normalizedEmail,
+      password,
+      phone,
+      address,
+      businessType,
+      sellerToken,
+      sellerAgentCode,
+      websiteLink,
+      qrCode,
+      images,
+      agentPlan,
+      verified: isVerified,
+      approved: isApproved,
+      blocked: needsPayment // Block access until payment
+    });
 
     // Normal registration (no payment)
     const token = jwt.sign(

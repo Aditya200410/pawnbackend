@@ -256,7 +256,6 @@ exports.phonePeCallback = async (req, res) => {
     const { code, data } = decodedData;
     const { merchantTransactionId, state } = data || {};
 
-    // In our createPhonePeOrder, we used merchantOrderId as the transactionId
     const idToSearch = merchantTransactionId;
 
     if (!idToSearch) {
@@ -264,15 +263,7 @@ exports.phonePeCallback = async (req, res) => {
       return res.status(400).send('Invalid Data');
     }
 
-    // Find by transactionId
-    const order = await Order.findOne({ transactionId: idToSearch });
-    if (!order) {
-      console.error(`Order not found for transactionId: ${idToSearch}`);
-      return res.status(404).send('Order not found');
-    }
-
     // Verify status with PhonePe API (Double Check Strategy)
-    // This protects against spoofed webhooks because we don't just trust the webhook data
     const accessToken = await getPhonePeToken();
     const env = process.env.PHONEPE_ENV || 'sandbox';
     const baseUrl = env === 'production' ? 'https://api.phonepe.com/apis/pg' : 'https://api-preprod.phonepe.com/apis/pg-sandbox';
@@ -283,8 +274,86 @@ exports.phonePeCallback = async (req, res) => {
     );
 
     const checkState = statusResponse.data.state; // COMPLETED, FAILED
-
     console.log(`Verifying Order ${idToSearch}: Webhook State [${state}], API State [${checkState}]`);
+
+    // Handle Plan Registration specific logic
+    if (idToSearch.startsWith('PLANREG')) {
+      // Registration Payment Flow
+      const Order = require('../models/Order');
+      const PendingRegistration = require('../models/PendingRegistration');
+      // Seller model needed for creation
+      const Seller = require('../models/Seller');
+      // We might need to import others if Seller creation is complex (e.g. Agent model if plan creates an Agent?)
+      // Current seller registration logic is in SellerAuthController. 
+
+      const order = await Order.findOne({ transactionId: idToSearch });
+      if (!order) {
+        console.error(`Order not found for Plan Registration: ${idToSearch}`);
+        return res.status(404).send('Order not found');
+      }
+
+      if (checkState === 'COMPLETED') {
+        if (order.paymentStatus !== 'completed') {
+          order.paymentStatus = 'completed';
+          order.orderStatus = 'processing';
+          await order.save();
+
+          // Find Pending Registration
+          const pendingReg = await PendingRegistration.findOne({ merchantTransactionId: idToSearch });
+
+          if (pendingReg) {
+            console.log(`Creating Seller from Pending Registration: ${pendingReg.email}`);
+
+            // Create Seller
+            const newSeller = new Seller({
+              businessName: pendingReg.businessName,
+              email: pendingReg.email,
+              password: pendingReg.password, // Already hashed
+              phone: pendingReg.phone,
+              address: pendingReg.address,
+              businessType: pendingReg.businessType,
+              images: pendingReg.images,
+              agentPlan: pendingReg.agentPlan,
+
+              // Use pre-generated unique fields from PendingRegistration
+              sellerToken: pendingReg.sellerToken,
+              sellerAgentCode: pendingReg.sellerAgentCode,
+              websiteLink: pendingReg.websiteLink,
+              qrCode: pendingReg.qrCode,
+
+              verified: true, // Payment done!
+              approved: true,
+              blocked: false
+            });
+
+            await newSeller.save();
+            console.log(`Seller Created: ${newSeller._id}`);
+
+            // Delete Pending Registration
+            await PendingRegistration.deleteOne({ _id: pendingReg._id });
+
+            // Link Order to new Seller ID
+            order.sellerToken = newSeller._id.toString();
+            await order.save();
+          } else {
+            console.error(`Pending Registration not found for transaction: ${idToSearch}`);
+          }
+        }
+      } else if (checkState === 'FAILED') {
+        if (order.paymentStatus !== 'failed') {
+          order.paymentStatus = 'failed';
+          await order.save();
+        }
+      }
+      return res.status(200).send('OK');
+    }
+
+    // Normal Order Flow
+    const order = await Order.findOne({ transactionId: idToSearch });
+    if (!order) {
+      console.error(`Order not found for transactionId: ${idToSearch}`);
+      return res.status(404).send('Order not found');
+    }
 
     if (checkState === 'COMPLETED') {
       if (order.paymentStatus !== 'completed') {
