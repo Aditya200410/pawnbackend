@@ -3,6 +3,7 @@ const QRCode = require('qrcode');
 const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
 const Agent = require('../models/Agent');
+const bcrypt = require('bcryptjs');
 
 const axios = require('axios');
 const phonepeController = require('./phonepeController'); // Import for initiateAgentPayment logic reuse or direct call
