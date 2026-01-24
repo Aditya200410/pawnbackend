@@ -7,6 +7,7 @@ console.log('Controller keys:', Object.keys(phonepeController)); // should inclu
 
 // PhonePe Payment Routes
 router.post('/phonepe', phonepeController.createPhonePeOrder);
+router.post('/phonepe/initiate', phonepeController.initiateAgentPayment);
 router.post('/phonepe/callback', phonepeController.phonePeCallback);
 router.get('/phonepe/status/:orderId', phonepeController.getPhonePeStatus);
 
