@@ -4,6 +4,9 @@ const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
 const Agent = require('../models/Agent');
 
+const axios = require('axios');
+const phonepeController = require('./phonepeController'); // Import for initiateAgentPayment logic reuse or direct call
+
 // Register a new seller
 exports.register = async (req, res) => {
   try {
@@ -64,6 +67,9 @@ exports.register = async (req, res) => {
       purchaseDate: new Date()
     };
 
+    let needsPayment = false;
+    let planAmount = 0;
+
     if (planType) {
       switch (planType) {
         case 'starter':
@@ -73,6 +79,8 @@ exports.register = async (req, res) => {
             amountPaid: 15000,
             purchaseDate: new Date()
           };
+          planAmount = 15000;
+          needsPayment = true;
           break;
         case 'pro':
           agentPlan = {
@@ -81,6 +89,8 @@ exports.register = async (req, res) => {
             amountPaid: 20000,
             purchaseDate: new Date()
           };
+          planAmount = 20000;
+          needsPayment = true;
           break;
         case 'unlimited':
           agentPlan = {
@@ -89,9 +99,15 @@ exports.register = async (req, res) => {
             amountPaid: 25000,
             purchaseDate: new Date()
           };
+          planAmount = 25000;
+          needsPayment = true;
           break;
       }
     }
+
+    // Mark as unverified until payment is done if payment is required
+    const isVerified = !needsPayment;
+    const isApproved = !needsPayment;
 
     // Create seller with all info including images
     const seller = await Seller.create({
@@ -106,9 +122,126 @@ exports.register = async (req, res) => {
       websiteLink,
       qrCode,
       images,
-      agentPlan
+      agentPlan,
+      verified: isVerified,
+      approved: isApproved,
+      blocked: needsPayment // Block access until payment
     });
-    // Create JWT token for seller
+
+    if (needsPayment) {
+      // Initiate Payment Logic - Directly call PhonePe controller logic or mimic it here for custom Redirect
+      // We will reuse the phonepeController's internal logic structure but customized for this flow
+      // Actually, cleaner to rely on the Order system for payment tracking and Webhook to update Seller.
+
+      // 1. Create a "Plan Purchase Order"
+      const Order = require('../models/Order');
+      const merchantOrderId = `PLANREG${Date.now()}${Math.random().toString(36).substr(2, 6)}`;
+
+      const newOrder = new Order({
+        transactionId: merchantOrderId,
+        customerName: businessName,
+        email: normalizedEmail,
+        phone: phone || '0000000000',
+        address: {
+          street: address || 'Online',
+          city: 'Online',
+          state: 'Online',
+          pincode: '000000',
+          country: 'India'
+        },
+        items: [{
+          name: `${agentPlan.planType.charAt(0).toUpperCase() + agentPlan.planType.slice(1)} Distribution Plan`,
+          productId: 'plan_' + planType,
+          quantity: 1,
+          price: planAmount
+        }],
+        totalAmount: planAmount,
+        paymentMethod: 'online',
+        paymentStatus: 'pending',
+        orderStatus: 'waiting_payment',
+        orderType: 'plan_purchase',
+        upfrontAmount: 0,
+        remainingAmount: 0,
+        shippingCost: 0,
+        sellerToken: seller._id.toString() // Link order to this newly created seller ID
+      });
+
+      await newOrder.save();
+
+      // 2. Initiate PhonePe Payment
+      // We need to fetch the token here
+      const { getPhonePeToken } = require('./phonepeController'); // We might need to un-export this helper or move it to utils
+      // Since it's not exported, we'll import the controller and use a new helper if needed, 
+      // OR mostly copy the token fetching logic if we can't access it easily.
+      // Better: Use internal call to `phonepeController.initiateAgentPayment` by passing a mocked req/res? 
+      // No, that's messy. Let's just create the payload here.
+
+      // ... Duplicate Token Logic (Safe for now as it's isolated) ...
+      // Ideally, move getPhonePeToken to utils/phonePeUtils.js
+      // For now, I will implement the payload generation directly.
+
+      const clientId = process.env.PHONEPE_CLIENT_ID;
+      const clientSecret = process.env.PHONEPE_CLIENT_SECRET;
+      const clientVersion = '1';
+      const env = process.env.PHONEPE_ENV || 'sandbox';
+      let oauthUrl = env === 'production' ? 'https://api.phonepe.com/apis/identity-manager/v1/oauth/token' : 'https://api-preprod.phonepe.com/apis/pg-sandbox/v1/oauth/token';
+
+
+      // Quick Token Fetch (Inline for simplicity)
+      const tokenResponse = await axios.post(oauthUrl, new URLSearchParams({
+        client_id: clientId,
+        client_version: clientVersion,
+        client_secret: clientSecret,
+        grant_type: 'client_credentials'
+      }), { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
+
+      const accessToken = tokenResponse.data.access_token;
+
+      const baseUrl = env === 'production' ? 'https://api.phonepe.com/apis/pg' : 'https://api-preprod.phonepe.com/apis/pg-sandbox';
+      const frontendUrl = process.env.FRONTEND_URL;
+      const backendUrl = process.env.BACKEND_URL;
+
+      const payload = {
+        merchantOrderId: merchantOrderId,
+        amount: Math.round(planAmount * 100),
+        expireAfter: 1200,
+        metaInfo: {
+          udf1: businessName,
+          udf2: normalizedEmail,
+          udf3: phone,
+          udf4: 'plan_purchase_registration', // Tag it
+          orderId: newOrder._id.toString(),
+          sellerId: seller._id.toString() // IMPORTANT: Store sellerId
+        },
+        paymentFlow: {
+          type: 'PG_CHECKOUT',
+          message: `Payment for Agent Plan Registration`,
+          merchantUrls: {
+            redirectUrl: `${frontendUrl.replace(/\/+$/, '')}/payment/status?orderId=${merchantOrderId}`,
+            callbackUrl: `${backendUrl}/api/payment/phonepe/callback`
+          }
+        }
+      };
+
+      const phonePeRes = await axios.post(baseUrl + '/checkout/v2/pay', payload, {
+        headers: { 'Content-Type': 'application/json', 'Authorization': `O-Bearer ${accessToken}` }
+      });
+
+      if (phonePeRes.data && phonePeRes.data.orderId) {
+        return res.json({
+          success: true,
+          requirePayment: true,
+          message: 'Registration initiated, payment required',
+          redirectUrl: phonePeRes.data.redirectUrl,
+          orderId: merchantOrderId
+        });
+      } else {
+        return res.status(500).json({ success: false, message: 'Payment initiation failed' });
+      }
+
+    }
+
+    // Normal registration (no payment)
     const token = jwt.sign(
       {
         id: seller._id,
@@ -122,6 +255,7 @@ exports.register = async (req, res) => {
     );
     res.status(201).json({
       success: true,
+      requirePayment: false,
       message: 'Seller registered successfully',
       token,
       seller: {
@@ -142,7 +276,7 @@ exports.register = async (req, res) => {
     });
   } catch (error) {
     console.error('Seller registration error:', error);
-    res.status(500).json({ success: false, message: 'Error registering seller' });
+    res.status(500).json({ success: false, message: 'Error registering seller: ' + error.message });
   }
 };
 
