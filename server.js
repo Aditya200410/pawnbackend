@@ -157,6 +157,7 @@ app.use('/api/msg91', require('./routes/msg91'));
 app.use('/api/bookings', require('./routes/bookings'));
 app.use('/api/agent', require('./routes/agent'));
 app.use('/api/uploads', require('./routes/uploads'));
+app.use('/api/product-submissions', require('./routes/productSubmissions'));
 
 
 // Health check endpoint
