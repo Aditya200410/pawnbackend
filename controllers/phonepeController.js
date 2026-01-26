@@ -617,7 +617,7 @@ exports.initiateAgentPayment = async (req, res) => {
     const backendUrl = process.env.BACKEND_URL;
 
     // Use orderId as transactionId
-    const merchantOrderId = `PLAN${Date.now()}${Math.random().toString(36).substr(2, 6)}`;
+    const merchantOrderId = `PLANREG${Date.now()}${Math.random().toString(36).substr(2, 6)}`;
 
     // Create Address Object (Defaulting missing fields as they are not collected for agents)
     const addressObj = {
