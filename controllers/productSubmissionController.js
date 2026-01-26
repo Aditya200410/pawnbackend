@@ -5,12 +5,12 @@ exports.submitProduct = async (req, res) => {
     try {
         const { name, email, phone, productName, productDescription } = req.body;
 
-        let productImage = null;
-        if (req.file) {
-            productImage = {
-                url: req.file.url,
-                public_id: req.file.filename
-            };
+        let productImages = [];
+        if (req.files && req.files.length > 0) {
+            productImages = req.files.map(file => ({
+                url: file.url,
+                public_id: file.filename
+            }));
         }
 
         const submission = new ProductSubmission({
@@ -19,7 +19,7 @@ exports.submitProduct = async (req, res) => {
             phone,
             productName,
             productDescription,
-            productImage
+            productImages
         });
 
         await submission.save();
