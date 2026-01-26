@@ -4,8 +4,6 @@ const path = require('path');
 exports.migrateCloudinary = (req, res) => {
     const scriptPath = path.join(__dirname, '../scripts/migrateCloudinary.js');
 
-    // We run it as a separate process to avoid blocking the main server
-    // and because the script handles its own DB connection and process exit
     exec(`node ${scriptPath}`, (error, stdout, stderr) => {
         if (error) {
             console.error(`Migration error: ${error}`);
@@ -22,6 +20,27 @@ exports.migrateCloudinary = (req, res) => {
         res.json({
             success: true,
             message: 'Migration completed successfully!',
+            output: stdout
+        });
+    });
+};
+
+exports.revertCloudinary = (req, res) => {
+    const scriptPath = path.join(__dirname, '../scripts/revertCloudinary.js');
+
+    exec(`node ${scriptPath}`, (error, stdout, stderr) => {
+        if (error) {
+            return res.status(500).json({
+                success: false,
+                message: 'Revert failed',
+                error: error.message,
+                stdout,
+                stderr
+            });
+        }
+        res.json({
+            success: true,
+            message: 'Revert completed successfully!',
             output: stdout
         });
     });
