@@ -8,6 +8,80 @@ const { sendOrderConfirmationEmail } = require('./orderController');
 let oauthToken = null;
 let tokenExpiry = null;
 
+// Helper to process completed registration
+const processCompletedRegistration = async (idToSearch) => {
+  try {
+    const Order = require('../models/Order');
+    const PendingRegistration = require('../models/PendingRegistration');
+    const Seller = require('../models/Seller');
+
+    const order = await Order.findOne({ transactionId: idToSearch });
+    if (!order) {
+      console.error(`Order not found for Plan Registration: ${idToSearch}`);
+      return false;
+    }
+
+    if (order.paymentStatus === 'completed') {
+      return true; // Already processed
+    }
+
+    // Update order status
+    order.paymentStatus = 'completed';
+    order.orderStatus = 'processing';
+    await order.save();
+
+    // Find Pending Registration
+    const pendingReg = await PendingRegistration.findOne({ merchantTransactionId: idToSearch });
+
+    if (pendingReg) {
+      console.log(`Creating Seller from Pending Registration: ${pendingReg.email}`);
+
+      // Check if seller already exists
+      const existingSeller = await Seller.findOne({ email: pendingReg.email });
+      if (existingSeller) {
+        order.sellerToken = existingSeller._id.toString();
+        await order.save();
+        await PendingRegistration.deleteOne({ _id: pendingReg._id });
+        return true;
+      }
+
+      // Create Seller
+      const newSeller = new Seller({
+        businessName: pendingReg.businessName,
+        email: pendingReg.email,
+        password: pendingReg.password,
+        phone: pendingReg.phone,
+        address: pendingReg.address,
+        businessType: pendingReg.businessType,
+        images: pendingReg.images,
+        agentPlan: pendingReg.agentPlan,
+        sellerToken: pendingReg.sellerToken,
+        sellerAgentCode: pendingReg.sellerAgentCode,
+        websiteLink: pendingReg.websiteLink,
+        qrCode: pendingReg.qrCode,
+        verified: true,
+        approved: true,
+        blocked: false
+      });
+
+      await newSeller.save();
+      console.log(`Seller Created: ${newSeller._id}`);
+
+      // Delete Pending Registration
+      await PendingRegistration.deleteOne({ _id: pendingReg._id });
+
+      // Link Order to new Seller ID
+      order.sellerToken = newSeller._id.toString();
+      await order.save();
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error('Error in processCompletedRegistration:', error);
+    return false;
+  }
+};
+
 // Get OAuth token for PhonePe API
 async function getPhonePeToken() {
   try {
@@ -278,69 +352,11 @@ exports.phonePeCallback = async (req, res) => {
 
     // Handle Plan Registration specific logic
     if (idToSearch.startsWith('PLANREG')) {
-      // Registration Payment Flow
-      const Order = require('../models/Order');
-      const PendingRegistration = require('../models/PendingRegistration');
-      // Seller model needed for creation
-      const Seller = require('../models/Seller');
-      // We might need to import others if Seller creation is complex (e.g. Agent model if plan creates an Agent?)
-      // Current seller registration logic is in SellerAuthController. 
-
-      const order = await Order.findOne({ transactionId: idToSearch });
-      if (!order) {
-        console.error(`Order not found for Plan Registration: ${idToSearch}`);
-        return res.status(404).send('Order not found');
-      }
-
       if (checkState === 'COMPLETED') {
-        if (order.paymentStatus !== 'completed') {
-          order.paymentStatus = 'completed';
-          order.orderStatus = 'processing';
-          await order.save();
-
-          // Find Pending Registration
-          const pendingReg = await PendingRegistration.findOne({ merchantTransactionId: idToSearch });
-
-          if (pendingReg) {
-            console.log(`Creating Seller from Pending Registration: ${pendingReg.email}`);
-
-            // Create Seller
-            const newSeller = new Seller({
-              businessName: pendingReg.businessName,
-              email: pendingReg.email,
-              password: pendingReg.password, // Already hashed
-              phone: pendingReg.phone,
-              address: pendingReg.address,
-              businessType: pendingReg.businessType,
-              images: pendingReg.images,
-              agentPlan: pendingReg.agentPlan,
-
-              // Use pre-generated unique fields from PendingRegistration
-              sellerToken: pendingReg.sellerToken,
-              sellerAgentCode: pendingReg.sellerAgentCode,
-              websiteLink: pendingReg.websiteLink,
-              qrCode: pendingReg.qrCode,
-
-              verified: true, // Payment done!
-              approved: true,
-              blocked: false
-            });
-
-            await newSeller.save();
-            console.log(`Seller Created: ${newSeller._id}`);
-
-            // Delete Pending Registration
-            await PendingRegistration.deleteOne({ _id: pendingReg._id });
-
-            // Link Order to new Seller ID
-            order.sellerToken = newSeller._id.toString();
-            await order.save();
-          } else {
-            console.error(`Pending Registration not found for transaction: ${idToSearch}`);
-          }
-        }
+        await processCompletedRegistration(idToSearch);
       } else if (checkState === 'FAILED') {
-        if (order.paymentStatus !== 'failed') {
+        const order = await Order.findOne({ transactionId: idToSearch });
+        if (order && order.paymentStatus !== 'failed') {
           order.paymentStatus = 'failed';
           await order.save();
         }
@@ -421,8 +437,16 @@ exports.getPhonePeStatus = async (req, res) => {
       // merchantOrderId = await lookupMerchantOrderId(response.data.orderId);
     }
     if (response.data && response.data.state) {
+      const isCompleted = response.data.state === 'COMPLETED';
+
+      // Fallback: If it's a registration and it's completed, ensure seller is created
+      // This is crucial for local development where webhooks don't work
+      if (isCompleted && orderId.startsWith('PLANREG')) {
+        await processCompletedRegistration(orderId);
+      }
+
       return res.json({
-        success: response.data.state === 'COMPLETED',
+        success: isCompleted,
         data: {
           orderId: response.data.orderId,
           merchantOrderId,
@@ -434,7 +458,7 @@ exports.getPhonePeStatus = async (req, res) => {
           detailedErrorCode: response.data.detailedErrorCode,
           errorContext: response.data.errorContext
         },
-        message: response.data.state === 'COMPLETED' ? 'Payment completed' : (response.data.state === 'FAILED' ? 'Payment failed' : 'Payment pending')
+        message: isCompleted ? 'Payment completed' : (response.data.state === 'FAILED' ? 'Payment failed' : 'Payment pending')
       });
     } else if (response.data && response.data.success === false) {
       return res.status(400).json({
