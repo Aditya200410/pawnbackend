@@ -13,6 +13,7 @@ exports.migrateCloudinary = (req, res) => {
                 success: false,
                 message: 'Migration failed',
                 error: error.message,
+                stdout,
                 stderr
             });
         }
@@ -20,7 +21,7 @@ exports.migrateCloudinary = (req, res) => {
         console.log(`Migration stdout: ${stdout}`);
         res.json({
             success: true,
-            message: 'Migration completed successfully',
+            message: 'Migration completed successfully!',
             output: stdout
         });
     });
