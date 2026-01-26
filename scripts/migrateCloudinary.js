@@ -19,27 +19,27 @@ const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://rikoenterprises25:
 
 const migrationDir = path.join(__dirname, '../public/uploads/migrated');
 
-// Ensure migration directory exists
 if (!fs.existsSync(migrationDir)) {
     fs.mkdirSync(migrationDir, { recursive: true });
 }
 
-const getCleanExtension = (url) => {
-    try {
-        const urlObj = new URL(url);
-        const pathname = urlObj.pathname;
-        const ext = path.extname(pathname);
-        return ext || '.jpg';
-    } catch {
-        const match = url.match(/\.(jpg|jpeg|png|gif|webp|svg)/i);
-        return match ? match[0] : '.jpg';
-    }
+// We need a way to find Cloudinary URLs for items that have "local" paths in DB but are missing on disk.
+// Since we don't have a backup, we will look at shopback.json and other data sources to try and match IDs.
+const shopBackData = fs.existsSync(path.join(__dirname, '../data/shopback.json'))
+    ? JSON.parse(fs.readFileSync(path.join(__dirname, '../data/shopback.json'), 'utf8'))
+    : [];
+
+const findOriginalUrl = (id, currentPath) => {
+    // Try to find the original Cloudinary URL from shopback.json if available
+    const match = shopBackData.find(p => p.id === id || p._id === id);
+    if (match && match.image && match.image.includes('cloudinary')) return match.image;
+    return null;
 };
 
 const downloadImage = (url, filename) => {
     return new Promise((resolve, reject) => {
         const filePath = path.join(migrationDir, filename);
-        if (fs.existsSync(filePath)) {
+        if (fs.existsSync(filePath) && fs.statSync(filePath).size > 0) {
             return resolve(`uploads/migrated/${filename}`);
         }
 
@@ -48,7 +48,7 @@ const downloadImage = (url, filename) => {
 
         protocol.get(url, (response) => {
             if (response.statusCode !== 200) {
-                reject(new Error(`Failed: ${response.statusCode}`));
+                reject(new Error(`Status: ${response.statusCode}`));
                 return;
             }
             response.pipe(file);
@@ -63,87 +63,64 @@ const downloadImage = (url, filename) => {
     });
 };
 
-const isCloudinary = (url) => {
-    return typeof url === 'string' && (url.includes('cloudinary.com') || url.includes('res.cloudinary.com'));
-};
+const isCloudinary = (url) => typeof url === 'string' && (url.includes('cloudinary.com') || url.includes('res.cloudinary.com'));
 
 const migrateCollection = async (Model, fields, name) => {
-    console.log(`Migrating ${name}...`);
+    console.log(`Processing ${name}...`);
     const docs = await Model.find({});
     let count = 0;
+    let recovered = 0;
 
     for (const doc of docs) {
         let updated = false;
 
         for (const field of fields) {
-            // Case 1: Simple string field (image)
-            if (typeof doc[field] === 'string' && isCloudinary(doc[field])) {
-                const ext = getCleanExtension(doc[field]);
-                const filename = `${name.toLowerCase()}-${doc._id}-${Date.now()}${ext}`;
-                try {
-                    const localPath = await downloadImage(doc[field], filename);
-                    doc[field] = localPath;
-                    updated = true;
-                    count++;
-                } catch (err) {
-                    console.error(`Error ${name} ${field}:`, err.message);
-                }
-            }
-            // Case 2: Array of strings (images)
-            else if (Array.isArray(doc[field]) && doc[field].length > 0 && typeof doc[field][0] === 'string') {
-                const newArray = [];
-                let arrayUpdated = false;
-                for (let i = 0; i < doc[field].length; i++) {
-                    const url = doc[field][i];
-                    if (isCloudinary(url)) {
-                        const ext = getCleanExtension(url);
-                        const filename = `${name.toLowerCase()}-array-${doc._id}-${i}-${Date.now()}${ext}`;
+            const val = doc[field];
+
+            // Handle recovery for broken local paths
+            if (typeof val === 'string' && val.startsWith('uploads/migrated/')) {
+                const localPath = path.join(__dirname, '../public', val);
+                if (!fs.existsSync(localPath) || fs.statSync(localPath).size === 0) {
+                    const original = findOriginalUrl(doc._id.toString(), val);
+                    if (original) {
                         try {
-                            const localPath = await downloadImage(url, filename);
-                            newArray.push(localPath);
-                            arrayUpdated = true;
-                            count++;
+                            const recoveredPath = await downloadImage(original, path.basename(val));
+                            recovered++;
+                            console.log(`Recovered missing image: ${val}`);
                         } catch (err) {
-                            console.error(`Error ${name} array ${i}:`, err.message);
-                            newArray.push(url);
+                            // Still missing, but we tried
                         }
-                    } else {
-                        newArray.push(url);
                     }
                 }
-                if (arrayUpdated) {
-                    doc[field] = newArray;
-                    updated = true;
-                }
             }
-            // Case 3: Object with url property (profileImage, etc.)
-            else if (doc[field] && typeof doc[field] === 'object' && isCloudinary(doc[field].url)) {
-                const ext = getCleanExtension(doc[field].url);
-                const filename = `${name.toLowerCase()}-obj-${doc._id}-${Date.now()}${ext}`;
+
+            // Standard Migration
+            if (typeof val === 'string' && isCloudinary(val)) {
+                const filename = `${name.toLowerCase()}-${doc._id}-${Date.now()}${path.extname(val.split('?')[0]) || '.jpg'}`;
                 try {
-                    const localPath = await downloadImage(doc[field].url, filename);
-                    doc[field].url = localPath;
+                    doc[field] = await downloadImage(val, filename);
                     updated = true;
                     count++;
-                } catch (err) {
-                    console.error(`Error ${name} object ${field}:`, err.message);
-                }
+                } catch (err) { }
             }
-            // Case 4: Array of objects with url property (productImages, images in Seller)
-            else if (Array.isArray(doc[field]) && doc[field].length > 0 && doc[field][0] && typeof doc[field][0] === 'object' && isCloudinary(doc[field][0].url)) {
+            else if (Array.isArray(val)) {
                 let arrayUpdated = false;
-                for (let i = 0; i < doc[field].length; i++) {
-                    if (isCloudinary(doc[field][i].url)) {
-                        const ext = getCleanExtension(doc[field][i].url);
-                        const filename = `${name.toLowerCase()}-objarray-${doc._id}-${i}-${Date.now()}${ext}`;
+                for (let i = 0; i < val.length; i++) {
+                    const item = val[i];
+                    if (typeof item === 'string' && isCloudinary(item)) {
                         try {
-                            const localPath = await downloadImage(doc[field][i].url, filename);
-                            doc[field][i].url = localPath;
+                            const filename = `${name.toLowerCase()}-arr-${doc._id}-${i}-${Date.now()}${path.extname(item.split('?')[0]) || '.jpg'}`;
+                            val[i] = await downloadImage(item, filename);
                             arrayUpdated = true;
                             count++;
-                        } catch (err) {
-                            console.error(`Error ${name} objarray ${i}:`, err.message);
-                        }
+                        } catch (err) { }
+                    } else if (item && typeof item === 'object' && isCloudinary(item.url)) {
+                        try {
+                            const filename = `${name.toLowerCase()}-objarr-${doc._id}-${i}-${Date.now()}${path.extname(item.url.split('?')[0]) || '.jpg'}`;
+                            item.url = await downloadImage(item.url, filename);
+                            arrayUpdated = true;
+                            count++;
+                        } catch (err) { }
                     }
                 }
                 if (arrayUpdated) {
@@ -153,21 +130,16 @@ const migrateCollection = async (Model, fields, name) => {
             }
         }
 
-        if (updated) {
-            await doc.save();
-        }
+        if (updated) await doc.save();
     }
-    console.log(`Finished ${name}. Migrated ${count} images.`);
-    return count;
+    console.log(`Finished ${name}. Migrated: ${count}, Recovered: ${recovered}`);
+    return count + recovered;
 };
 
 const migrate = async () => {
     try {
         await mongoose.connect(MONGODB_URI);
-        console.log('Connected to MongoDB');
-
         const results = [];
-
         results.push(await migrateCollection(Product, ['image', 'images'], 'Product'));
         results.push(await migrateCollection(BestSeller, ['image', 'images'], 'BestSeller'));
         results.push(await migrateCollection(Loved, ['image', 'images'], 'Loved'));
@@ -175,13 +147,12 @@ const migrate = async () => {
         results.push(await migrateCollection(Category, ['image'], 'Category'));
         results.push(await migrateCollection(HeroCarousel, ['image'], 'HeroCarousel'));
         results.push(await migrateCollection(Seller, ['profileImage', 'images'], 'Seller'));
-        results.push(await migrateCollection(ProductSubmission, ['productImages'], 'ProductSubmission'));
 
         const total = results.reduce((a, b) => a + b, 0);
-        console.log(`\nMigration complete! Total images migrated: ${total}`);
+        console.log(`\nSync complete! Total actions: ${total}`);
         process.exit(0);
     } catch (err) {
-        console.error('Migration failed:', err);
+        console.error('Failed:', err);
         process.exit(1);
     }
 };
