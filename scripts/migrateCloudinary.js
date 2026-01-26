@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
+const http = require('http');
 require('dotenv').config();
 
 // Models
@@ -9,6 +10,10 @@ const Product = require('../models/Product');
 const Category = require('../models/cate');
 const Seller = require('../models/Seller');
 const HeroCarousel = require('../models/heroCarousel');
+const BestSeller = require('../models/bestSeller');
+const Loved = require('../models/loved');
+const FeaturedProduct = require('../models/FeaturedProduct');
+const ProductSubmission = require('../models/ProductSubmission');
 
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://rikoenterprises25:2EKCeowE0NtO9d2q@cluster0.g68doth.mongodb.net/rikocraft?retryWrites=true&w=majority&appName=Cluster0";
 
@@ -19,14 +24,31 @@ if (!fs.existsSync(migrationDir)) {
     fs.mkdirSync(migrationDir, { recursive: true });
 }
 
+const getCleanExtension = (url) => {
+    try {
+        const urlObj = new URL(url);
+        const pathname = urlObj.pathname;
+        const ext = path.extname(pathname);
+        return ext || '.jpg';
+    } catch {
+        const match = url.match(/\.(jpg|jpeg|png|gif|webp|svg)/i);
+        return match ? match[0] : '.jpg';
+    }
+};
+
 const downloadImage = (url, filename) => {
     return new Promise((resolve, reject) => {
         const filePath = path.join(migrationDir, filename);
-        const file = fs.createWriteStream(filePath);
+        if (fs.existsSync(filePath)) {
+            return resolve(`uploads/migrated/${filename}`);
+        }
 
-        https.get(url, (response) => {
+        const file = fs.createWriteStream(filePath);
+        const protocol = url.startsWith('https') ? https : http;
+
+        protocol.get(url, (response) => {
             if (response.statusCode !== 200) {
-                reject(new Error(`Failed to download: ${response.statusCode}`));
+                reject(new Error(`Failed: ${response.statusCode}`));
                 return;
             }
             response.pipe(file);
@@ -42,7 +64,101 @@ const downloadImage = (url, filename) => {
 };
 
 const isCloudinary = (url) => {
-    return typeof url === 'string' && url.includes('cloudinary.com');
+    return typeof url === 'string' && (url.includes('cloudinary.com') || url.includes('res.cloudinary.com'));
+};
+
+const migrateCollection = async (Model, fields, name) => {
+    console.log(`Migrating ${name}...`);
+    const docs = await Model.find({});
+    let count = 0;
+
+    for (const doc of docs) {
+        let updated = false;
+
+        for (const field of fields) {
+            // Case 1: Simple string field (image)
+            if (typeof doc[field] === 'string' && isCloudinary(doc[field])) {
+                const ext = getCleanExtension(doc[field]);
+                const filename = `${name.toLowerCase()}-${doc._id}-${Date.now()}${ext}`;
+                try {
+                    const localPath = await downloadImage(doc[field], filename);
+                    doc[field] = localPath;
+                    updated = true;
+                    count++;
+                } catch (err) {
+                    console.error(`Error ${name} ${field}:`, err.message);
+                }
+            }
+            // Case 2: Array of strings (images)
+            else if (Array.isArray(doc[field]) && doc[field].length > 0 && typeof doc[field][0] === 'string') {
+                const newArray = [];
+                let arrayUpdated = false;
+                for (let i = 0; i < doc[field].length; i++) {
+                    const url = doc[field][i];
+                    if (isCloudinary(url)) {
+                        const ext = getCleanExtension(url);
+                        const filename = `${name.toLowerCase()}-array-${doc._id}-${i}-${Date.now()}${ext}`;
+                        try {
+                            const localPath = await downloadImage(url, filename);
+                            newArray.push(localPath);
+                            arrayUpdated = true;
+                            count++;
+                        } catch (err) {
+                            console.error(`Error ${name} array ${i}:`, err.message);
+                            newArray.push(url);
+                        }
+                    } else {
+                        newArray.push(url);
+                    }
+                }
+                if (arrayUpdated) {
+                    doc[field] = newArray;
+                    updated = true;
+                }
+            }
+            // Case 3: Object with url property (profileImage, etc.)
+            else if (doc[field] && typeof doc[field] === 'object' && isCloudinary(doc[field].url)) {
+                const ext = getCleanExtension(doc[field].url);
+                const filename = `${name.toLowerCase()}-obj-${doc._id}-${Date.now()}${ext}`;
+                try {
+                    const localPath = await downloadImage(doc[field].url, filename);
+                    doc[field].url = localPath;
+                    updated = true;
+                    count++;
+                } catch (err) {
+                    console.error(`Error ${name} object ${field}:`, err.message);
+                }
+            }
+            // Case 4: Array of objects with url property (productImages, images in Seller)
+            else if (Array.isArray(doc[field]) && doc[field].length > 0 && doc[field][0] && typeof doc[field][0] === 'object' && isCloudinary(doc[field][0].url)) {
+                let arrayUpdated = false;
+                for (let i = 0; i < doc[field].length; i++) {
+                    if (isCloudinary(doc[field][i].url)) {
+                        const ext = getCleanExtension(doc[field][i].url);
+                        const filename = `${name.toLowerCase()}-objarray-${doc._id}-${i}-${Date.now()}${ext}`;
+                        try {
+                            const localPath = await downloadImage(doc[field][i].url, filename);
+                            doc[field][i].url = localPath;
+                            arrayUpdated = true;
+                            count++;
+                        } catch (err) {
+                            console.error(`Error ${name} objarray ${i}:`, err.message);
+                        }
+                    }
+                }
+                if (arrayUpdated) {
+                    doc.markModified(field);
+                    updated = true;
+                }
+            }
+        }
+
+        if (updated) {
+            await doc.save();
+        }
+    }
+    console.log(`Finished ${name}. Migrated ${count} images.`);
+    return count;
 };
 
 const migrate = async () => {
@@ -50,127 +166,19 @@ const migrate = async () => {
         await mongoose.connect(MONGODB_URI);
         console.log('Connected to MongoDB');
 
-        let totalMigrated = 0;
+        const results = [];
 
-        // 1. Migrate Products
-        console.log('Migrating Products...');
-        const products = await Product.find({});
-        for (const product of products) {
-            let updated = false;
+        results.push(await migrateCollection(Product, ['image', 'images'], 'Product'));
+        results.push(await migrateCollection(BestSeller, ['image', 'images'], 'BestSeller'));
+        results.push(await migrateCollection(Loved, ['image', 'images'], 'Loved'));
+        results.push(await migrateCollection(FeaturedProduct, ['image', 'images'], 'FeaturedProduct'));
+        results.push(await migrateCollection(Category, ['image'], 'Category'));
+        results.push(await migrateCollection(HeroCarousel, ['image'], 'HeroCarousel'));
+        results.push(await migrateCollection(Seller, ['profileImage', 'images'], 'Seller'));
+        results.push(await migrateCollection(ProductSubmission, ['productImages'], 'ProductSubmission'));
 
-            // Single image
-            if (isCloudinary(product.image)) {
-                const filename = `product-${product._id}-${Date.now()}${path.extname(product.image) || '.jpg'}`;
-                try {
-                    const localPath = await downloadImage(product.image, filename);
-                    product.image = localPath;
-                    updated = true;
-                    totalMigrated++;
-                } catch (err) {
-                    console.error(`Failed to migrate product image ${product.image}:`, err.message);
-                }
-            }
-
-            // Gallery images
-            if (product.images && product.images.length > 0) {
-                const newImages = [];
-                for (let i = 0; i < product.images.length; i++) {
-                    const imgUrl = product.images[i];
-                    if (isCloudinary(imgUrl)) {
-                        const filename = `product-gallery-${product._id}-${i}-${Date.now()}${path.extname(imgUrl) || '.jpg'}`;
-                        try {
-                            const localPath = await downloadImage(imgUrl, filename);
-                            newImages.push(localPath);
-                            totalMigrated++;
-                            updated = true;
-                        } catch (err) {
-                            console.error(`Failed to migrate gallery image ${imgUrl}:`, err.message);
-                            newImages.push(imgUrl);
-                        }
-                    } else {
-                        newImages.push(imgUrl);
-                    }
-                }
-                product.images = newImages;
-            }
-
-            if (updated) await product.save();
-        }
-
-        // 2. Migrate Categories
-        console.log('Migrating Categories...');
-        const categories = await Category.find({});
-        for (const cat of categories) {
-            if (isCloudinary(cat.image)) {
-                const filename = `category-${cat._id}-${Date.now()}${path.extname(cat.image) || '.jpg'}`;
-                try {
-                    const localPath = await downloadImage(cat.image, filename);
-                    cat.image = localPath;
-                    await cat.save();
-                    totalMigrated++;
-                } catch (err) {
-                    console.error(`Failed to migrate category image ${cat.image}:`, err.message);
-                }
-            }
-        }
-
-        // 3. Migrate Sellers
-        console.log('Migrating Sellers...');
-        const sellers = await Seller.find({});
-        for (const seller of sellers) {
-            let updated = false;
-
-            // Profile image
-            if (seller.profileImage && isCloudinary(seller.profileImage.url)) {
-                const filename = `seller-profile-${seller._id}-${Date.now()}${path.extname(seller.profileImage.url) || '.jpg'}`;
-                try {
-                    const localPath = await downloadImage(seller.profileImage.url, filename);
-                    seller.profileImage.url = localPath;
-                    updated = true;
-                    totalMigrated++;
-                } catch (err) {
-                    console.error(`Failed to migrate seller profile ${seller.profileImage.url}:`, err.message);
-                }
-            }
-
-            // Seller gallery
-            if (seller.images && seller.images.length > 0) {
-                for (let i = 0; i < seller.images.length; i++) {
-                    if (isCloudinary(seller.images[i].url)) {
-                        const filename = `seller-gallery-${seller._id}-${i}-${Date.now()}${path.extname(seller.images[i].url) || '.jpg'}`;
-                        try {
-                            const localPath = await downloadImage(seller.images[i].url, filename);
-                            seller.images[i].url = localPath;
-                            updated = true;
-                            totalMigrated++;
-                        } catch (err) {
-                            console.error(`Failed to migrate seller gallery ${seller.images[i].url}:`, err.message);
-                        }
-                    }
-                }
-            }
-
-            if (updated) await seller.save();
-        }
-
-        // 4. Migrate Hero Carousel
-        console.log('Migrating Hero Carousel...');
-        const items = await HeroCarousel.find({});
-        for (const item of items) {
-            if (isCloudinary(item.image)) {
-                const filename = `hero-${item._id}-${Date.now()}${path.extname(item.image) || '.jpg'}`;
-                try {
-                    const localPath = await downloadImage(item.image, filename);
-                    item.image = localPath;
-                    await item.save();
-                    totalMigrated++;
-                } catch (err) {
-                    console.error(`Failed to migrate hero image ${item.image}:`, err.message);
-                }
-            }
-        }
-
-        console.log(`Migration complete! Total images migrated: ${totalMigrated}`);
+        const total = results.reduce((a, b) => a + b, 0);
+        console.log(`\nMigration complete! Total images migrated: ${total}`);
         process.exit(0);
     } catch (err) {
         console.error('Migration failed:', err);
