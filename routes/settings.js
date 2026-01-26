@@ -18,6 +18,9 @@ router.get('/seller-commission-percentage', settingsController.getSellerCommissi
 // Public endpoint to get agent commission percentage
 router.get('/agent-commission-percentage', settingsController.getAgentCommissionPercentage);
 
+// Public endpoint to get distribution plans
+router.get('/distribution-plans', settingsController.getDistributionPlans);
+
 // Get a specific setting by key
 router.get('/:key', authenticateToken, settingsController.getSettingByKey);
 

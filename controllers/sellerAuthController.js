@@ -72,37 +72,24 @@ exports.register = async (req, res) => {
     let planAmount = 0;
 
     if (planType) {
-      switch (planType) {
-        case 'starter':
-          agentPlan = {
-            planType: 'starter',
-            agentLimit: 50,
-            amountPaid: 15000,
-            purchaseDate: new Date()
-          };
-          planAmount = 15000;
-          needsPayment = true;
-          break;
-        case 'pro':
-          agentPlan = {
-            planType: 'pro',
-            agentLimit: 100,
-            amountPaid: 20000,
-            purchaseDate: new Date()
-          };
-          planAmount = 20000;
-          needsPayment = true;
-          break;
-        case 'unlimited':
-          agentPlan = {
-            planType: 'unlimited',
-            agentLimit: 999999, // Effectively unlimited
-            amountPaid: 25000,
-            purchaseDate: new Date()
-          };
-          planAmount = 25000;
-          needsPayment = true;
-          break;
+      const Settings = require('../models/Settings');
+      const settingsDoc = await Settings.findOne({ key: 'distribution_plans' });
+      const plans = settingsDoc ? settingsDoc.value : [
+        { id: 'starter', price: 15000, limit: 50 },
+        { id: 'pro', price: 20000, limit: 100 },
+        { id: 'unlimited', price: 25000, limit: 999999 }
+      ];
+
+      const selectedPlanData = plans.find(p => p.id === planType);
+      if (selectedPlanData) {
+        agentPlan = {
+          planType: selectedPlanData.id,
+          agentLimit: selectedPlanData.limit,
+          amountPaid: selectedPlanData.price,
+          purchaseDate: new Date()
+        };
+        planAmount = selectedPlanData.price;
+        needsPayment = true;
       }
     }
 

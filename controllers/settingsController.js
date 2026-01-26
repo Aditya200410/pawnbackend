@@ -120,6 +120,37 @@ const initializeDefaultSettings = async () => {
         key: 'agent_commission_percentage',
         value: 10,
         description: 'Percentage of sales given as commission to agents'
+      },
+      {
+        key: 'distribution_plans',
+        value: [
+          {
+            id: 'starter',
+            name: 'Starter Distribution',
+            price: 15000,
+            limit: 50,
+            limitText: '50 Shops',
+            color: 'blue'
+          },
+          {
+            id: 'pro',
+            name: 'Pro Distribution',
+            price: 20000,
+            limit: 100,
+            limitText: '100 Shops',
+            color: 'red'
+          },
+          {
+            id: 'unlimited',
+            name: 'Unlimited Distribution',
+            price: 25000,
+            limit: 999999,
+            limitText: 'Unlimited Shops',
+            color: 'pink',
+            popular: true
+          }
+        ],
+        description: 'Distribution plans for agents/distributors'
       }
     ];
 
@@ -208,6 +239,56 @@ const getAgentCommissionPercentage = async (req, res) => {
   }
 };
 
+// Get Distribution Plans (public endpoint)
+const getDistributionPlans = async (req, res) => {
+  try {
+    const setting = await Settings.findOne({ key: 'distribution_plans' });
+    let plans = [
+      {
+        id: 'starter',
+        name: 'Starter Distribution',
+        price: 15000,
+        limit: 50,
+        limitText: '50 Shops',
+        color: 'blue'
+      },
+      {
+        id: 'pro',
+        name: 'Pro Distribution',
+        price: 20000,
+        limit: 100,
+        limitText: '100 Shops',
+        color: 'red'
+      },
+      {
+        id: 'unlimited',
+        name: 'Unlimited Distribution',
+        price: 25000,
+        limit: 999999,
+        limitText: 'Unlimited Shops',
+        color: 'pink',
+        popular: true
+      }
+    ];
+
+    if (setting) {
+      plans = setting.value;
+    }
+
+    res.status(200).json({
+      success: true,
+      plans: plans
+    });
+  } catch (error) {
+    console.error('Error fetching distribution plans:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch distribution plans',
+      plans: []
+    });
+  }
+};
+
 module.exports = {
   getAllSettings,
   getSettingByKey,
@@ -216,5 +297,6 @@ module.exports = {
   initializeDefaultSettings,
   getCodUpfrontAmount,
   getSellerCommissionPercentage,
-  getAgentCommissionPercentage
-}; 
+  getAgentCommissionPercentage,
+  getDistributionPlans
+};
