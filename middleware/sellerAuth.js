@@ -5,7 +5,7 @@ const sellerAuth = async (req, res, next) => {
   try {
     // Get token from header
     const token = req.header('Authorization')?.replace('Bearer ', '');
-    
+
     if (!token) {
       return res.status(401).json({
         success: false,
@@ -14,8 +14,8 @@ const sellerAuth = async (req, res, next) => {
     }
 
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET_SELLER);
-    
+    const decoded = jwt.verify(token, process.env.JWT_SECRET_SELLER || 'your-secret-key');
+
     // Check if it's a seller token
     if (decoded.type !== 'seller') {
       return res.status(401).json({

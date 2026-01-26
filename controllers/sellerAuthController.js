@@ -100,15 +100,11 @@ exports.register = async (req, res) => {
 
       const merchantOrderId = `PLANREG${Date.now()}${Math.random().toString(36).substr(2, 6)}`;
 
-      // Hash password for pending storage
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(password, salt);
-
       const pendingReg = new PendingRegistration({
         merchantTransactionId: merchantOrderId,
         businessName,
         email: normalizedEmail,
-        password: hashedPassword,
+        password, // Store plain password, will be hashed by Seller model on activation
         phone,
         address,
         businessType,

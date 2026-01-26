@@ -8,7 +8,7 @@ const pendingRegistrationSchema = new mongoose.Schema({
     // Basic Info
     businessName: { type: String, required: true },
     email: { type: String, required: true }, // Not unique globally here to allow cleanup, but should check Seller collection
-    password: { type: String, required: true }, // Hashed
+    password: { type: String, required: true }, // Plain text, will be hashed when Seller is created
     phone: { type: String },
     address: { type: String },
     businessType: { type: String },
