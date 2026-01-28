@@ -305,3 +305,40 @@ exports.getAllAgents = async (req, res) => {
         res.status(500).json({ success: false, message: 'Error fetching agents' });
     }
 };
+// Update Agent Profile
+exports.updateProfile = async (req, res) => {
+    try {
+        const { name, phone, bankDetails } = req.body;
+        const agent = await Agent.findById(req.user.id);
+
+        if (!agent) {
+            return res.status(404).json({ success: false, message: 'Agent not found' });
+        }
+
+        if (name) agent.name = name;
+        if (phone) agent.phone = phone;
+        if (bankDetails) {
+            agent.bankDetails = {
+                ...agent.bankDetails,
+                ...bankDetails
+            };
+        }
+
+        await agent.save();
+
+        res.json({
+            success: true,
+            message: 'Profile updated successfully',
+            agent: {
+                id: agent._id,
+                name: agent.name,
+                email: agent.email,
+                phone: agent.phone,
+                bankDetails: agent.bankDetails
+            }
+        });
+    } catch (error) {
+        console.error('Update agent profile error:', error);
+        res.status(500).json({ success: false, message: 'Error updating profile' });
+    }
+};

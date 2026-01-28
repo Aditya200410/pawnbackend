@@ -15,6 +15,7 @@ router.get('/seller/:sellerId', agentController.getAgentsBySeller);
 
 // Protected Agent Routes
 router.get('/profile', protectAgent, agentController.getProfile);
+router.put('/profile', protectAgent, agentController.updateProfile);
 
 // Commission History
 router.get('/commission-history', protectAgent, commissionController.getAgentCommissionHistory);
