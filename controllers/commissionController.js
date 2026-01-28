@@ -325,6 +325,11 @@ exports.createCommissionEntry = async (orderId, sellerId, orderAmount, commissio
       agentCommissionAmount = Math.round(agentCommissionAmount / 10) * 10;
       sellerCommissionAmount = Math.round(sellerCommissionAmount / 10) * 10;
 
+      const firstProductName = order.items && order.items.length > 0 ? order.items[0].name : '';
+      const description = firstProductName
+        ? `Commission earned from: ${firstProductName} (#${order.orderNumber || orderId})`
+        : `Commission earned from order #${order.orderNumber || orderId}`;
+
       // 1. Create Agent Commission Entry
       const agentEntry = new CommissionHistory({
         sellerId: sellerId, // Keep reference to seller
@@ -334,7 +339,7 @@ exports.createCommissionEntry = async (orderId, sellerId, orderAmount, commissio
         amount: agentCommissionAmount,
         commissionRate: agentRate,
         orderAmount,
-        description: `Commission earned from order #${order.orderNumber || orderId}`,
+        description,
         status: 'confirmed',
         orderDetails: {
           orderNumber: order.orderNumber || `Order-${orderId}`,
@@ -369,6 +374,12 @@ exports.createCommissionEntry = async (orderId, sellerId, orderAmount, commissio
       sellerCommissionAmount = Math.round(sellerCommissionAmount / 10) * 10;
     }
 
+    const sellerDescription = firstProductName
+      ? `Commission earned from: ${firstProductName} (#${order.orderNumber || orderId})${agentId ? ' (after Agent deduction)' : ''}`
+      : (agentId
+        ? `Commission earned from order #${order.orderNumber || orderId} (after Agent deduction)`
+        : `Commission earned from order #${order.orderNumber || orderId}`);
+
     // 2. Create Seller Commission Entry
     const sellerEntry = new CommissionHistory({
       sellerId,
@@ -378,9 +389,7 @@ exports.createCommissionEntry = async (orderId, sellerId, orderAmount, commissio
       amount: sellerCommissionAmount,
       commissionRate: agentId ? Math.max(0, sellerRate - agentRate) : (commissionRate || sellerRate),
       orderAmount,
-      description: agentId
-        ? `Commission earned from order #${order.orderNumber || orderId} (after Agent deduction)`
-        : `Commission earned from order #${order.orderNumber || orderId}`,
+      description: sellerDescription,
       status: 'confirmed',
       orderDetails: {
         orderNumber: order.orderNumber || `Order-${orderId}`,
