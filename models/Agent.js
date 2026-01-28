@@ -33,6 +33,11 @@ const agentSchema = new mongoose.Schema({
         type: String,
         required: false
     },
+    parentAgent: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Agent',
+        required: false
+    },
     // The unique code for this agent to share with customers
     personalAgentCode: {
         type: String,
@@ -66,6 +71,24 @@ const agentSchema = new mongoose.Schema({
     createdAt: {
         type: Date,
         default: Date.now
+    },
+    agentPlan: {
+        planType: {
+            type: String,
+            enum: ['none', 'starter', 'pro', 'unlimited'],
+            default: 'none'
+        },
+        agentLimit: {
+            type: Number,
+            default: 0
+        },
+        amountPaid: {
+            type: Number,
+            default: 0
+        },
+        purchaseDate: {
+            type: Date
+        }
     }
 });
 

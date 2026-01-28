@@ -11,23 +11,44 @@ exports.register = async (req, res) => {
         const { name, email, phone, password, agentCode } = req.body;
 
         let seller = null;
+        let parentAgent = null;
+
         if (agentCode) {
-            // 1. Verify Agent Code / Find Seller
+            // 1. Try to find if it's a Seller's Code
             seller = await Seller.findOne({ sellerAgentCode: agentCode });
+
             if (!seller) {
-                return res.status(404).json({ success: false, message: 'Invalid Agent Code. No seller found.' });
-            }
+                // 2. Try to find if it's another Agent's Code (Sub-Agent flow)
+                parentAgent = await Agent.findOne({ personalAgentCode: agentCode });
 
-            // Check if seller has reached their agent limit
-            const currentAgentCount = await Agent.countDocuments({ linkedSeller: seller._id });
-            const agentPlan = seller.agentPlan || { agentLimit: 0, planType: 'none' };
+                if (!parentAgent) {
+                    return res.status(404).json({ success: false, message: 'Invalid Agent Code. No distributor or seller found.' });
+                }
 
-            // If plan is NOT unlimited and count >= limit, block registration
-            if (agentPlan.planType !== 'unlimited' && currentAgentCount >= agentPlan.agentLimit) {
-                return res.status(403).json({
-                    success: false,
-                    message: 'This distributor has reached their agent limit. Please contact them for assistance.'
-                });
+                // If found a parent agent, inherit the seller
+                seller = await Seller.findById(parentAgent.linkedSeller);
+
+                // Check if parent agent has reached THEIR limit
+                const currentSubAgentCount = await Agent.countDocuments({ parentAgent: parentAgent._id });
+                const agentPlan = parentAgent.agentPlan || { agentLimit: 50, planType: 'starter' }; // Default 50 for agents if not set
+
+                if (agentPlan.planType !== 'unlimited' && currentSubAgentCount >= agentPlan.agentLimit) {
+                    return res.status(403).json({
+                        success: false,
+                        message: 'This distributor has reached their sub-agent limit. Please contact them for assistance.'
+                    });
+                }
+            } else {
+                // Check if seller has reached their agent limit
+                const currentAgentCount = await Agent.countDocuments({ linkedSeller: seller._id, parentAgent: { $exists: false } });
+                const agentPlan = seller.agentPlan || { agentLimit: 0, planType: 'none' };
+
+                if (agentPlan.planType !== 'unlimited' && currentAgentCount >= agentPlan.agentLimit) {
+                    return res.status(403).json({
+                        success: false,
+                        message: 'This distributor has reached their agent limit. Please contact them for assistance.'
+                    });
+                }
             }
         }
 
@@ -70,6 +91,10 @@ exports.register = async (req, res) => {
         if (seller) {
             agentData.linkedSeller = seller._id;
             agentData.usedAgentCode = agentCode;
+        }
+
+        if (parentAgent) {
+            agentData.parentAgent = parentAgent._id;
         }
 
         const newAgent = await Agent.create(agentData);
@@ -230,6 +255,15 @@ exports.getProfile = async (req, res) => {
             agentObj.stats.availableCommission = 0;
         }
 
+        // Get sub-agent count
+        try {
+            const subAgentCount = await Agent.countDocuments({ parentAgent: agent._id });
+            agentObj.subAgentCount = subAgentCount;
+        } catch (err) {
+            console.error('Error counting sub-agents:', err);
+            agentObj.subAgentCount = 0;
+        }
+
         // Generate Dynamic Link and QR if linked seller exists
         if (agent.linkedSeller && agent.linkedSeller.sellerToken) {
             agentObj.websiteLink = `https://www.rikocraft.com/?agent=${agent.linkedSeller.sellerToken}&seller=${agent.personalAgentCode}`;
@@ -340,5 +374,19 @@ exports.updateProfile = async (req, res) => {
     } catch (error) {
         console.error('Update agent profile error:', error);
         res.status(500).json({ success: false, message: 'Error updating profile' });
+    }
+};
+
+// Get My Sub-Agents (For Agent Dashboard)
+exports.getMyAgents = async (req, res) => {
+    try {
+        const agents = await Agent.find({ parentAgent: req.user.id }).select('-password');
+        res.json({
+            success: true,
+            agents
+        });
+    } catch (error) {
+        console.error('Get my agents error:', error);
+        res.status(500).json({ success: false, message: 'Error fetching sub-agents' });
     }
 };
