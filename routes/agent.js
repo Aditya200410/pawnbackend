@@ -6,8 +6,10 @@ const withdrawalController = require('../controllers/withdrawalController');
 const protectAgent = require('../middleware/agentAuth');
 const { authenticateToken, isAdmin } = require('../middleware/auth');
 
+const { handleMultipleImages } = require('../middleware/sellerUpload');
+
 // Routes
-router.post('/register', agentController.register);
+router.post('/register', handleMultipleImages, agentController.register);
 router.post('/login', agentController.login);
 // Seller/Admin might use this, but it was public/protected by logic before. keeping as is or using general auth if needed.
 // For now, leaving as is from previous state (it was just agentController.getAgentsBySeller)
@@ -15,7 +17,7 @@ router.get('/seller/:sellerId', agentController.getAgentsBySeller);
 
 // Protected Agent Routes
 router.get('/profile', protectAgent, agentController.getProfile);
-router.put('/profile', protectAgent, agentController.updateProfile);
+router.put('/profile', protectAgent, handleMultipleImages, agentController.updateProfile);
 router.get('/my-agents', protectAgent, agentController.getMyAgents);
 
 // Commission History

@@ -8,7 +8,7 @@ const jwt = require('jsonwebtoken');
 // Register a new agent
 exports.register = async (req, res) => {
     try {
-        const { name, email, phone, password, agentCode } = req.body;
+        const { name, email, phone, password, agentCode, address } = req.body;
 
         let seller = null;
         let parentAgent = null;
@@ -79,12 +79,24 @@ exports.register = async (req, res) => {
         const codePrefix = cleanName.length > 0 ? cleanName : 'AGENT';
         const personalAgentCode = `${codePrefix}${phoneDigits}`;
 
+        // Process uploaded images
+        let images = [];
+        if (req.files && req.files.length > 0) {
+            images = req.files.map(file => ({
+                public_id: file.filename,
+                url: `uploads/seller-images/${file.filename}`,
+                alt: 'Agent image'
+            }));
+        }
+
         // 3. Create Agent
         const agentData = {
             name,
             email,
             phone,
             password,
+            address,
+            images,
             personalAgentCode // Save the new unique code
         };
 
@@ -115,6 +127,8 @@ exports.register = async (req, res) => {
                 name: newAgent.name,
                 email: newAgent.email,
                 phone: newAgent.phone,
+                address: newAgent.address,
+                images: newAgent.images || [],
                 personalAgentCode: newAgent.personalAgentCode,
                 linkedSeller: seller ? {
                     id: seller._id,
@@ -162,6 +176,8 @@ exports.login = async (req, res) => {
                 name: agent.name,
                 email: agent.email,
                 phone: agent.phone,
+                address: agent.address,
+                images: agent.images || [],
                 linkedSeller: agent.linkedSeller
             }
         });
@@ -351,6 +367,7 @@ exports.updateProfile = async (req, res) => {
 
         if (name) agent.name = name;
         if (phone) agent.phone = phone;
+        if (req.body.address) agent.address = req.body.address;
         if (bankDetails) {
             agent.bankDetails = {
                 ...agent.bankDetails,
@@ -368,6 +385,8 @@ exports.updateProfile = async (req, res) => {
                 name: agent.name,
                 email: agent.email,
                 phone: agent.phone,
+                address: agent.address,
+                images: agent.images || [],
                 bankDetails: agent.bankDetails
             }
         });

@@ -68,6 +68,21 @@ const agentSchema = new mongoose.Schema({
         bankName: String,
         upi: String
     },
+    address: {
+        type: String,
+        required: false
+    },
+    // Multiple images for agent profile
+    images: [{
+        public_id: { type: String },
+        url: { type: String },
+        alt: { type: String, default: 'Agent image' }
+    }],
+    profileImage: {
+        public_id: { type: String },
+        url: { type: String },
+        alt: { type: String, default: 'Profile image' }
+    },
     createdAt: {
         type: Date,
         default: Date.now
