@@ -274,6 +274,7 @@ exports.register = async (req, res) => {
         websiteLink: seller.websiteLink,
         qrCode: seller.qrCode,
         images: seller.images || [],
+        agentPlan: seller.agentPlan,
         createdAt: seller.createdAt,
         verified: seller.verified
       }
@@ -365,7 +366,8 @@ exports.login = async (req, res) => {
         createdAt: seller.createdAt,
         verified: seller.verified,
         blocked: seller.blocked,
-        upi: seller.upi
+        upi: seller.upi,
+        agentPlan: seller.agentPlan
       }
     });
   } catch (error) {
