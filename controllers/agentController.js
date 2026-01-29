@@ -368,6 +368,19 @@ exports.updateProfile = async (req, res) => {
         if (name) agent.name = name;
         if (phone) agent.phone = phone;
         if (req.body.address) agent.address = req.body.address;
+
+        // Handle image updates
+        if (req.files && req.files.length > 0) {
+            const newImages = req.files.map(file => ({
+                public_id: file.filename,
+                url: `uploads/seller-images/${file.filename}`,
+                alt: 'Agent image'
+            }));
+            // Append or replace? Let's append but limit to 10
+            const totalImages = [...(agent.images || []), ...newImages];
+            agent.images = totalImages.slice(-10); // Keep last 10
+        }
+
         if (bankDetails) {
             agent.bankDetails = {
                 ...agent.bankDetails,
