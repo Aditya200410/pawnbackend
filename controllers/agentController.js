@@ -280,15 +280,18 @@ exports.getProfile = async (req, res) => {
             agentObj.subAgentCount = 0;
         }
 
-        // Generate Dynamic Link and QR if linked seller exists
-        if (agent.linkedSeller && agent.linkedSeller.sellerToken) {
-            agentObj.websiteLink = `https://www.rikocraft.com/?agent=${agent.linkedSeller.sellerToken}&seller=${agent.personalAgentCode}`;
-            try {
-                agentObj.qrCode = await QRCode.toDataURL(agentObj.websiteLink);
-            } catch (err) {
-                console.error('QR Gen Error:', err);
-                agentObj.qrCode = null;
-            }
+        // Generate Dynamic Link and QR
+        const storeLink = agent.linkedSeller && agent.linkedSeller.sellerToken
+            ? `https://www.rikocraft.com/?agent=${agent.linkedSeller.sellerToken}&seller=${agent.personalAgentCode}`
+            : `https://www.rikocraft.com/?seller=${agent.personalAgentCode}`;
+
+        agentObj.websiteLink = storeLink;
+
+        try {
+            agentObj.qrCode = await QRCode.toDataURL(storeLink);
+        } catch (err) {
+            console.error('QR Gen Error:', err);
+            agentObj.qrCode = null;
         }
 
         res.json({
