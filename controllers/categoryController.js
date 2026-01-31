@@ -195,12 +195,16 @@ exports.reorderCategories = async (req, res) => {
       return res.status(400).json({ message: 'categoryIds must be an array' });
     }
 
+    console.log('Received reorder request with IDs:', categoryIds);
+
     // Update each category's sortOrder
     const updatePromises = categoryIds.map((id, index) => {
+      console.log(`Setting sortOrder ${index} for category ${id}`);
       return Category.findByIdAndUpdate(id, { sortOrder: index });
     });
 
     await Promise.all(updatePromises);
+    console.log('Successfully updated all category sortOrders');
 
     res.json({ message: 'Categories reordered successfully' });
   } catch (error) {
