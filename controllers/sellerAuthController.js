@@ -20,7 +20,7 @@ exports.register = async (req, res) => {
     if (existingSeller) {
       return res.status(400).json({ success: false, message: 'Email already registered' });
     }
-    const requiredFields = ['businessName', 'email', 'password'];
+    const requiredFields = ['businessName', 'email'];
     const missingFields = requiredFields.filter(field => !req.body[field] || req.body[field].toString().trim() === '');
     if (missingFields.length > 0) {
       return res.status(400).json({ success: false, message: `Missing required fields: ${missingFields.join(', ')}` });
@@ -285,6 +285,110 @@ exports.register = async (req, res) => {
   }
 };
 
+// Helper function to generate seller login response
+const generateLoginResponse = async (seller, res, message = 'Login successful') => {
+  // Create JWT token for seller
+  const token = jwt.sign(
+    {
+      id: seller._id,
+      email: seller.email,
+      businessName: seller.businessName,
+      type: 'seller',
+      isSeller: true
+    },
+    process.env.JWT_SECRET_SELLER || 'your-secret-key',
+    { expiresIn: '24h' }
+  );
+
+  // Get withdrawal data from Withdraw model
+  const Withdraw = require('../models/Withdraw');
+  const withdrawals = await Withdraw.find({ seller: seller._id })
+    .sort({ requestedAt: -1 })
+    .select('amount status requestedAt processedAt bankDetails');
+
+  // Map withdrawal data to match expected format
+  const mappedWithdrawals = withdrawals.map(withdrawal => ({
+    _id: withdrawal._id,
+    amount: withdrawal.amount,
+    status: withdrawal.status,
+    requestedAt: withdrawal.requestedAt,
+    processedDate: withdrawal.processedAt,
+    adminNotes: null,
+    rejectionReason: null,
+    bankDetails: withdrawal.bankDetails
+  }));
+
+  return res.json({
+    success: true,
+    message,
+    token,
+    seller: {
+      id: seller._id,
+      businessName: seller.businessName,
+      email: seller.email,
+      phone: seller.phone,
+      address: seller.address,
+      businessType: seller.businessType,
+      accountHolderName: seller.accountHolderName,
+      bankAccountNumber: seller.bankAccountNumber,
+      ifscCode: seller.ifscCode,
+      bankName: seller.bankName,
+      sellerToken: seller.sellerToken,
+      sellerAgentCode: seller.sellerAgentCode,
+      websiteLink: seller.websiteLink,
+      qrCode: seller.qrCode,
+      images: seller.images || [],
+      profileImage: seller.profileImage || null,
+      totalOrders: seller.totalOrders || 0,
+      totalCommission: seller.totalCommission || 0,
+      availableCommission: seller.availableCommission || 0,
+      bankDetails: seller.bankDetails || {},
+      withdrawals: mappedWithdrawals,
+      createdAt: seller.createdAt,
+      verified: seller.verified,
+      blocked: seller.blocked,
+      upi: seller.upi,
+      agentPlan: seller.agentPlan
+    }
+  });
+};
+
+// OTP Login for seller
+exports.otpLogin = async (req, res) => {
+  try {
+    const { identifier, email } = req.body;
+    if (!identifier) {
+      return res.status(400).json({ success: false, message: 'Phone or email is required' });
+    }
+
+    let seller;
+    const emailPattern = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+    if (emailPattern.test(identifier)) {
+      seller = await Seller.findOne({ email: identifier.toLowerCase().trim() });
+    } else {
+      // Clean phone number
+      const phoneDigits = identifier.replace(/\D/g, '');
+      seller = await Seller.findOne({ phone: new RegExp(phoneDigits + '$') });
+
+      if (!seller && !phoneDigits.startsWith('91')) {
+        seller = await Seller.findOne({ phone: new RegExp('91' + phoneDigits + '$') });
+      }
+    }
+
+    if (!seller) {
+      return res.status(404).json({
+        success: false,
+        message: 'No distributor account found with this information. Please register.'
+      });
+    }
+
+    return await generateLoginResponse(seller, res);
+  } catch (error) {
+    console.error('Seller OTP login error:', error);
+    res.status(500).json({ success: false, message: 'Error logging in' });
+  }
+};
+
 // Login seller
 exports.login = async (req, res) => {
   try {
@@ -306,70 +410,8 @@ exports.login = async (req, res) => {
         message: 'Invalid credentials'
       });
     }
-    // Create JWT token for seller
-    const token = jwt.sign(
-      {
-        id: seller._id,
-        email: seller.email,
-        businessName: seller.businessName,
-        type: 'seller',
-        isSeller: true
-      },
-      process.env.JWT_SECRET_SELLER || 'your-secret-key',
-      { expiresIn: '24h' }
-    );
 
-    // Get withdrawal data from Withdraw model
-    const Withdraw = require('../models/Withdraw');
-    const withdrawals = await Withdraw.find({ seller: seller._id })
-      .sort({ requestedAt: -1 })
-      .select('amount status requestedAt processedAt bankDetails');
-
-    // Map withdrawal data to match expected format
-    const mappedWithdrawals = withdrawals.map(withdrawal => ({
-      _id: withdrawal._id,
-      amount: withdrawal.amount,
-      status: withdrawal.status,
-      requestedAt: withdrawal.requestedAt,
-      processedDate: withdrawal.processedAt,
-      adminNotes: null,
-      rejectionReason: null,
-      bankDetails: withdrawal.bankDetails
-    }));
-
-    res.json({
-      success: true,
-      message: 'Login successful',
-      token,
-      seller: {
-        id: seller._id,
-        businessName: seller.businessName,
-        email: seller.email,
-        phone: seller.phone,
-        address: seller.address,
-        businessType: seller.businessType,
-        accountHolderName: seller.accountHolderName,
-        bankAccountNumber: seller.bankAccountNumber,
-        ifscCode: seller.ifscCode,
-        bankName: seller.bankName,
-        sellerToken: seller.sellerToken,
-        sellerAgentCode: seller.sellerAgentCode,
-        websiteLink: seller.websiteLink,
-        qrCode: seller.qrCode,
-        images: seller.images || [],
-        profileImage: seller.profileImage || null,
-        totalOrders: seller.totalOrders || 0,
-        totalCommission: seller.totalCommission || 0,
-        availableCommission: seller.availableCommission || 0,
-        bankDetails: seller.bankDetails || {},
-        withdrawals: mappedWithdrawals,
-        createdAt: seller.createdAt,
-        verified: seller.verified,
-        blocked: seller.blocked,
-        upi: seller.upi,
-        agentPlan: seller.agentPlan
-      }
-    });
+    return await generateLoginResponse(seller, res);
   } catch (error) {
     console.error('Seller login error:', error);
     res.status(500).json({

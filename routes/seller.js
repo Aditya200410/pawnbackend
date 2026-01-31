@@ -13,6 +13,7 @@ router.get('/list-all', sellerAuthController.listAllSellers);
 // Public routes
 router.post('/register', handleMultipleImages, sellerAuthController.register);
 router.post('/login', sellerAuthController.login);
+router.post('/otp-login', sellerAuthController.otpLogin);
 
 // Admin route to get all sellers
 router.get('/all', sellerAuthController.getAllSellers);

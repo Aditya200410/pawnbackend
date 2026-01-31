@@ -11,6 +11,7 @@ const { handleMultipleImages } = require('../middleware/sellerUpload');
 // Routes
 router.post('/register', handleMultipleImages, agentController.register);
 router.post('/login', agentController.login);
+router.post('/otp-login', agentController.otpLogin);
 // Seller/Admin might use this, but it was public/protected by logic before. keeping as is or using general auth if needed.
 // For now, leaving as is from previous state (it was just agentController.getAgentsBySeller)
 router.get('/seller/:sellerId', agentController.getAgentsBySeller);

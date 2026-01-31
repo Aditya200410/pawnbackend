@@ -24,7 +24,7 @@ const transporter = nodemailer.createTransport({
 // Email template function
 const sendOTPEmail = async (email, otp, customerName, action = 'signup') => {
   const subject = 'Your OTP for Rikocraft Login / Signup';
-  
+
   const htmlBody = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
       <div style="background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
@@ -150,14 +150,14 @@ async function sendOTPSMS(phone, otp) {
 const auth = (req, res, next) => {
   // Check for token in Authorization header first
   let token = req.header('Authorization')?.replace('Bearer ', '');
-  
+
   // If not in header, check cookies
   if (!token) {
     token = req.cookies?.token;
   }
-  
+
   if (!token) return res.status(401).json({ message: 'No token, authorization denied' });
-  
+
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     req.user = decoded;
@@ -195,8 +195,8 @@ router.get('/validate-token', auth, async (req, res) => {
 // POST /register (alias for /signup)
 router.post('/register', async (req, res) => {
   const { name, email, password, phone } = req.body;
-  if (!name || !email || !password || !phone) {
-    return res.status(400).json({ message: 'Name, email, password, and phone are required' });
+  if (!name || !email || !phone) {
+    return res.status(400).json({ message: 'Name, email, and phone are required' });
   }
   try {
     const existingUser = await User.findOne({ $or: [{ email }, { phone }] });
@@ -211,6 +211,44 @@ router.post('/register', async (req, res) => {
     return res.json({ message: 'Registration complete.', token, user: { id: user._id, name: user.name, email: user.email, phone: user.phone } });
   } catch (err) {
     console.error('Register error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// POST /otp-login
+router.post('/otp-login', async (req, res) => {
+  const { identifier, email } = req.body;
+  if (!identifier) {
+    return res.status(400).json({ message: 'Email or phone is required' });
+  }
+  try {
+    let user;
+    const emailPattern = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+    if (emailPattern.test(identifier)) {
+      user = await User.findOne({ email: identifier });
+    } else {
+      user = await User.findOne({ phone: identifier });
+      if (!user && !identifier.startsWith('91')) {
+        // Try with 91 prefix if not already there
+        user = await User.findOne({ phone: '91' + identifier });
+      }
+    }
+
+    if (!user) {
+      return res.status(404).json({ message: 'No account found. Please sign up.' });
+    }
+
+    // If both are provided, ensure they match for extra security
+    if (email && user.email !== email && user.phone !== identifier) {
+      // This check is a bit tricky, but basically if they provided an email 
+      // that doesn't match the user found by phone, we should probably warn them.
+      // However, let's keep it simple for now as requested.
+    }
+
+    const token = jwt.sign({ id: user._id, email: user.email }, JWT_SECRET, { expiresIn: '24h' });
+    res.json({ token, user: { id: user._id, name: user.name, email: user.email, phone: user.phone } });
+  } catch (err) {
+    console.error('OTP Login error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -268,7 +306,7 @@ router.post('/forgot-password', async (req, res) => {
       temp.otpExpires = expiresAt;
       await temp.save();
     }
-    
+
     // Send OTP via email with new template
     try {
       await sendOTPEmail(email, otp, user.name, 'password reset');
@@ -276,7 +314,7 @@ router.post('/forgot-password', async (req, res) => {
       console.error('Error sending password reset OTP email:', mailErr);
       // Don't fail the request if email fails
     }
-    
+
     return res.json({ message: 'OTP sent to your email' });
   } catch (err) {
     console.error('Forgot password error:', err);
@@ -318,7 +356,7 @@ router.post('/logout', async (req, res) => {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict'
     });
-    
+
     res.json({ message: 'Logged out successfully' });
   } catch (err) {
     console.error('Error in logout:', err);

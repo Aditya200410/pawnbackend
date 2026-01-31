@@ -16,7 +16,7 @@ const sellerSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: [true, 'Password is required'],
+    required: false,
     minlength: 6
   },
   phone: {
@@ -149,7 +149,7 @@ const sellerSchema = new mongoose.Schema({
 
 // Hash password before saving
 sellerSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
+  if (!this.isModified('password') || !this.password) return next();
 
   try {
     const salt = await bcrypt.genSalt(10);
