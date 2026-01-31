@@ -51,6 +51,8 @@ const upsertSetting = async (req, res) => {
     if (key === 'cod_upfront_amount') {
       // Allow 0 as a valid value
       processedValue = value === '' || value === null || value === undefined ? 39 : Number(value);
+    } else if (key === 'seller_commission_percentage' || key === 'agent_commission_percentage') {
+      processedValue = value === '' || value === null || value === undefined ? 0 : Number(value);
     }
 
     // Use findOneAndUpdate with upsert to create or update

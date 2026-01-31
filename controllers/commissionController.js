@@ -314,12 +314,9 @@ exports.createCommissionEntry = async (orderId, sellerId, orderAmount, commissio
     let agentCommissionAmount = 0;
 
     if (agentId) {
-      // Split Commission: Seller gets (SellerRate - AgentRate), Agent gets AgentRate
-      // Ensure Seller doesn't get negative if AgentRate > SellerRate (unlikely but safe check)
-      const effectiveSellerRate = Math.max(0, sellerRate - agentRate);
-
+      // Independent Commissions: Both Agent and Seller get their full rates
       agentCommissionAmount = orderAmount * agentRate;
-      sellerCommissionAmount = orderAmount * effectiveSellerRate;
+      sellerCommissionAmount = orderAmount * sellerRate;
 
       // Round to nearest 10
       agentCommissionAmount = Math.round(agentCommissionAmount / 10) * 10;
@@ -387,7 +384,7 @@ exports.createCommissionEntry = async (orderId, sellerId, orderAmount, commissio
       orderId,
       type: 'earned',
       amount: sellerCommissionAmount,
-      commissionRate: agentId ? Math.max(0, sellerRate - agentRate) : (commissionRate || sellerRate),
+      commissionRate: commissionRate !== null ? commissionRate : sellerRate,
       orderAmount,
       description: sellerDescription,
       status: 'confirmed',
