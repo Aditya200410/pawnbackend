@@ -276,7 +276,8 @@ exports.register = async (req, res) => {
         images: seller.images || [],
         agentPlan: seller.agentPlan,
         createdAt: seller.createdAt,
-        verified: seller.verified
+        verified: seller.verified,
+        shopCount: 0
       }
     });
   } catch (error) {
@@ -318,6 +319,10 @@ const generateLoginResponse = async (seller, res, message = 'Login successful') 
     bankDetails: withdrawal.bankDetails
   }));
 
+  // Get shop count (Distribution network)
+  const Agent = require('../models/Agent');
+  const shopCount = await Agent.countDocuments({ linkedSeller: seller._id });
+
   return res.json({
     success: true,
     message,
@@ -348,7 +353,8 @@ const generateLoginResponse = async (seller, res, message = 'Login successful') 
       verified: seller.verified,
       blocked: seller.blocked,
       upi: seller.upi,
-      agentPlan: seller.agentPlan
+      agentPlan: seller.agentPlan,
+      shopCount
     }
   });
 };
@@ -612,12 +618,17 @@ exports.updateProfile = async (req, res) => {
       await seller.save();
     }
 
+    // Get shop count (Distribution network)
+    const Agent = require('../models/Agent');
+    const shopCount = await Agent.countDocuments({ linkedSeller: seller._id });
+
     // Combine seller data with withdrawal data
     const sellerWithWithdrawals = {
       ...seller.toObject(),
       withdrawals: mappedWithdrawals,
       calculatedAvailableCommission: availableCommission,
-      sellerAgentCode: seller.sellerAgentCode // Explicitly include sellerAgentCode
+      sellerAgentCode: seller.sellerAgentCode, // Explicitly include sellerAgentCode
+      shopCount // Add shop count
     };
 
     res.json({
