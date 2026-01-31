@@ -59,6 +59,7 @@ router.post('/', authenticateToken, isAdmin, handleUpload, categoryController.cr
 router.post('/upload', authenticateToken, isAdmin, handleUpload, categoryController.createCategory);
 router.put('/:id', authenticateToken, isAdmin, handleUpload, categoryController.updateCategory);
 router.put('/:id/upload', authenticateToken, isAdmin, handleUpload, categoryController.updateCategory);
+router.put('/reorder', authenticateToken, isAdmin, categoryController.reorderCategories);
 router.delete('/:id', authenticateToken, isAdmin, categoryController.deleteCategory);
 
 module.exports = router; 

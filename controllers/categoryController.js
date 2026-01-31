@@ -3,7 +3,8 @@ const Category = require('../models/cate');
 // Get all categories
 exports.getAllCategories = async (req, res) => {
   try {
-    const categories = await Category.find({ isActive: true }).sort({ sortOrder: 1, name: 1 });
+    const filter = req.query.all === 'true' ? {} : { isActive: true };
+    const categories = await Category.find(filter).sort({ sortOrder: 1, name: 1 });
     res.json({ categories });
   } catch (error) {
     console.error('Error in getAllCategories:', error);
@@ -62,13 +63,19 @@ exports.createCategory = async (req, res) => {
       }
     }
 
+    let sortOrder = parseInt(categoryData.sortOrder);
+    if (isNaN(sortOrder)) {
+      const lastCategory = await Category.findOne().sort({ sortOrder: -1 });
+      sortOrder = lastCategory ? lastCategory.sortOrder + 1 : 0;
+    }
+
     const newCategory = new Category({
       name: categoryData.name,
       description: categoryData.description,
       image: imageUrl,
       video: videoUrl,
-      sortOrder: parseInt(categoryData.sortOrder) || 0,
-      isActive: categoryData.isActive !== 'false'
+      sortOrder: sortOrder,
+      isActive: categoryData.isActive !== 'false' && categoryData.isActive !== false
     });
 
     console.log('Creating new category with data:', {
@@ -142,7 +149,7 @@ exports.updateCategory = async (req, res) => {
       image: imageUrl,
       video: videoUrl,
       sortOrder: categoryData.sortOrder ? parseInt(categoryData.sortOrder) : existingCategory.sortOrder,
-      isActive: categoryData.isActive !== undefined ? (categoryData.isActive === 'true') : existingCategory.isActive
+      isActive: categoryData.isActive !== undefined ? (categoryData.isActive === 'true' || categoryData.isActive === true) : existingCategory.isActive
     };
 
     console.log('Updating category with data:', {
@@ -176,5 +183,28 @@ exports.deleteCategory = async (req, res) => {
   } catch (error) {
     console.error('Error in deleteCategory:', error);
     res.status(500).json({ message: 'Error deleting category' });
+  }
+};
+
+// Reorder categories
+exports.reorderCategories = async (req, res) => {
+  try {
+    const { categoryIds } = req.body;
+
+    if (!Array.isArray(categoryIds)) {
+      return res.status(400).json({ message: 'categoryIds must be an array' });
+    }
+
+    // Update each category's sortOrder
+    const updatePromises = categoryIds.map((id, index) => {
+      return Category.findByIdAndUpdate(id, { sortOrder: index });
+    });
+
+    await Promise.all(updatePromises);
+
+    res.json({ message: 'Categories reordered successfully' });
+  } catch (error) {
+    console.error('Error in reorderCategories:', error);
+    res.status(500).json({ message: 'Error reordering categories', error: error.message });
   }
 }; 
