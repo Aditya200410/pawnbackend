@@ -320,7 +320,6 @@ const generateLoginResponse = async (seller, res, message = 'Login successful') 
   }));
 
   // Get shop count (Distribution network)
-  const Agent = require('../models/Agent');
   const shopCount = await Agent.countDocuments({ linkedSeller: seller._id });
 
   return res.json({
