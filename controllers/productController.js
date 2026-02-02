@@ -6,7 +6,21 @@ const path = require('path');
 // Get all products
 const getAllProducts = async (req, res) => {
   try {
-    const products = await Product.find();
+    const { category, minPrice, maxPrice } = req.query;
+    let query = {};
+
+    if (category) query.category = category;
+    if (minPrice || maxPrice) {
+      query.price = {};
+      if (minPrice) query.price.$gte = Number(minPrice);
+      if (maxPrice) query.price.$lte = Number(maxPrice);
+    }
+
+    // Exclude heavy fields for the catalogue view to speed up initial load
+    const products = await Product.find(query)
+      .select('name price regularPrice category subcategory item image images rating reviews inStock stock date')
+      .sort({ date: -1 });
+
     res.json(products);
   } catch (error) {
     console.error('Error fetching products:', error);
@@ -34,7 +48,10 @@ const getProductsBySection = async (req, res) => {
         return res.status(400).json({ message: "Invalid section" });
     }
 
-    const products = await Product.find(query);
+    const products = await Product.find(query)
+      .select('name price regularPrice category subcategory item image images rating reviews inStock stock date')
+      .sort({ date: -1 });
+
     res.json(products);
   } catch (error) {
     console.error(`Error fetching ${req.params.section} products:`, error);
