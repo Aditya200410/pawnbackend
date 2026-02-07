@@ -443,6 +443,22 @@ exports.getPhonePeStatus = async (req, res) => {
       // This is crucial for local development where webhooks don't work
       if (isCompleted && orderId.startsWith('PLANREG')) {
         await processCompletedRegistration(orderId);
+      } else if (isCompleted) {
+        // Normal Order Fallback: Update order status if completed but database shows pending
+        try {
+          const Order = require('../models/Order');
+          const { finalizeOrder } = require('../utils/orderHelper');
+          const order = await Order.findOne({ transactionId: orderId });
+          if (order && order.paymentStatus !== 'completed') {
+            order.paymentStatus = 'completed';
+            order.orderStatus = 'processing';
+            await order.save();
+            await finalizeOrder(order);
+            console.log(`Order ${orderId} marked as COMPLETED via Status Check fallback`);
+          }
+        } catch (updateErr) {
+          console.error('Error updating order status in getPhonePeStatus fallback:', updateErr);
+        }
       }
 
       return res.json({
