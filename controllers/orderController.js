@@ -205,15 +205,34 @@ const createOrder = async (req, res) => {
   }
 };
 
-// Get all orders for a specific user by email
+// Get all orders for a specific user by email or phone
 const getOrdersByEmail = async (req, res) => {
   try {
-    const userEmail = req.query.email;
-    if (!userEmail) {
-      return res.status(400).json({ success: false, message: 'Email query parameter is required.' });
+    const { email, phone } = req.query;
+
+    if (!email && !phone) {
+      return res.status(400).json({ success: false, message: 'Email or phone query parameter is required.' });
     }
-    // Case-insensitive search for email
-    const orders = await Order.find({ email: { $regex: new RegExp(`^${userEmail}$`, 'i') } }).sort({ createdAt: -1 });
+
+    let query = {};
+    const conditions = [];
+
+    if (email) {
+      conditions.push({ email: { $regex: new RegExp(`^${email}$`, 'i') } });
+    }
+
+    if (phone) {
+      // Basic phone matching - could be improved with more robust normalization
+      conditions.push({ phone: { $regex: new RegExp(`${phone}$`) } });
+    }
+
+    if (conditions.length > 1) {
+      query = { $or: conditions };
+    } else {
+      query = conditions[0];
+    }
+
+    const orders = await Order.find(query).sort({ createdAt: -1 });
     res.status(200).json({ success: true, orders });
   } catch (error) {
     console.error('Error fetching orders:', error);
