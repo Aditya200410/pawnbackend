@@ -222,8 +222,16 @@ const getOrdersByEmail = async (req, res) => {
     }
 
     if (phone) {
-      // Basic phone matching - could be improved with more robust normalization
-      conditions.push({ phone: { $regex: new RegExp(`${phone}$`) } });
+      // Normalize phone: remove all non-numeric characters
+      const cleanPhone = phone.replace(/\D/g, '');
+      // Take the last 10 digits for matching
+      if (cleanPhone.length >= 10) {
+        const last10 = cleanPhone.slice(-10);
+        conditions.push({ phone: { $regex: new RegExp(`${last10}$`) } });
+      } else {
+        // Fallback for shorter numbers
+        conditions.push({ phone: { $regex: new RegExp(`${cleanPhone}$`) } });
+      }
     }
 
     if (conditions.length > 1) {
