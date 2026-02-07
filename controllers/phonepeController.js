@@ -275,30 +275,25 @@ exports.createPhonePeOrder = async (req, res) => {
       }
     );
 
-    if (response.data && response.data.orderId) {
-      // Update with PhonePe's orderId if needed, but we used merchantOrderId as key
-      newOrder.transactionId = response.data.orderId; // store PhonePe ID as transactionId? Or keep merchantOrderId?
-      // Let's store PhonePe orderId in a separate field if possible, or swap.
-      // Based on Schema: transactionId is generic. Let's keep merchantOrderId locally.
-      // Actually, response.data.orderId IS the merchantOrderId we sent!
-      // PhonePe returns the SAME orderId we sent as `orderId`.
-      // So no need to update transactionId if we saved it as merchantOrderId.
-
-      // Just update status if needed
+    if (response.data && (response.data.orderId || response.data.merchantOrderId)) {
+      // Use PhonePe's merchantOrderId or our local one as the primary transactionId
+      // because that's what's passed in the success URL and callback
+      newOrder.transactionId = response.data.merchantOrderId || merchantOrderId;
+      // You can store PhonePe's internal orderId in another field if you want, 
+      // but merchantOrderId is what we need for lookups.
       await newOrder.save();
 
       return res.json({
         success: true,
         redirectUrl: response.data.redirectUrl,
-        orderId: merchantOrderId, // Returning OUR ID
-        merchantOrderId: merchantOrderId,
-        orderData: newOrder // Return saved order
+        orderId: newOrder.transactionId, // Returning the ID we'll use for lookups
+        merchantOrderId: newOrder.transactionId,
+        orderData: newOrder
       });
     } else {
       await Order.findByIdAndDelete(newOrder._id); // Cleanup failed order
-      return res.status(500).json({ success: false, message: 'Payment initiation failed' });
+      return res.status(500).json({ success: false, message: 'Failed to initiate payment with PhonePe' });
     }
-
   } catch (error) {
     console.error('PhonePe init error:', error);
     // Return detailed error if available, else generic

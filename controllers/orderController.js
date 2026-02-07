@@ -102,24 +102,53 @@ const createOrder = async (req, res) => {
       };
     }
 
-    const newOrder = new Order({
-      customerName,
-      email,
-      phone,
-      address: addressObj,
-      items,
-      totalAmount,
-      paymentMethod,
-      paymentStatus: mappedPaymentStatus,
-      upfrontAmount: upfrontAmount || 0,
-      remainingAmount: remainingAmount || 0,
-      sellerToken,
-      agentCode,
-      transactionId,
-      couponCode,
-    });
+    // Check if an order with this transactionId already exists
+    // This happens for PhonePe orders created via createPhonePeOrder
+    const idToCheck = transactionId || req.body.phonepeOrderId;
+    let savedOrder;
 
-    const savedOrder = await newOrder.save();
+    if (idToCheck) {
+      const existingOrder = await Order.findOne({ transactionId: idToCheck });
+      if (existingOrder) {
+        console.log(`Updating existing order ${idToCheck} instead of creating new one`);
+        existingOrder.paymentStatus = mappedPaymentStatus;
+        existingOrder.orderStatus = mappedPaymentStatus === 'completed' ? 'processing' : existingOrder.orderStatus;
+
+        // Update customer details if they changed
+        existingOrder.customerName = customerName || existingOrder.customerName;
+        existingOrder.email = email || existingOrder.email;
+        existingOrder.phone = phone || existingOrder.phone;
+
+        // Also update items and amounts to match current cart in case they changed
+        existingOrder.items = items || existingOrder.items;
+        existingOrder.totalAmount = totalAmount || existingOrder.totalAmount;
+        existingOrder.upfrontAmount = upfrontAmount || existingOrder.upfrontAmount;
+        existingOrder.remainingAmount = remainingAmount || existingOrder.remainingAmount;
+
+        savedOrder = await existingOrder.save();
+      }
+    }
+
+    if (!savedOrder) {
+      const newOrder = new Order({
+        customerName,
+        email,
+        phone,
+        address: addressObj,
+        items,
+        totalAmount,
+        paymentMethod,
+        paymentStatus: mappedPaymentStatus,
+        upfrontAmount: upfrontAmount || 0,
+        remainingAmount: remainingAmount || 0,
+        sellerToken,
+        agentCode,
+        transactionId,
+        couponCode,
+      });
+
+      savedOrder = await newOrder.save();
+    }
 
     // Calculate commission if seller token is provided
     let commission = 0;
