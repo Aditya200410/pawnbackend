@@ -128,42 +128,71 @@ async function finalizeOrder(order) {
   try {
     console.log(`Finalizing order ${order._id}...`);
 
-    // 1. Handle Plan Purchase
+    // 1. Handle Plan Purchase / Agent Registration
     if (order.orderType === 'plan_purchase') {
       console.log('Finalizing Plan Purchase Order:', order._id);
       try {
         const Seller = require('../models/Seller');
-        // Find seller by email (customerName was passed as seller name, email as seller email)
-        const seller = await Seller.findOne({ email: order.email });
-        if (seller) {
-          // Determine limits based on amount
-          let limit = 0;
-          let planType = 'none';
-          if (order.totalAmount >= 25000) {
-            limit = 999999; // Unlimited
-            planType = 'unlimited';
-          } else if (order.totalAmount >= 20000) {
-            limit = 100;
-            planType = 'pro';
-          } else if (order.totalAmount >= 15000) {
-            limit = 50;
-            planType = 'starter';
-          }
+        const PendingRegistration = require('../models/PendingRegistration');
 
-          seller.agentPlan = {
-            planType: planType,
-            agentLimit: limit,
-            amountPaid: order.totalAmount,
-            purchaseDate: new Date()
-          };
+        // Check if there's a pending registration for this transaction
+        const pendingReg = await PendingRegistration.findOne({
+          $or: [
+            { merchantTransactionId: order.transactionId },
+            { email: order.email } // Fallback
+          ]
+        });
 
-          await seller.save();
-          console.log(`Updated Seller ${seller.businessName} plan to ${planType} (Limit: ${limit})`);
+        if (pendingReg) {
+          console.log(`Creating seller from pending registration: ${pendingReg.businessName}`);
+
+          // Create new seller
+          const newSeller = new Seller({
+            businessName: pendingReg.businessName,
+            email: pendingReg.email,
+            password: pendingReg.password, // This will be hashed by the Seller model pre-save hook
+            phone: pendingReg.phone,
+            address: pendingReg.address,
+            businessType: pendingReg.businessType,
+            images: pendingReg.images,
+            sellerToken: pendingReg.sellerToken,
+            sellerAgentCode: pendingReg.sellerAgentCode,
+            websiteLink: pendingReg.websiteLink,
+            qrCode: pendingReg.qrCode,
+            agentPlan: pendingReg.agentPlan,
+            approved: true, // Auto-approve after payment
+            isVerified: true
+          });
+
+          await newSeller.save();
+          console.log(`Seller ${newSeller.businessName} created successfully after payment.`);
+
+          // Delete pending registration
+          await PendingRegistration.findByIdAndDelete(pendingReg._id);
         } else {
-          console.error(`Seller not found for plan purchase with email: ${order.email}`);
+          // Fallback: update existing seller if this was a plan upgrade (not registration)
+          const seller = await Seller.findOne({ email: order.email });
+          if (seller) {
+            let limit = 0;
+            let planType = 'none';
+            if (order.totalAmount >= 25000) { limit = 999999; planType = 'unlimited'; }
+            else if (order.totalAmount >= 20000) { limit = 100; planType = 'pro'; }
+            else if (order.totalAmount >= 15000) { limit = 50; planType = 'starter'; }
+
+            seller.agentPlan = {
+              planType: planType,
+              agentLimit: limit,
+              amountPaid: order.totalAmount,
+              purchaseDate: new Date()
+            };
+            await seller.save();
+            console.log(`Updated existing Seller ${seller.businessName} plan to ${planType}`);
+          } else {
+            console.error(`Neither pending registration nor seller found for plan purchase: ${order.email}`);
+          }
         }
+
         await appendOrderToJson(order);
-        // Maybe send a specific plan confirmation email? For now reusing standard.
         await sendOrderConfirmationEmail(order);
         return true;
       } catch (err) {

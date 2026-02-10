@@ -6,7 +6,7 @@ const Agent = require('../models/Agent');
 const bcrypt = require('bcryptjs');
 
 const axios = require('axios');
-const phonepeController = require('./phonepeController'); // Import for initiateAgentPayment logic reuse or direct call
+// const phonepeController = require('./phonepeController'); // No longer needed as we use Razorpay
 
 // Register a new seller
 exports.register = async (req, res) => {
@@ -148,76 +148,44 @@ exports.register = async (req, res) => {
 
       await newOrder.save();
 
-      // 2. Initiate PhonePe Payment
-      // We need to fetch the token here
-      // We might need to un-export this helper or move it to utils
-      // Since it's not exported, we'll import the controller and use a new helper if needed, 
-      // OR mostly copy the token fetching logic if we can't access it easily.
-      // Better: Use internal call to `phonepeController.initiateAgentPayment` by passing a mocked req/res? 
-      // No, that's messy. Let's just create the payload here.
-
-      // ... Duplicate Token Logic (Safe for now as it's isolated) ...
-      // Ideally, move getPhonePeToken to utils/phonePeUtils.js
-      // For now, I will implement the payload generation directly.
-
-      const clientId = process.env.PHONEPE_CLIENT_ID;
-      const clientSecret = process.env.PHONEPE_CLIENT_SECRET;
-      const clientVersion = '1';
-      const env = process.env.PHONEPE_ENV || 'sandbox';
-      let oauthUrl = env === 'production' ? 'https://api.phonepe.com/apis/identity-manager/v1/oauth/token' : 'https://api-preprod.phonepe.com/apis/pg-sandbox/v1/oauth/token';
-
-
-      // Quick Token Fetch (Inline for simplicity)
-      const tokenResponse = await axios.post(oauthUrl, new URLSearchParams({
-        client_id: clientId,
-        client_version: clientVersion,
-        client_secret: clientSecret,
-        grant_type: 'client_credentials'
-      }), { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
-
-      const accessToken = tokenResponse.data.access_token;
-
-      const baseUrl = env === 'production' ? 'https://api.phonepe.com/apis/pg' : 'https://api-preprod.phonepe.com/apis/pg-sandbox';
-      const frontendUrl = process.env.FRONTEND_URL;
-      const backendUrl = process.env.BACKEND_URL;
-
-      const payload = {
-        merchantOrderId: merchantOrderId,
-        amount: Math.round(planAmount * 100),
-        expireAfter: 1200,
-        metaInfo: {
-          udf1: businessName,
-          udf2: normalizedEmail,
-          udf3: phone,
-          udf4: 'plan_purchase_registration', // Tag it
-          orderId: newOrder._id.toString(),
-          // sellerId is NOT available yet
-        },
-        paymentFlow: {
-          type: 'PG_CHECKOUT',
-          message: `Payment for Agent Plan Registration`,
-          merchantUrls: {
-            redirectUrl: `${frontendUrl.replace(/\/+$/, '')}/payment/status?orderId=${merchantOrderId}`,
-            callbackUrl: `${backendUrl}/api/payment/phonepe/callback`
-          }
-        }
-      };
-
-      const phonePeRes = await axios.post(baseUrl + '/checkout/v2/pay', payload, {
-        headers: { 'Content-Type': 'application/json', 'Authorization': `O-Bearer ${accessToken}` }
+      // 2. Initiate Razorpay Payment
+      const Razorpay = require('razorpay');
+      const razorpay = new Razorpay({
+        key_id: process.env.RAZORPAY_KEY_ID,
+        key_secret: process.env.RAZORPAY_KEY_SECRET,
       });
 
-      if (phonePeRes.data && phonePeRes.data.orderId) {
-        return res.json({
-          success: true,
-          requirePayment: true,
-          message: 'Registration initiated, payment required',
-          redirectUrl: phonePeRes.data.redirectUrl,
-          orderId: merchantOrderId
-        });
-      } else {
-        return res.status(500).json({ success: false, message: 'Payment initiation failed' });
-      }
+      const razorpayOrder = await razorpay.orders.create({
+        amount: Math.round(planAmount * 100), // in paise
+        currency: "INR",
+        receipt: merchantOrderId,
+        notes: {
+          businessName,
+          email: normalizedEmail,
+          phone: phone,
+          orderType: 'plan_purchase',
+          pendingRegId: pendingReg._id.toString()
+        }
+      });
+
+      // Update Order with Razorpay Order ID
+      newOrder.transactionId = razorpayOrder.id;
+      await newOrder.save();
+
+      return res.json({
+        success: true,
+        requirePayment: true,
+        message: 'Registration initiated, payment required',
+        razorpayOrderId: razorpayOrder.id,
+        amount: razorpayOrder.amount,
+        key: process.env.RAZORPAY_KEY_ID,
+        merchantOrderId: merchantOrderId,
+        customerDetails: {
+          name: businessName,
+          email: normalizedEmail,
+          contact: phone
+        }
+      });
 
     }
 

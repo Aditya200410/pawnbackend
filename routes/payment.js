@@ -1,18 +1,15 @@
 const express = require('express');
 const router = express.Router();
-const phonepeController = require('../controllers/phonepeController');
+const razorpayController = require('../controllers/razorpayController');
 
-// Debugging
-console.log('Controller keys:', Object.keys(phonepeController)); // should include 'createPhonePeOrder'
+// Razorpay Payment Routes
+router.post('/razorpay/create-order', razorpayController.createRazorpayOrder);
+router.post('/razorpay/verify', razorpayController.verifySignature);
+router.get('/razorpay/status/:orderId', razorpayController.getRazorpayStatus);
 
-// PhonePe Payment Routes
-router.post('/phonepe', phonepeController.createPhonePeOrder);
-router.post('/phonepe/initiate', phonepeController.initiateAgentPayment);
-router.post('/phonepe/callback', phonepeController.phonePeCallback);
-router.get('/phonepe/status/:orderId', phonepeController.getPhonePeStatus);
-
-// PhonePe Refund Routes
-router.post('/phonepe/refund', phonepeController.refundPayment);
-router.get('/phonepe/refund/:merchantRefundId/status', phonepeController.getRefundStatus);
+// Magic Checkout Mandatory Endpoints (Public)
+router.post('/razorpay/shipping-info', razorpayController.getShippingInfo);
+router.post('/razorpay/get-promotions', razorpayController.getPromotions);
+router.post('/razorpay/apply-promotion', razorpayController.applyPromotion);
 
 module.exports = router;
