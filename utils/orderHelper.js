@@ -139,6 +139,7 @@ async function finalizeOrder(order) {
         const pendingReg = await PendingRegistration.findOne({
           $or: [
             { merchantTransactionId: order.transactionId },
+            { merchantTransactionId: order.merchantTransactionId },
             { email: order.email } // Fallback
           ]
         });

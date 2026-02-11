@@ -58,6 +58,18 @@ exports.createRazorpayOrder = async (req, res) => {
             return res.status(400).json({ success: false, message: `Missing required fields: ${missingFields.join(', ')}` });
         }
 
+        // Normalize phone to E.164 format for Razorpay
+        let formattedPhone = phone.trim();
+        // Remove spaces, dashes, etc
+        formattedPhone = formattedPhone.replace(/[\s\-\(\)]/g, '');
+        if (!formattedPhone.startsWith('+')) {
+            if (formattedPhone.length === 10) {
+                formattedPhone = '+91' + formattedPhone;
+            } else if (formattedPhone.startsWith('91') && formattedPhone.length === 12) {
+                formattedPhone = '+' + formattedPhone;
+            }
+        }
+
         // Determine payment amount in paise
         // Use finalTotal if available, else use amount, else use totalAmount
         const paymentAmountRupees = finalTotal || amount || totalAmount || 0;
@@ -82,6 +94,26 @@ exports.createRazorpayOrder = async (req, res) => {
             },
             payment: {
                 capture: 'automatic',
+            },
+            // Passing customer_details helps Magic Checkout pre-fill/identify user
+            customer_details: {
+                name: customerName,
+                email: email,
+                contact: phone,
+                billing_address: {
+                    line1: address || 'TBD',
+                    city: city || 'TBD',
+                    state: state || 'TBD',
+                    zipcode: pincode || 'TBD',
+                    country: 'IN'
+                },
+                shipping_address: {
+                    line1: address || 'TBD',
+                    city: city || 'TBD',
+                    state: state || 'TBD',
+                    zipcode: pincode || 'TBD',
+                    country: 'IN'
+                }
             }
         };
 
@@ -114,6 +146,7 @@ exports.createRazorpayOrder = async (req, res) => {
             sellerToken: sellerToken || '',
             agentCode: agentCode || '',
             couponCode: couponCode || '',
+            merchantTransactionId: merchantOrderId,
         });
 
         await newOrder.save();
@@ -185,9 +218,11 @@ exports.verifySignature = async (req, res) => {
  */
 exports.getShippingInfo = async (req, res) => {
     try {
-        const { order_id, address } = req.body;
+        // Updated to match 1.4 Interact with Shipping Info API docs
+        const { order_id, razorpay_order_id, email, contact, addresses } = req.body;
+        console.log('Magic Checkout Shipping Info Request:', { order_id, razorpay_order_id, email, contact, count: addresses?.length });
 
-        // You can implement custom shipping logic here based on pincode or state
+        // You can implement custom shipping logic here based on pincode or state found in 'addresses'
         // For now, we use a fixed standard shipping (free)
         const codAmount = await getCodAmount();
 
@@ -198,11 +233,12 @@ exports.getShippingInfo = async (req, res) => {
                     id: "standard",
                     name: "Standard Shipping",
                     amount: 0,
+                    currency: "INR",
                     description: "3-5 business days"
                 }
             ],
             cod_available: true,
-            cod_fee: codAmount
+            cod_fee: codAmount * 100 // Convert to paise
         };
 
         res.json(response);
@@ -225,9 +261,11 @@ exports.getPromotions = async (req, res) => {
 
         const promotions = activeCoupons.map(coupon => ({
             code: coupon.code,
-            description: `Get ${coupon.discountValue}% off on orders above ₹${coupon.minPurchase}`,
+            description: coupon.discountType === 'percentage'
+                ? `Get ${coupon.discountValue}% off on orders above ₹${coupon.minPurchase}`
+                : `Get ₹${coupon.discountValue} off on orders above ₹${coupon.minPurchase}`,
             discount_type: coupon.discountType === 'percentage' ? 'percentage' : 'flat',
-            discount_value: coupon.discountValue
+            discount_value: coupon.discountType === 'percentage' ? coupon.discountValue : (coupon.discountValue * 100)
         }));
 
         res.json({ promotions });

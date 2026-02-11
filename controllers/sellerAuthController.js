@@ -143,6 +143,7 @@ exports.register = async (req, res) => {
         upfrontAmount: 0,
         remainingAmount: 0,
         shippingCost: 0,
+        merchantTransactionId: merchantOrderId,
         // sellerToken linked to pendingReg is tricky, usually we link via merchantId
       });
 
