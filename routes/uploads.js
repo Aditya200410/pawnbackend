@@ -17,6 +17,8 @@ router.get('/*', (req, res) => {
 
     // Check if file exists
     if (fs.existsSync(absolutePath)) {
+        // Add strong caching for images (1 year)
+        res.set('Cache-Control', 'public, max-age=31536000, immutable');
         // Let express handle Content-Type based on extension
         res.sendFile(absolutePath);
     } else {
