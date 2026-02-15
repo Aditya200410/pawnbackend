@@ -84,6 +84,14 @@ exports.createRazorpayOrder = async (req, res) => {
             amount: Math.round(paymentAmountRupees * 100), // amount in paise
             currency: "INR",
             receipt: merchantOrderId,
+            line_items_total: Math.round(paymentAmountRupees * 100), // MANDATORY for Magic Checkout
+            line_items: (items || []).map(item => ({
+                name: item.name || 'Product',
+                quantity: item.quantity || 1,
+                price: Math.round((item.price || item.product?.price || 0) * 100),
+                offer_price: Math.round((item.price || item.product?.price || 0) * 100),
+                sku: item.productId || item.id || 'N/A'
+            })),
             notes: {
                 customerName,
                 email,
@@ -95,7 +103,6 @@ exports.createRazorpayOrder = async (req, res) => {
             payment: {
                 capture: 'automatic',
             },
-            // Passing customer_details helps Magic Checkout pre-fill/identify user
             customer_details: {
                 name: customerName,
                 email: email,
