@@ -212,10 +212,16 @@ exports.verifySignature = async (req, res) => {
                     // Capture name from various possible locations in Magic Checkout payload
                     const capturedName = payment.notes?.customerName ||
                         payment.notes?.name ||
+                        payment.notes?.customer_name ||
+                        payment.notes?.contact_name ||
                         payment.customer?.name ||
                         payment.customer_details?.name ||
-                        payment.billing_address?.name;
-                    if (capturedName) {
+                        payment.billing_address?.name ||
+                        payment.shipping_address?.name ||
+                        payment.notes?.['shipping_address.name'] ||
+                        payment.notes?.['billing_address.name'];
+
+                    if (capturedName && capturedName !== 'Valued Customer' && capturedName.trim().length > 0) {
                         console.log('Captured Customer Name for order:', capturedName);
                         order.customerName = capturedName;
                     }
@@ -229,29 +235,61 @@ exports.verifySignature = async (req, res) => {
                     const newAddress = { ...order.address };
                     let ra = payment.shipping_address || payment.notes?.shipping_address || payment.notes?.address;
 
+                    // Support for flat fields in notes if address is not a direct object/string
+                    if (!ra && payment.notes) {
+                        // Priority 1: Flat fields with prefixes
+                        const n = payment.notes;
+                        const line1 = n.shipping_address_line1 || n.shipping_address_street || n.address_line1 || n.line1 || n.street || n['shipping_address.line1'];
+                        const city = n.shipping_address_city || n.address_city || n.city || n['shipping_address.city'];
+                        const state = n.shipping_address_state || n.address_state || n.state || n['shipping_address.state'];
+                        const pincode = n.shipping_address_pincode || n.shipping_address_zip || n.address_pincode || n.pincode || n.zipcode || n.zip || n['shipping_address.pincode'];
+
+                        if (line1 || city || state) {
+                            ra = {
+                                line1,
+                                city,
+                                state,
+                                pincode,
+                                country: n.shipping_address_country || n.country || 'India'
+                            };
+                        }
+                    }
+
                     if (ra) {
-                        if (typeof ra === 'string' && (ra.startsWith('{') || ra.startsWith('['))) {
-                            try {
-                                const parsed = JSON.parse(ra);
-                                if (parsed && typeof parsed === 'object') ra = parsed;
-                            } catch (e) { /* not json */ }
+                        if (typeof ra === 'string') {
+                            const trimmedRa = ra.trim();
+                            if (trimmedRa.startsWith('{') || trimmedRa.startsWith('[')) {
+                                try {
+                                    const parsed = JSON.parse(trimmedRa);
+                                    if (parsed && typeof parsed === 'object') ra = parsed;
+                                } catch (e) { /* not valid json, use as string */ }
+                            }
                         }
 
-                        if (typeof ra === 'string') {
+                        if (typeof ra === 'string' && ra.trim().length > 0) {
                             newAddress.street = ra;
                         } else if (typeof ra === 'object' && ra !== null) {
-                            newAddress.street = ra.line1 || ra.street || (ra.line2 ? `${ra.line1} ${ra.line2}` : newAddress.street);
-                            newAddress.city = ra.city || newAddress.city;
-                            newAddress.state = ra.state || newAddress.state;
-                            newAddress.pincode = ra.pincode || ra.zipcode || ra.postal_code || newAddress.pincode;
-                            newAddress.country = ra.country || ra.countryCode || 'India';
+                            // Extract street/line1
+                            const street = ra.line1 || ra.street || (ra.line2 ? `${ra.line1} ${ra.line2}` : null);
+                            if (street) newAddress.street = street;
+
+                            // Extract other fields with fallbacks to current values only if new ones are missing
+                            if (ra.city) newAddress.city = ra.city;
+                            if (ra.state) newAddress.state = ra.state;
+                            if (ra.pincode || ra.zipcode || ra.postal_code || ra.zip) {
+                                newAddress.pincode = ra.pincode || ra.zipcode || ra.postal_code || ra.zip;
+                            }
+                            if (ra.country || ra.countryCode) {
+                                newAddress.country = ra.country || ra.countryCode;
+                            }
                         }
                     } else if (payment.billing_address) {
                         const ba = payment.billing_address;
                         newAddress.street = ba.line1 || ba.street || newAddress.street;
                         newAddress.city = ba.city || newAddress.city;
-                        newAddress.state = ba.state || ba.state;
+                        newAddress.state = ba.state || newAddress.state;
                         newAddress.pincode = ba.pincode || ba.zipcode || newAddress.pincode;
+                        if (ba.country) newAddress.country = ba.country;
                     }
 
                     order.address = newAddress;
