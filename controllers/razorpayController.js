@@ -209,10 +209,11 @@ exports.verifySignature = async (req, res) => {
                     if (payment.contact) {
                         order.phone = payment.contact;
                     }
-                    if (payment.notes && (payment.notes.customerName || payment.notes.name)) {
-                        order.customerName = payment.notes.customerName || payment.notes.name;
-                    } else if (payment.customer_details && payment.customer_details.name) {
-                        order.customerName = payment.customer_details.name;
+                    // Capture name from various possible locations in Magic Checkout payload
+                    const capturedName = payment.notes?.customerName || payment.notes?.name ||
+                        payment.customer_details?.name || payment.billing_address?.name;
+                    if (capturedName) {
+                        order.customerName = capturedName;
                     }
 
                     // 2. Sync Actual Paid Amount (paise to INR)
@@ -220,25 +221,32 @@ exports.verifySignature = async (req, res) => {
                         order.totalAmount = payment.amount / 100;
                     }
 
-                    // 3. Sync Shipping Address
+                    // 3. Robust Shipping Address Sync
                     const newAddress = { ...order.address };
-                    if (payment && payment.notes && (payment.notes.shipping_address || payment.notes.address)) {
-                        const addrNote = payment.notes.shipping_address || payment.notes.address;
-                        if (typeof addrNote === 'string') {
-                            newAddress.street = addrNote;
-                        } else if (typeof addrNote === 'object') {
-                            newAddress.street = addrNote.line1 || addrNote.street || newAddress.street;
-                            newAddress.city = addrNote.city || newAddress.city;
-                            newAddress.state = addrNote.state || newAddress.state;
-                            newAddress.pincode = addrNote.pincode || addrNote.zipcode || newAddress.pincode;
+
+                    // Check direct shipping_address object first (standard Razorpay)
+                    // Then check notes (Magic Checkout often puts it here)
+                    const ra = payment.shipping_address || payment.notes?.shipping_address || payment.notes?.address;
+
+                    if (ra) {
+                        if (typeof ra === 'string') {
+                            newAddress.street = ra;
+                        } else if (typeof ra === 'object') {
+                            newAddress.street = ra.line1 || ra.street || (ra.line2 ? `${ra.line1} ${ra.line2}` : newAddress.street);
+                            newAddress.city = ra.city || newAddress.city;
+                            newAddress.state = ra.state || newAddress.state;
+                            newAddress.pincode = ra.pincode || ra.zipcode || ra.postal_code || newAddress.pincode;
+                            newAddress.country = ra.country || newAddress.country || 'India';
                         }
-                    } else if (payment && payment.shipping_address) {
-                        const ra = payment.shipping_address;
-                        newAddress.street = ra.line1 || ra.line2 ? `${ra.line1} ${ra.line2}`.trim() : newAddress.street;
-                        newAddress.city = ra.city || newAddress.city;
-                        newAddress.state = ra.state || newAddress.state;
-                        newAddress.pincode = ra.pincode || ra.zipcode || ra.postal_code || newAddress.pincode;
+                    } else if (payment.billing_address) {
+                        // Fallback to billing address if shipping is missing
+                        const ba = payment.billing_address;
+                        newAddress.street = ba.line1 || ba.street || newAddress.street;
+                        newAddress.city = ba.city || ba.city; // keep existing if ba.city missing
+                        newAddress.state = ba.state || ba.state;
+                        newAddress.pincode = ba.pincode || ba.zipcode || newAddress.pincode;
                     }
+
                     order.address = newAddress;
                     order.markModified('address');
                 } catch (fetchError) {
