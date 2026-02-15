@@ -52,11 +52,11 @@ exports.createRazorpayOrder = async (req, res) => {
             country
         } = req.body;
 
-        const requiredFields = ['customerName', 'email', 'phone'];
-        const missingFields = requiredFields.filter(field => !req.body[field]);
-        if (missingFields.length > 0) {
-            return res.status(400).json({ success: false, message: `Missing required fields: ${missingFields.join(', ')}` });
-        }
+        // For Magic Checkout, we can allow missing customer details as they will be captured in the modal
+        // But we provide defaults to satisfy the schema if needed
+        const finalCustomerName = customerName || 'Valued Customer';
+        const finalEmail = email || ' ';
+        const finalPhone = phone || '+910000000000';
 
         // Normalize phone to E.164 format for Razorpay
         let formattedPhone = phone.trim();
@@ -93,9 +93,9 @@ exports.createRazorpayOrder = async (req, res) => {
                 sku: item.productId || item.id || 'N/A'
             })),
             notes: {
-                customerName,
-                email,
-                phone,
+                customerName: finalCustomerName,
+                email: finalEmail,
+                phone: formattedPhone,
                 sellerToken: sellerToken || '',
                 agentCode: agentCode || '',
                 orderType: orderType || 'product_order'
@@ -104,9 +104,9 @@ exports.createRazorpayOrder = async (req, res) => {
                 capture: 'automatic',
             },
             customer_details: {
-                name: customerName,
-                email: email,
-                contact: phone,
+                name: finalCustomerName,
+                email: finalEmail,
+                contact: formattedPhone,
                 billing_address: {
                     line1: address || 'TBD',
                     city: city || 'TBD',
@@ -138,9 +138,9 @@ exports.createRazorpayOrder = async (req, res) => {
         // Save Order in DB
         const newOrder = new Order({
             transactionId: razorpayOrder.id,
-            customerName,
-            email,
-            phone,
+            customerName: finalCustomerName,
+            email: finalEmail,
+            phone: formattedPhone,
             address: addressObj,
             items: items || [],
             totalAmount: totalAmount || paymentAmountRupees,
