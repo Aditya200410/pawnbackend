@@ -198,27 +198,49 @@ exports.verifySignature = async (req, res) => {
             }
 
             if (order.paymentStatus !== 'completed') {
-                // Fetch payment details to get address from Magic Checkout
+                // Fetch payment details to get accurate customer info from Magic Checkout
                 try {
                     const payment = await razorpay.payments.fetch(razorpay_payment_id);
+
+                    // 1. Sync Customer Details (Overwrite placeholders with real data)
+                    if (payment.email && payment.email.trim()) {
+                        order.email = payment.email;
+                    }
+                    if (payment.contact) {
+                        order.phone = payment.contact;
+                    }
+                    if (payment.notes && (payment.notes.customerName || payment.notes.name)) {
+                        order.customerName = payment.notes.customerName || payment.notes.name;
+                    } else if (payment.customer_details && payment.customer_details.name) {
+                        order.customerName = payment.customer_details.name;
+                    }
+
+                    // 2. Sync Actual Paid Amount (paise to INR)
+                    if (payment.amount) {
+                        order.totalAmount = payment.amount / 100;
+                    }
+
+                    // 3. Sync Shipping Address
+                    const newAddress = { ...order.address };
                     if (payment && payment.notes && (payment.notes.shipping_address || payment.notes.address)) {
-                        // Razorpay Magic Checkout often stores address in notes or shipping_address
                         const addrNote = payment.notes.shipping_address || payment.notes.address;
                         if (typeof addrNote === 'string') {
-                            order.address.street = addrNote;
+                            newAddress.street = addrNote;
                         } else if (typeof addrNote === 'object') {
-                            order.address.street = addrNote.line1 || addrNote.street || order.address.street;
-                            order.address.city = addrNote.city || order.address.city;
-                            order.address.state = addrNote.state || order.address.state;
-                            order.address.pincode = addrNote.pincode || addrNote.zipcode || order.address.pincode;
+                            newAddress.street = addrNote.line1 || addrNote.street || newAddress.street;
+                            newAddress.city = addrNote.city || newAddress.city;
+                            newAddress.state = addrNote.state || newAddress.state;
+                            newAddress.pincode = addrNote.pincode || addrNote.zipcode || newAddress.pincode;
                         }
                     } else if (payment && payment.shipping_address) {
                         const ra = payment.shipping_address;
-                        order.address.street = ra.line1 || ra.line2 ? `${ra.line1} ${ra.line2}` : order.address.street;
-                        order.address.city = ra.city || order.address.city;
-                        order.address.state = ra.state || order.address.state;
-                        order.address.pincode = ra.pincode || order.address.pincode;
+                        newAddress.street = ra.line1 || ra.line2 ? `${ra.line1} ${ra.line2}`.trim() : newAddress.street;
+                        newAddress.city = ra.city || newAddress.city;
+                        newAddress.state = ra.state || newAddress.state;
+                        newAddress.pincode = ra.pincode || ra.zipcode || ra.postal_code || newAddress.pincode;
                     }
+                    order.address = newAddress;
+                    order.markModified('address');
                 } catch (fetchError) {
                     console.error('Error fetching Razorpay payment details:', fetchError);
                 }

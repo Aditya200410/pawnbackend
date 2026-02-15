@@ -403,6 +403,10 @@ exports.createCommissionEntry = async (orderId, sellerId, orderAmount, commissio
     await sellerEntry.save();
     createdEntries.push(sellerEntry);
 
+    // Update order's commission field for easy reference
+    order.commission = sellerCommissionAmount + agentCommissionAmount;
+    await order.save();
+
     // Update seller's commission totals
     const seller = await Seller.findById(sellerId);
     if (seller) {

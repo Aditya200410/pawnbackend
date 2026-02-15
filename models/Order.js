@@ -47,7 +47,18 @@ const orderSchema = new mongoose.Schema({
   commission: { type: Number, default: 0 }, // Commission amount for this order
   transactionId: { type: String, required: false }, // PhonePe/Razorpay transaction ID
   merchantTransactionId: { type: String, required: false }, // Internal order ID (e.g. PLANREG...)
+  orderNumber: { type: String, unique: true }, // Human-readable order number (e.g. RC-1001)
   couponCode: { type: String, required: false }, // Coupon code if applied
 }, { timestamps: true });
+
+// Pre-save hook to generate orderNumber
+orderSchema.pre('save', async function (next) {
+  if (this.isNew && !this.orderNumber) {
+    const timestamp = Date.now().toString().slice(-8);
+    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    this.orderNumber = `RC-${timestamp}${random}`;
+  }
+  next();
+});
 
 module.exports = mongoose.model('Order', orderSchema);
