@@ -56,8 +56,8 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'Access-Control-Allow-Origin', 'Content-Length'],
-  exposedHeaders: ['Content-Length', 'X-Requested-With'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'Access-Control-Allow-Origin', 'Content-Length', 'x-rtb-fingerprint-id'],
+  exposedHeaders: ['Content-Length', 'X-Requested-With', 'x-rtb-fingerprint-id'],
   preflightContinue: false,
   optionsSuccessStatus: 204
 }));
