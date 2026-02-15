@@ -209,7 +209,7 @@ exports.verifySignature = async (req, res) => {
                     if (payment.contact) {
                         order.phone = payment.contact;
                     }
-                    // Capture name from various possible locations in Magic Checkout payload
+                    // Capture name from various possible locations in Magic Checkout / Standard payload
                     const capturedName = payment.notes?.customerName ||
                         payment.notes?.name ||
                         payment.notes?.customer_name ||
@@ -221,8 +221,13 @@ exports.verifySignature = async (req, res) => {
                         payment.notes?.['shipping_address.name'] ||
                         payment.notes?.['billing_address.name'];
 
-                    if (capturedName && capturedName !== 'Valued Customer' && capturedName.trim().length > 0) {
-                        console.log('Captured Customer Name for order:', capturedName);
+                    if (capturedName &&
+                        typeof capturedName === 'string' &&
+                        capturedName.trim().length > 0 &&
+                        capturedName !== 'Valued Customer' &&
+                        capturedName !== 'TBD'
+                    ) {
+                        console.log('Captured Real Customer Name:', capturedName);
                         order.customerName = capturedName;
                     }
 
@@ -239,7 +244,7 @@ exports.verifySignature = async (req, res) => {
                     if (!ra && payment.notes) {
                         // Priority 1: Flat fields with prefixes
                         const n = payment.notes;
-                        const line1 = n.shipping_address_line1 || n.shipping_address_street || n.address_line1 || n.line1 || n.street || n['shipping_address.line1'];
+                        const line1 = n.shipping_address_line1 || n.shipping_address_street || n.address_line1 || n.line1 || n.street || n.address || n['shipping_address.line1'];
                         const city = n.shipping_address_city || n.address_city || n.city || n['shipping_address.city'];
                         const state = n.shipping_address_state || n.address_state || n.state || n['shipping_address.state'];
                         const pincode = n.shipping_address_pincode || n.shipping_address_zip || n.address_pincode || n.pincode || n.zipcode || n.zip || n['shipping_address.pincode'];
@@ -266,30 +271,32 @@ exports.verifySignature = async (req, res) => {
                             }
                         }
 
-                        if (typeof ra === 'string' && ra.trim().length > 0) {
+                        if (typeof ra === 'string' && ra.trim().length > 0 && ra !== 'TBD') {
                             newAddress.street = ra;
                         } else if (typeof ra === 'object' && ra !== null) {
                             // Extract street/line1
                             const street = ra.line1 || ra.street || (ra.line2 ? `${ra.line1} ${ra.line2}` : null);
-                            if (street) newAddress.street = street;
+                            if (street && street !== 'TBD') newAddress.street = street;
 
-                            // Extract other fields with fallbacks to current values only if new ones are missing
-                            if (ra.city) newAddress.city = ra.city;
-                            if (ra.state) newAddress.state = ra.state;
+                            // Extract other fields with fallbacks
+                            if (ra.city && ra.city !== 'TBD') newAddress.city = ra.city;
+                            if (ra.state && ra.state !== 'TBD') newAddress.state = ra.state;
                             if (ra.pincode || ra.zipcode || ra.postal_code || ra.zip) {
-                                newAddress.pincode = ra.pincode || ra.zipcode || ra.postal_code || ra.zip;
+                                const pc = ra.pincode || ra.zipcode || ra.postal_code || ra.zip;
+                                if (pc !== 'TBD') newAddress.pincode = pc;
                             }
                             if (ra.country || ra.countryCode) {
-                                newAddress.country = ra.country || ra.countryCode;
+                                const c = ra.country || ra.countryCode;
+                                if (c !== 'TBD') newAddress.country = c;
                             }
                         }
                     } else if (payment.billing_address) {
                         const ba = payment.billing_address;
-                        newAddress.street = ba.line1 || ba.street || newAddress.street;
-                        newAddress.city = ba.city || newAddress.city;
-                        newAddress.state = ba.state || newAddress.state;
-                        newAddress.pincode = ba.pincode || ba.zipcode || newAddress.pincode;
-                        if (ba.country) newAddress.country = ba.country;
+                        if (ba.line1 && ba.line1 !== 'TBD') newAddress.street = ba.line1 || ba.street;
+                        if (ba.city && ba.city !== 'TBD') newAddress.city = ba.city;
+                        if (ba.state && ba.state !== 'TBD') newAddress.state = ba.state;
+                        if (ba.pincode || ba.zipcode) newAddress.pincode = ba.pincode || ba.zipcode;
+                        if (ba.country && ba.country !== 'TBD') newAddress.country = ba.country;
                     }
 
                     order.address = newAddress;
@@ -302,6 +309,8 @@ exports.verifySignature = async (req, res) => {
                 order.orderStatus = 'processing';
                 order.notes = order.notes || {};
                 order.notes.razorpay_payment_id = razorpay_payment_id;
+
+                // SAVE BEFORE FINALIZE
                 await order.save();
 
                 // Finalize Order (stock, email, etc.)
