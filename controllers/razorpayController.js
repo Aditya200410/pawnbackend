@@ -210,9 +210,13 @@ exports.verifySignature = async (req, res) => {
                         order.phone = payment.contact;
                     }
                     // Capture name from various possible locations in Magic Checkout payload
-                    const capturedName = payment.notes?.customerName || payment.notes?.name ||
-                        payment.customer_details?.name || payment.billing_address?.name;
+                    const capturedName = payment.notes?.customerName ||
+                        payment.notes?.name ||
+                        payment.customer?.name ||
+                        payment.customer_details?.name ||
+                        payment.billing_address?.name;
                     if (capturedName) {
+                        console.log('Captured Customer Name for order:', capturedName);
                         order.customerName = capturedName;
                     }
 
@@ -223,26 +227,29 @@ exports.verifySignature = async (req, res) => {
 
                     // 3. Robust Shipping Address Sync
                     const newAddress = { ...order.address };
-
-                    // Check direct shipping_address object first (standard Razorpay)
-                    // Then check notes (Magic Checkout often puts it here)
-                    const ra = payment.shipping_address || payment.notes?.shipping_address || payment.notes?.address;
+                    let ra = payment.shipping_address || payment.notes?.shipping_address || payment.notes?.address;
 
                     if (ra) {
+                        if (typeof ra === 'string' && (ra.startsWith('{') || ra.startsWith('['))) {
+                            try {
+                                const parsed = JSON.parse(ra);
+                                if (parsed && typeof parsed === 'object') ra = parsed;
+                            } catch (e) { /* not json */ }
+                        }
+
                         if (typeof ra === 'string') {
                             newAddress.street = ra;
-                        } else if (typeof ra === 'object') {
+                        } else if (typeof ra === 'object' && ra !== null) {
                             newAddress.street = ra.line1 || ra.street || (ra.line2 ? `${ra.line1} ${ra.line2}` : newAddress.street);
                             newAddress.city = ra.city || newAddress.city;
                             newAddress.state = ra.state || newAddress.state;
                             newAddress.pincode = ra.pincode || ra.zipcode || ra.postal_code || newAddress.pincode;
-                            newAddress.country = ra.country || newAddress.country || 'India';
+                            newAddress.country = ra.country || ra.countryCode || 'India';
                         }
                     } else if (payment.billing_address) {
-                        // Fallback to billing address if shipping is missing
                         const ba = payment.billing_address;
                         newAddress.street = ba.line1 || ba.street || newAddress.street;
-                        newAddress.city = ba.city || ba.city; // keep existing if ba.city missing
+                        newAddress.city = ba.city || newAddress.city;
                         newAddress.state = ba.state || ba.state;
                         newAddress.pincode = ba.pincode || ba.zipcode || newAddress.pincode;
                     }
