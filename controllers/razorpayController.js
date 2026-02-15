@@ -55,11 +55,11 @@ exports.createRazorpayOrder = async (req, res) => {
         // For Magic Checkout, we can allow missing customer details as they will be captured in the modal
         // But we provide defaults to satisfy the schema if needed
         const finalCustomerName = customerName || 'Valued Customer';
-        const finalEmail = email || ' ';
-        const finalPhone = phone || '+910000000000';
+        const finalEmail = (email && email.trim()) ? email : ' ';
+        const rawPhone = phone || '0000000000';
 
         // Normalize phone to E.164 format for Razorpay
-        let formattedPhone = phone.trim();
+        let formattedPhone = rawPhone.trim();
         // Remove spaces, dashes, etc
         formattedPhone = formattedPhone.replace(/[\s\-\(\)]/g, '');
         if (!formattedPhone.startsWith('+')) {
