@@ -40,7 +40,15 @@ const writeOrders = (orders) => {
 // Admin: Get all orders from MongoDB (not orders.json) - PROTECTED
 router.get('/json', authenticateToken, isAdmin, async (req, res) => {
   try {
-    const orders = await Order.find().sort({ createdAt: -1 });
+    // Filter out abandoned/failed online payments to keep the dashboard clean
+    const orders = await Order.find({
+      $or: [
+        { paymentStatus: 'completed' },
+        { paymentStatus: 'pending_upfront' },
+        // Show COD orders unless they explicitly failed (e.g. upfront payment failed)
+        { paymentMethod: 'cod', paymentStatus: { $ne: 'failed' } }
+      ]
+    }).sort({ createdAt: -1 });
     res.json({ success: true, orders });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch orders from MongoDB', error: error.message });
@@ -93,10 +101,10 @@ router.put("/:id/status", authenticateToken, isAdmin, async (req, res) => {
         errors: Object.values(error.errors).map(err => err.message)
       });
     }
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       message: 'Failed to update order status',
-      error: error.message 
+      error: error.message
     });
   }
 });
@@ -146,10 +154,10 @@ router.put("/:id", authenticateToken, isAdmin, async (req, res) => {
         errors: Object.values(error.errors).map(err => err.message)
       });
     }
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       message: 'Failed to update order',
-      error: error.message 
+      error: error.message
     });
   }
 });
