@@ -111,8 +111,8 @@ exports.createBooking = async (req, res) => {
         // PhonePe Integration
         if (paymentMethod === 'phonepe') {
             const env = process.env.PHONEPE_ENV || 'sandbox';
-            const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-            const backendUrl = process.env.BACKEND_URL || 'http://localhost:5175';
+            const frontendUrl = process.env.FRONTEND_URL || 'https://rikocraft.com';
+            const backendUrl = process.env.BACKEND_URL || 'https://api.rikocraft.com/api';
 
             const accessToken = await getPhonePeToken();
             const baseUrl = env === 'production'
