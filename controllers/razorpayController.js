@@ -229,11 +229,11 @@ exports.getShippingInfo = async (req, res) => {
         const { order_id, razorpay_order_id, email, contact, addresses } = req.body;
         console.log('Magic Checkout Shipping Info Request:', { order_id, razorpay_order_id, email, contact, count: addresses?.length });
 
-        // You can implement custom shipping logic here based on pincode or state found in 'addresses'
-        // For now, we use a fixed standard shipping (free)
         const codAmount = await getCodAmount();
 
-        const response = {
+        // Map shipping options to EACH address as required by Razorpay
+        const updatedAddresses = (addresses || []).map(addr => ({
+            ...addr,
             serviceable: true,
             shipping_options: [
                 {
@@ -245,7 +245,12 @@ exports.getShippingInfo = async (req, res) => {
                 }
             ],
             cod_available: true,
-            cod_fee: codAmount * 100 // Convert to paise
+            cod_fee: codAmount * 100
+        }));
+
+        const response = {
+            serviceable: true,
+            addresses: updatedAddresses
         };
 
         res.json(response);
