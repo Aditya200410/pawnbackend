@@ -69,12 +69,12 @@ app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', origin);
   }
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Content-Length, x-rtb-fingerprint-id');
-  res.header('Access-Control-Expose-Headers', 'Content-Length, X-Requested-With, x-rtb-fingerprint-id');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Content-Length, x-rtb-fingerprint-id, *');
+  res.header('Access-Control-Expose-Headers', 'Content-Length, X-Requested-With, x-rtb-fingerprint-id, x-rtb-fingerprint-id');
   res.header('Access-Control-Allow-Credentials', 'true');
 
-  // Suppress sensor warnings from third-party SDKs
-  res.header('Permissions-Policy', 'accelerometer=(self "https://checkout.razorpay.com"), devicemotion=(self "https://checkout.razorpay.com"), deviceorientation=(self "https://checkout.razorpay.com")');
+  // Fully allow sensors for Razorpay to prevent all violation errors
+  res.header('Permissions-Policy', 'accelerometer=*, devicemotion=*, deviceorientation=*, gyroscope=*');
 
   if (req.method === 'OPTIONS') {
     res.sendStatus(200);
