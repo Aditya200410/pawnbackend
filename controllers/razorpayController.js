@@ -198,9 +198,33 @@ exports.verifySignature = async (req, res) => {
             }
 
             if (order.paymentStatus !== 'completed') {
+                // Fetch payment details to get address from Magic Checkout
+                try {
+                    const payment = await razorpay.payments.fetch(razorpay_payment_id);
+                    if (payment && payment.notes && (payment.notes.shipping_address || payment.notes.address)) {
+                        // Razorpay Magic Checkout often stores address in notes or shipping_address
+                        const addrNote = payment.notes.shipping_address || payment.notes.address;
+                        if (typeof addrNote === 'string') {
+                            order.address.street = addrNote;
+                        } else if (typeof addrNote === 'object') {
+                            order.address.street = addrNote.line1 || addrNote.street || order.address.street;
+                            order.address.city = addrNote.city || order.address.city;
+                            order.address.state = addrNote.state || order.address.state;
+                            order.address.pincode = addrNote.pincode || addrNote.zipcode || order.address.pincode;
+                        }
+                    } else if (payment && payment.shipping_address) {
+                        const ra = payment.shipping_address;
+                        order.address.street = ra.line1 || ra.line2 ? `${ra.line1} ${ra.line2}` : order.address.street;
+                        order.address.city = ra.city || order.address.city;
+                        order.address.state = ra.state || order.address.state;
+                        order.address.pincode = ra.pincode || order.address.pincode;
+                    }
+                } catch (fetchError) {
+                    console.error('Error fetching Razorpay payment details:', fetchError);
+                }
+
                 order.paymentStatus = 'completed';
                 order.orderStatus = 'processing';
-                // Update with actual payment ID if needed
                 order.notes = order.notes || {};
                 order.notes.razorpay_payment_id = razorpay_payment_id;
                 await order.save();
