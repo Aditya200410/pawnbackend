@@ -164,7 +164,7 @@ app.use('/api/agent', require('./routes/agent'));
 app.use('/api/uploads', require('./routes/uploads'));
 app.use('/api/product-submissions', require('./routes/productSubmissions'));
 app.use('/api/utility', require('./routes/utility'));
-app.use('/api/api/ip', require('./routes/ip'));
+app.use('/api/ip', require('./routes/ip'));
 
 
 // Health check endpoint
