@@ -73,11 +73,8 @@ app.use((req, res, next) => {
   res.header('Access-Control-Expose-Headers', 'Content-Length, X-Requested-With, x-rtb-fingerprint-id');
   res.header('Access-Control-Allow-Credentials', 'true');
 
-  // Suppress Razorpay sensor and motion warnings
-  res.header('Permissions-Policy', 'accelerometer=*');
-  res.header('Permissions-Policy', 'gyroscope=*');
-  res.header('Permissions-Policy', 'magnetometer=*');
-  res.header('Permissions-Policy', 'camera=()');
+  // Consolidate Permissions-Policy into a single header
+  res.header('Permissions-Policy', 'accelerometer=*, devicemotion=*, deviceorientation=*, gyroscope=*, magnetometer=*, camera=()');
 
   if (req.method === 'OPTIONS') {
     res.sendStatus(200);
@@ -167,6 +164,7 @@ app.use('/api/agent', require('./routes/agent'));
 app.use('/api/uploads', require('./routes/uploads'));
 app.use('/api/product-submissions', require('./routes/productSubmissions'));
 app.use('/api/utility', require('./routes/utility'));
+app.use('/api/ip', require('./routes/ip'));
 
 
 // Health check endpoint
