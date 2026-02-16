@@ -1,0 +1,39 @@
+{
+  "address": {
+    "street": "TBD",
+    "city": "TBD",
+    "state": "TBD",
+    "pincode": "TBD",
+    "country": "India"
+  },
+  "_id": "69924197eae05aacb5842f27",
+  "customerName": "Valued Customer",
+  "email": "adityakumar098k@gmail.com",
+  "phone": "+919114703231",
+  "items": [
+    {
+      "productId": "6992391c0008415eecddd7bc",
+      "name": "test Product",
+      "price": 1,
+      "quantity": 1,
+      "image": "uploads/products/product-1771190556521-533089587.png"
+    }
+  ],
+  "totalAmount": 1,
+  "paymentMethod": "online",
+  "orderType": "product_order",
+  "orderStatus": "processing",
+  "paymentStatus": "completed",
+  "upfrontAmount": 0,
+  "remainingAmount": 0,
+  "sellerToken": "",
+  "agentCode": "",
+  "commission": 0,
+  "transactionId": "order_SGZuRUIVmNBxOt",
+  "merchantTransactionId": "MT177119272738227yhkc",
+  "couponCode": "",
+  "createdAt": "2026-02-15T21:58:47.560Z",
+  "updatedAt": "2026-02-15T21:59:25.583Z",
+  "orderNumber": "RC-92727561925",
+  "__v": 0
+}

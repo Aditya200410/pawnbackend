@@ -1,65 +1,291 @@
 [
   {
-    "customerName": "aditya Kumar",
-    "email": "adityakumar098k@gmail.com",
-    "phone": "9134763424",
     "address": {
-      "street": "Burla",
-      "city": "Sambalpur",
-      "state": "Odisha",
-      "pincode": "768018",
+      "street": "delhi",
+      "city": "Central Delhi",
+      "state": "Delhi",
+      "pincode": "110011",
       "country": "India"
     },
+    "_id": "699399355a5013966d870743",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar@gmail.com",
+    "phone": "+919114703231",
     "items": [
       {
-        "id": "1749130378698",
-        "type": "floro",
-        "text": "aditya",
-        "font": "font-chewy",
-        "color": "#ff00ff",
-        "size": "medium",
-        "shape": "rectangle",
-        "usage": "outdoor",
-        "addOns": [
-          "stars"
-        ],
-        "dimmer": true,
-        "price": 3199,
-        "preview": "",
-        "_id": "6841a844d376cad363beaad0"
+        "productId": "697628e031aaee41fac32151",
+        "name": "Handcrafted dokra earrings- petal floral",
+        "price": 49,
+        "quantity": 5,
+        "image": "uploads/products/product-1769351391715-328971567.jpeg"
       },
       {
-        "id": "1749131525865",
-        "type": "neon",
-        "text": "aditya",
-        "font": "font-bungee",
-        "color": "#00ffff",
-        "size": "large",
-        "shape": "cut-to-shape",
-        "usage": "outdoor",
-        "addOns": [
-          "butterfly"
-        ],
-        "dimmer": true,
-        "price": 3299,
-        "preview": "",
-        "_id": "6841a844d376cad363beaad1"
+        "productId": "697630df31aaee41fac32391",
+        "name": "HANDCRAFTED DOKRA EARRINGS- DURGA MAA",
+        "price": 99,
+        "quantity": 4,
+        "image": "uploads/products/product-1769353438938-332525399.jpeg"
       }
     ],
-    "totalAmount": 6498,
-    "paymentMethod": "card",
-    "orderStatus": "processing",
-    "paymentStatus": "completed",
-    "_id": "6841a844d376cad363beaacf",
-    "createdAt": "2025-06-05T14:23:00.204Z",
-    "updatedAt": "2025-06-05T14:23:00.204Z",
+    "totalAmount": 641,
+    "paymentMethod": "online",
+    "orderType": "product_order",
+    "orderStatus": "waiting_payment",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": "",
+    "agentCode": "",
+    "commission": 0,
+    "transactionId": "order_SGytAe9lfe9Rua",
+    "merchantTransactionId": "MT1771280692710ado320",
+    "couponCode": "",
+    "createdAt": "2026-02-16T22:24:53.285Z",
+    "updatedAt": "2026-02-16T22:44:38.163Z",
+    "orderNumber": "RC-80693285269",
     "__v": 0,
-    "id": "6841a844d376cad363beaacf"
+    "id": "699399355a5013966d870743"
   },
   {
+    "address": {
+      "street": "TBD",
+      "city": "TBD",
+      "state": "TBD",
+      "pincode": "TBD",
+      "country": "India"
+    },
+    "_id": "699360bbeae05aacb5843671",
+    "customerName": "Valued Customer",
+    "email": " ",
+    "phone": "+910000000000",
+    "items": [
+      {
+        "productId": "697628e031aaee41fac32151",
+        "name": "Handcrafted dokra earrings- petal floral",
+        "price": 49,
+        "quantity": 1,
+        "image": "uploads/products/product-1769351391715-328971567.jpeg"
+      }
+    ],
+    "totalAmount": 49,
+    "paymentMethod": "online",
+    "orderType": "product_order",
+    "orderStatus": "waiting_payment",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": "",
+    "agentCode": "",
+    "commission": 0,
+    "transactionId": "order_SGumaAR9pmsIUB",
+    "merchantTransactionId": "MT1771266234178uu9rzm",
+    "couponCode": "",
+    "createdAt": "2026-02-16T18:23:55.337Z",
+    "updatedAt": "2026-02-16T18:23:55.337Z",
+    "orderNumber": "RC-66235337702",
+    "__v": 0,
+    "id": "699360bbeae05aacb5843671"
+  },
+  {
+    "address": {
+      "street": "delhi",
+      "city": "Central Delhi",
+      "state": "Delhi",
+      "pincode": "110011",
+      "country": "India"
+    },
+    "_id": "69924197eae05aacb5842f27",
     "customerName": "aditya Kumar",
-    "email": "qW@GMAIL.COM",
-    "phone": "9134763424",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "+919114703231",
+    "items": [
+      {
+        "productId": "6992391c0008415eecddd7bc",
+        "name": "test Product",
+        "price": 1,
+        "quantity": 1,
+        "image": "uploads/products/product-1771190556521-533089587.png"
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "online",
+    "orderType": "product_order",
+    "orderStatus": "processing",
+    "paymentStatus": "completed",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": "",
+    "agentCode": "",
+    "commission": 0,
+    "transactionId": "order_SGZuRUIVmNBxOt",
+    "merchantTransactionId": "MT177119272738227yhkc",
+    "couponCode": "",
+    "createdAt": "2026-02-15T21:58:47.560Z",
+    "updatedAt": "2026-02-16T22:45:56.657Z",
+    "orderNumber": "RC-92727561925",
+    "__v": 0,
+    "id": "69924197eae05aacb5842f27"
+  },
+  {
+    "address": {
+      "street": "delhi",
+      "city": "Central Delhi",
+      "state": "Delhi",
+      "pincode": "110011",
+      "country": "India"
+    },
+    "_id": "6992405e26e94a7e2b3bc296",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "+919114703231",
+    "items": [
+      {
+        "productId": "6992391c0008415eecddd7bc",
+        "name": "test Product",
+        "price": 1,
+        "quantity": 1,
+        "image": "uploads/products/product-1771190556521-533089587.png"
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "online",
+    "orderType": "product_order",
+    "orderStatus": "processing",
+    "paymentStatus": "completed",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": "",
+    "agentCode": "",
+    "commission": 0,
+    "transactionId": "order_SGZovhbyTYsijA",
+    "merchantTransactionId": "MT1771192414243fzz427",
+    "couponCode": "",
+    "createdAt": "2026-02-15T21:53:34.446Z",
+    "updatedAt": "2026-02-16T22:45:55.993Z",
+    "orderNumber": "RC-92414447745",
+    "__v": 0,
+    "id": "6992405e26e94a7e2b3bc296"
+  },
+  {
+    "address": {
+      "street": "delhi",
+      "city": "Central Delhi",
+      "state": "Delhi",
+      "pincode": "110011",
+      "country": "India"
+    },
+    "_id": "69923f1c6e43cba17a709846",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "+919114703231",
+    "items": [
+      {
+        "productId": "6992391c0008415eecddd7bc",
+        "name": "test Product",
+        "price": 1,
+        "quantity": 1,
+        "image": "uploads/products/product-1771190556521-533089587.png"
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "online",
+    "orderType": "product_order",
+    "orderStatus": "processing",
+    "paymentStatus": "completed",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": "",
+    "agentCode": "",
+    "commission": 0,
+    "transactionId": "order_SGZjGLGq9z9kZX",
+    "merchantTransactionId": "MT1771192092406j1dkvf",
+    "couponCode": "",
+    "createdAt": "2026-02-15T21:48:12.529Z",
+    "updatedAt": "2026-02-16T22:45:55.313Z",
+    "orderNumber": "RC-92092530546",
+    "__v": 0,
+    "id": "69923f1c6e43cba17a709846"
+  },
+  {
+    "address": {
+      "street": "delhi",
+      "city": "Central Delhi",
+      "state": "Delhi",
+      "pincode": "110011",
+      "country": "India"
+    },
+    "_id": "69923cc4d0734ede92acc945",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "+919114703231",
+    "items": [
+      {
+        "productId": "6992391c0008415eecddd7bc",
+        "name": "test Product",
+        "price": 1,
+        "quantity": 1,
+        "image": "uploads/products/product-1771190556521-533089587.png"
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "online",
+    "orderType": "product_order",
+    "orderStatus": "processing",
+    "paymentStatus": "completed",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": "",
+    "agentCode": "",
+    "commission": 0,
+    "transactionId": "order_SGZYh9K5Nvzn2n",
+    "merchantTransactionId": "MT1771191492051ka3wh9",
+    "couponCode": "",
+    "createdAt": "2026-02-15T21:38:12.292Z",
+    "updatedAt": "2026-02-16T22:45:54.481Z",
+    "orderNumber": "RC-91492293982",
+    "__v": 0,
+    "id": "69923cc4d0734ede92acc945"
+  },
+  {
+    "address": {
+      "street": "delhi",
+      "city": "Central Delhi",
+      "state": "Delhi",
+      "pincode": "110011",
+      "country": "India"
+    },
+    "_id": "69923a47854b31ef73082f80",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "+910000000000",
+    "items": [
+      {
+        "productId": "6992391c0008415eecddd7bc",
+        "name": "test Product",
+        "price": 1,
+        "quantity": 1,
+        "image": "uploads/products/product-1771190556521-533089587.png"
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "online",
+    "orderType": "product_order",
+    "orderStatus": "processing",
+    "paymentStatus": "completed",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": "",
+    "agentCode": "",
+    "commission": 0,
+    "transactionId": "order_SGZNUPDaQgVmzP",
+    "merchantTransactionId": "MT17711908556493pafd9",
+    "couponCode": "",
+    "createdAt": "2026-02-15T21:27:35.829Z",
+    "updatedAt": "2026-02-16T22:45:53.737Z",
+    "__v": 0,
+    "id": "69923a47854b31ef73082f80"
+  },
+  {
     "address": {
       "street": "Burla",
       "city": "Sambalpur",
@@ -67,37 +293,38 @@
       "pincode": "768018",
       "country": "India"
     },
-    "items": [
-      {
-        "id": "1749562732083",
-        "type": "neon",
-        "text": "jbfjqF",
-        "font": "font-gloria-hallelujah",
-        "color": "#39ff14",
-        "size": "large",
-        "shape": "cut-to-shape",
-        "usage": "indoor",
-        "addOns": [],
-        "dimmer": false,
-        "price": 499,
-        "preview": "",
-        "_id": "6848357742ce5dbada4f5ef9"
-      }
-    ],
-    "totalAmount": 499,
-    "paymentMethod": "card",
-    "orderStatus": "processing",
-    "paymentStatus": "completed",
-    "_id": "6848357742ce5dbada4f5ef8",
-    "createdAt": "2025-06-10T13:39:03.734Z",
-    "updatedAt": "2025-06-10T13:39:03.734Z",
-    "__v": 0,
-    "id": "6848357742ce5dbada4f5ef8"
-  },
-  {
+    "_id": "6992376c55f27a72808eea30",
     "customerName": "aditya Kumar",
     "email": "adityakumar098k@gmail.com",
     "phone": "9114703231",
+    "items": [
+      {
+        "productId": "698b708db57adddb34641816",
+        "name": "test Product",
+        "price": 1,
+        "quantity": 1,
+        "image": "uploads/products/product-1770745996824-680907086.png"
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "razorpay",
+    "orderType": "product_order",
+    "orderStatus": "processing",
+    "paymentStatus": "completed",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": "6a6dd776-16ae-49c8-84cf-c038e83adfc3",
+    "agentCode": "ADITYAKUMAR032",
+    "commission": 0,
+    "transactionId": "order_SGZAciBmytYZbS",
+    "merchantTransactionId": "MT1771190124862npfy16",
+    "couponCode": "",
+    "createdAt": "2026-02-15T21:15:25.023Z",
+    "updatedAt": "2026-02-15T21:16:58.957Z",
+    "__v": 0,
+    "id": "6992376c55f27a72808eea30"
+  },
+  {
     "address": {
       "street": "Burla",
       "city": "Sambalpur",
@@ -105,38 +332,2163 @@
       "pincode": "768018",
       "country": "India"
     },
+    "_id": "6992369405082db2b7cdfe3b",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "9114703231",
     "items": [
       {
+        "productId": "698b708db57adddb34641816",
+        "name": "test Product",
+        "price": 1,
+        "quantity": 1,
+        "image": "uploads/products/product-1770745996824-680907086.png"
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "razorpay",
+    "orderType": "product_order",
+    "orderStatus": "waiting_payment",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": "ADITYAKUMAR032",
+    "agentCode": "6a6dd776-16ae-49c8-84cf-c038e83adfc3",
+    "commission": 0,
+    "transactionId": "order_SGZ6oKNOeQP8al",
+    "merchantTransactionId": "MT1771189908034ycu0ll",
+    "couponCode": "",
+    "createdAt": "2026-02-15T21:11:48.638Z",
+    "updatedAt": "2026-02-15T21:11:48.638Z",
+    "__v": 0,
+    "id": "6992369405082db2b7cdfe3b"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "_id": "6992363605082db2b7cdfe2f",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "9114703231",
+    "items": [
+      {
+        "productId": "698b708db57adddb34641816",
+        "name": "test Product",
+        "price": 1,
+        "quantity": 1,
+        "image": "uploads/products/product-1770745996824-680907086.png"
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "razorpay",
+    "orderType": "product_order",
+    "orderStatus": "waiting_payment",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": "6a6dd776-16ae-49c8-84cf-c038e83adfc3",
+    "agentCode": "ADITYAKUMAR032",
+    "commission": 0,
+    "transactionId": "order_SGZ59Hsc5YCQOj",
+    "merchantTransactionId": "MT1771189813100b5m0aw",
+    "couponCode": "",
+    "createdAt": "2026-02-15T21:10:14.589Z",
+    "updatedAt": "2026-02-15T21:10:14.589Z",
+    "__v": 0,
+    "id": "6992363605082db2b7cdfe2f"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "_id": "699235ac9e9ea06aee45aedd",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "9114703231",
+    "items": [
+      {
+        "productId": "698b708db57adddb34641816",
+        "name": "test Product",
+        "price": 1,
+        "quantity": 1,
+        "image": "uploads/products/product-1770745996824-680907086.png"
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "razorpay",
+    "orderType": "product_order",
+    "orderStatus": "waiting_payment",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": "ADITYAKUMAR032",
+    "agentCode": "6a6dd776-16ae-49c8-84cf-c038e83adfc3",
+    "commission": 0,
+    "transactionId": "order_SGZ2jUCvPNQP8U",
+    "merchantTransactionId": "MT1771189676532cegojl",
+    "couponCode": "",
+    "createdAt": "2026-02-15T21:07:56.853Z",
+    "updatedAt": "2026-02-15T21:07:56.853Z",
+    "__v": 0,
+    "id": "699235ac9e9ea06aee45aedd"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "_id": "6992348a9e9ea06aee45aecd",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "8114703231",
+    "items": [
+      {
+        "productId": "698b708db57adddb34641816",
+        "name": "test Product",
+        "price": 1,
+        "quantity": 1,
+        "image": "uploads/products/product-1770745996824-680907086.png"
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "razorpay",
+    "orderType": "product_order",
+    "orderStatus": "waiting_payment",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": "6a6dd776-16ae-49c8-84cf-c038e83adfc3",
+    "agentCode": "ADITYAKUMAR032",
+    "commission": 0,
+    "transactionId": "order_SGYxcLg5kMbVeV",
+    "merchantTransactionId": "MT1771189385956oawpvj",
+    "couponCode": "",
+    "createdAt": "2026-02-15T21:03:06.319Z",
+    "updatedAt": "2026-02-15T21:03:06.319Z",
+    "__v": 0,
+    "id": "6992348a9e9ea06aee45aecd"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "_id": "699234629e9ea06aee45aec9",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "9114703231",
+    "items": [
+      {
+        "productId": "698b708db57adddb34641816",
+        "name": "test Product",
+        "price": 1,
+        "quantity": 1,
+        "image": "uploads/products/product-1770745996824-680907086.png"
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "razorpay",
+    "orderType": "product_order",
+    "orderStatus": "waiting_payment",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": "ADITYAKUMAR032",
+    "agentCode": "6a6dd776-16ae-49c8-84cf-c038e83adfc3",
+    "commission": 0,
+    "transactionId": "order_SGYwvJh5rFVhSw",
+    "merchantTransactionId": "MT1771189346471ax0f0a",
+    "couponCode": "",
+    "createdAt": "2026-02-15T21:02:26.956Z",
+    "updatedAt": "2026-02-15T21:02:26.956Z",
+    "__v": 0,
+    "id": "699234629e9ea06aee45aec9"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "_id": "699233699e9ea06aee45aea3",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "9114703231",
+    "items": [
+      {
+        "productId": "698b708db57adddb34641816",
+        "name": "test Product",
+        "price": 1,
+        "quantity": 1,
+        "image": "uploads/products/product-1770745996824-680907086.png"
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "razorpay",
+    "orderType": "product_order",
+    "orderStatus": "waiting_payment",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": "6a6dd776-16ae-49c8-84cf-c038e83adfc3",
+    "agentCode": "ADITYAKUMAR032",
+    "commission": 0,
+    "transactionId": "order_SGYsWaeV6vGjdM",
+    "merchantTransactionId": "MT1771189096338gtesku",
+    "couponCode": "",
+    "createdAt": "2026-02-15T20:58:17.787Z",
+    "updatedAt": "2026-02-15T20:58:17.787Z",
+    "__v": 0,
+    "id": "699233699e9ea06aee45aea3"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "_id": "699232aa79671496be98a641",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "9114703231",
+    "items": [
+      {
+        "productId": "698b708db57adddb34641816",
+        "name": "test Product",
+        "price": 1,
+        "quantity": 1,
+        "image": "uploads/products/product-1770745996824-680907086.png"
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "razorpay",
+    "orderType": "product_order",
+    "orderStatus": "waiting_payment",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": "ADITYAKUMAR032",
+    "agentCode": "6a6dd776-16ae-49c8-84cf-c038e83adfc3",
+    "commission": 0,
+    "transactionId": "order_SGYpAxnKO0Rtaw",
+    "merchantTransactionId": "MT1771188906255f8filb",
+    "couponCode": "",
+    "createdAt": "2026-02-15T20:55:07.301Z",
+    "updatedAt": "2026-02-15T20:55:07.301Z",
+    "__v": 0,
+    "id": "699232aa79671496be98a641"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "_id": "699230d3e43aaa7e66eb19c0",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "9114703231",
+    "items": [
+      {
+        "productId": "698b708db57adddb34641816",
+        "name": "test Product",
+        "price": 1,
+        "quantity": 1,
+        "image": "uploads/products/product-1770745996824-680907086.png"
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "razorpay",
+    "orderType": "product_order",
+    "orderStatus": "waiting_payment",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": "6a6dd776-16ae-49c8-84cf-c038e83adfc3",
+    "agentCode": "ADITYAKUMAR032",
+    "commission": 0,
+    "transactionId": "order_SGYgryWUghwuSy",
+    "merchantTransactionId": "MT1771188434469o5qnhy",
+    "couponCode": "",
+    "createdAt": "2026-02-15T20:47:15.632Z",
+    "updatedAt": "2026-02-15T20:47:15.632Z",
+    "__v": 0,
+    "id": "699230d3e43aaa7e66eb19c0"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "_id": "69922fa32118cc326b0484e2",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "9937443231",
+    "items": [
+      {
+        "productId": "698b708db57adddb34641816",
+        "name": "test Product",
+        "price": 1,
+        "quantity": 1,
+        "image": "uploads/products/product-1770745996824-680907086.png"
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "razorpay",
+    "orderType": "product_order",
+    "orderStatus": "waiting_payment",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": "ADITYAKUMAR032",
+    "agentCode": "6a6dd776-16ae-49c8-84cf-c038e83adfc3",
+    "commission": 0,
+    "transactionId": "order_SGYbWHcYIGCM5a",
+    "merchantTransactionId": "MT1771188130841rxsco6",
+    "couponCode": "",
+    "createdAt": "2026-02-15T20:42:11.125Z",
+    "updatedAt": "2026-02-15T20:42:11.125Z",
+    "__v": 0,
+    "id": "69922fa32118cc326b0484e2"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "_id": "69922f5e2118cc326b0484e0",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "9937443231",
+    "items": [
+      {
+        "productId": "698b708db57adddb34641816",
+        "name": "test Product",
+        "price": 1,
+        "quantity": 1,
+        "image": "uploads/products/product-1770745996824-680907086.png"
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "razorpay",
+    "orderType": "product_order",
+    "orderStatus": "waiting_payment",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": "ADITYAKUMAR032",
+    "agentCode": "6a6dd776-16ae-49c8-84cf-c038e83adfc3",
+    "commission": 0,
+    "transactionId": "order_SGYaJarNm3JYPP",
+    "merchantTransactionId": "MT1771188062196urnrfo",
+    "couponCode": "",
+    "createdAt": "2026-02-15T20:41:02.711Z",
+    "updatedAt": "2026-02-15T20:41:02.711Z",
+    "__v": 0,
+    "id": "69922f5e2118cc326b0484e0"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "_id": "69922dd72118cc326b04849e",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "919114703231",
+    "items": [
+      {
+        "name": "test Product",
+        "price": 1,
+        "quantity": 1,
+        "image": "uploads/products/product-1770745996824-680907086.png"
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "razorpay",
+    "orderType": "product_order",
+    "orderStatus": "waiting_payment",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": "6a6dd776-16ae-49c8-84cf-c038e83adfc3",
+    "agentCode": "ADITYAKUMAR032",
+    "commission": 0,
+    "transactionId": "order_SGYTQiLdGRgy8F",
+    "merchantTransactionId": "MT1771187671299jfoqx8",
+    "couponCode": "",
+    "createdAt": "2026-02-15T20:34:31.659Z",
+    "updatedAt": "2026-02-15T20:34:31.659Z",
+    "__v": 0,
+    "id": "69922dd72118cc326b04849e"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "_id": "69922cff2118cc326b048460",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "919114703231",
+    "items": [
+      {
+        "name": "test Product",
+        "price": 1,
+        "quantity": 1,
+        "image": "uploads/products/product-1770745996824-680907086.png"
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "razorpay",
+    "orderType": "product_order",
+    "orderStatus": "waiting_payment",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": "6a6dd776-16ae-49c8-84cf-c038e83adfc3",
+    "agentCode": "ADITYAKUMAR032",
+    "commission": 0,
+    "transactionId": "order_SGYPckGO6VDZmF",
+    "merchantTransactionId": "MT1771187455003rnuraf",
+    "couponCode": "",
+    "createdAt": "2026-02-15T20:30:55.405Z",
+    "updatedAt": "2026-02-15T20:30:55.405Z",
+    "__v": 0,
+    "id": "69922cff2118cc326b048460"
+  },
+  {
+    "address": {
+      "street": "Burla ",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "_id": "69922cef2118cc326b048450",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "919114703231",
+    "items": [
+      {
+        "name": "test Product",
+        "price": 1,
+        "quantity": 1,
+        "image": "uploads/products/product-1770745996824-680907086.png"
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "razorpay",
+    "orderType": "product_order",
+    "orderStatus": "waiting_payment",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": "ADITYAKUMAR032",
+    "agentCode": "6a6dd776-16ae-49c8-84cf-c038e83adfc3",
+    "commission": 0,
+    "transactionId": "order_SGYPLT9sW5mCZZ",
+    "merchantTransactionId": "MT1771187439334o9d6gr",
+    "couponCode": "",
+    "createdAt": "2026-02-15T20:30:39.652Z",
+    "updatedAt": "2026-02-15T20:30:39.652Z",
+    "__v": 0,
+    "id": "69922cef2118cc326b048450"
+  },
+  {
+    "address": {
+      "street": "Burla ",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "_id": "69922ae32118cc326b04844d",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "919114703231",
+    "items": [
+      {
+        "name": "test Product",
+        "price": 1,
+        "quantity": 1,
+        "image": "uploads/products/product-1770745996824-680907086.png"
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "razorpay",
+    "orderType": "product_order",
+    "orderStatus": "waiting_payment",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": "ADITYAKUMAR032",
+    "agentCode": "6a6dd776-16ae-49c8-84cf-c038e83adfc3",
+    "commission": 0,
+    "transactionId": "order_SGYG7bqIV6DkZp",
+    "merchantTransactionId": "MT1771186915086pmw6ew",
+    "couponCode": "",
+    "createdAt": "2026-02-15T20:21:55.886Z",
+    "updatedAt": "2026-02-15T20:21:55.886Z",
+    "__v": 0,
+    "id": "69922ae32118cc326b04844d"
+  },
+  {
+    "address": {
+      "street": "Ddgcdss",
+      "city": "Jamshedpur ",
+      "state": "Jharkhand ",
+      "pincode": "835736",
+      "country": "India"
+    },
+    "_id": "69908ede2118cc326b047dbb",
+    "customerName": "KOUSHIK CHAKRABORTY",
+    "email": "koushik048@gmail.com",
+    "phone": "918340624635",
+    "items": [
+      {
+        "name": "Tribal Dance Relief Art Panel - TC5",
+        "price": 199,
+        "quantity": 1,
+        "image": "uploads/migrated/product-gallery-692f0ba9e21de8fa89cf400d-0-1769459285902.jpg"
+      }
+    ],
+    "totalAmount": 199,
+    "paymentMethod": "cod",
+    "orderType": "product_order",
+    "orderStatus": "processing",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 199,
+    "sellerToken": null,
+    "agentCode": null,
+    "commission": 0,
+    "createdAt": "2026-02-14T15:03:58.344Z",
+    "updatedAt": "2026-02-14T15:03:58.344Z",
+    "__v": 0,
+    "id": "69908ede2118cc326b047dbb"
+  },
+  {
+    "address": {
+      "street": "Fibddgv",
+      "city": "Online",
+      "state": "Online",
+      "pincode": "000000",
+      "country": "India"
+    },
+    "_id": "698f004c2118cc326b045765",
+    "customerName": "Koushik",
+    "email": "koushik9@gmail.com",
+    "phone": "918340624635",
+    "items": [
+      {
+        "productId": "plan_unlimited",
+        "name": "Unlimited Distribution Plan",
+        "price": 3,
+        "quantity": 1
+      }
+    ],
+    "totalAmount": 3,
+    "paymentMethod": "online",
+    "orderType": "plan_purchase",
+    "orderStatus": "processing",
+    "paymentStatus": "completed",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "commission": 0,
+    "transactionId": "order_SFbKmXwvSYjCcA",
+    "merchantTransactionId": "PLANREG17709794036863l5w4h",
+    "createdAt": "2026-02-13T10:43:24.090Z",
+    "updatedAt": "2026-02-13T10:44:07.032Z",
+    "__v": 0,
+    "id": "698f004c2118cc326b045765"
+  },
+  {
+    "address": {
+      "street": "house no. 81 , near sai minder , devas naka indore",
+      "city": "indore",
+      "state": "Madhya Pradesh",
+      "pincode": "452010",
+      "country": "India"
+    },
+    "_id": "698e0f9d2118cc326b0451b4",
+    "customerName": "sumit jaiswal",
+    "email": "appzeto@gmail.com",
+    "phone": "9876543210",
+    "items": [
+      {
+        "productId": "69874ea60af697ad4979ec56",
+        "name": "Rajasthan Metal Art Musicians (Set of 3) - MA2",
+        "price": 1599,
+        "quantity": 1,
+        "image": "uploads/products/product-1770475173689-989478650.jpeg"
+      }
+    ],
+    "totalAmount": 1599,
+    "paymentMethod": "cod",
+    "orderType": "product_order",
+    "orderStatus": "confirmed",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 1599,
+    "sellerToken": null,
+    "agentCode": null,
+    "commission": 0,
+    "createdAt": "2026-02-12T17:36:29.905Z",
+    "updatedAt": "2026-02-14T14:18:41.649Z",
+    "__v": 0,
+    "id": "698e0f9d2118cc326b0451b4"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Sbp",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "_id": "698cb4812bd920271ebadf3f",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "919114703231",
+    "items": [
+      {
+        "name": "test Product",
+        "price": 1,
+        "quantity": 1,
+        "image": "uploads/products/product-1770745996824-680907086.png"
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "razorpay",
+    "orderType": "product_order",
+    "orderStatus": "waiting_payment",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": "ADITYAKUMAR032",
+    "agentCode": "6a6dd776-16ae-49c8-84cf-c038e83adfc3",
+    "commission": 0,
+    "transactionId": "order_SEubZwszlxTLs3",
+    "merchantTransactionId": "MT1770828929227smxq38",
+    "couponCode": "",
+    "createdAt": "2026-02-11T16:55:29.992Z",
+    "updatedAt": "2026-02-11T16:55:29.992Z",
+    "__v": 0,
+    "id": "698cb4812bd920271ebadf3f"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Online",
+      "state": "Online",
+      "pincode": "000000",
+      "country": "India"
+    },
+    "_id": "698cb0ad718398d782143ac7",
+    "customerName": "Riko Craft Store",
+    "email": "adityakumar123@gmail.com",
+    "phone": "919114703231",
+    "items": [
+      {
+        "productId": "plan_starter",
+        "name": "Starter Distribution Plan",
+        "price": 1,
+        "quantity": 1
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "online",
+    "orderType": "plan_purchase",
+    "orderStatus": "processing",
+    "paymentStatus": "completed",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "commission": 0,
+    "transactionId": "order_SEuKPGKty6JFVU",
+    "merchantTransactionId": "PLANREG17708279488900bh4dz",
+    "createdAt": "2026-02-11T16:39:09.072Z",
+    "updatedAt": "2026-02-11T16:39:43.690Z",
+    "__v": 0,
+    "id": "698cb0ad718398d782143ac7"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Online",
+      "state": "Online",
+      "pincode": "000000",
+      "country": "India"
+    },
+    "_id": "698c93224759264f2ec20572",
+    "customerName": "Riko Craft Store",
+    "email": "adityakumar123@gmail.com",
+    "phone": "919114703231",
+    "items": [
+      {
+        "productId": "plan_starter",
+        "name": "Starter Distribution Plan",
+        "price": 1,
+        "quantity": 1
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "online",
+    "orderType": "plan_purchase",
+    "orderStatus": "waiting_payment",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "commission": 0,
+    "transactionId": "order_SEsBZ3uLRhy2VA",
+    "createdAt": "2026-02-11T14:33:06.632Z",
+    "updatedAt": "2026-02-11T14:33:24.101Z",
+    "__v": 0,
+    "id": "698c93224759264f2ec20572"
+  },
+  {
+    "address": {
+      "street": "Hkgfd",
+      "city": "Hdjjfx",
+      "state": "Bcfhbc",
+      "pincode": "831009",
+      "country": "India"
+    },
+    "_id": "698c68e7b57adddb34641b21",
+    "customerName": "KOUSHIK CHAKRABORTY",
+    "email": "koushik048@gmail.com",
+    "phone": "918340624635",
+    "items": [
+      {
+        "name": "test Product",
+        "price": 1,
+        "quantity": 1,
+        "image": "uploads/products/product-1770745996824-680907086.png"
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "razorpay",
+    "orderType": "product_order",
+    "orderStatus": "processing",
+    "paymentStatus": "completed",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": "",
+    "agentCode": "",
+    "commission": 0,
+    "transactionId": "order_SEp6pizUhZtGdf",
+    "couponCode": "",
+    "createdAt": "2026-02-11T11:32:55.475Z",
+    "updatedAt": "2026-02-11T11:33:43.842Z",
+    "__v": 0,
+    "id": "698c68e7b57adddb34641b21"
+  },
+  {
+    "address": {
+      "street": "Agrico",
+      "city": "Online",
+      "state": "Online",
+      "pincode": "000000",
+      "country": "India"
+    },
+    "_id": "698c662bb57adddb34641ae3",
+    "customerName": "Rk Enterprises ",
+    "email": "koushik05@gmail.com",
+    "phone": "918340624635",
+    "items": [
+      {
+        "productId": "plan_unlimited",
+        "name": "Unlimited Distribution Plan",
+        "price": 3,
+        "quantity": 1
+      }
+    ],
+    "totalAmount": 3,
+    "paymentMethod": "online",
+    "orderType": "plan_purchase",
+    "orderStatus": "waiting_payment",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "commission": 0,
+    "transactionId": "order_SEouWQdudkcgFk",
+    "createdAt": "2026-02-11T11:21:15.395Z",
+    "updatedAt": "2026-02-11T11:21:16.073Z",
+    "__v": 0,
+    "id": "698c662bb57adddb34641ae3"
+  },
+  {
+    "address": {
+      "street": "burla",
+      "city": "Ara",
+      "state": "Odisha",
+      "pincode": "754005",
+      "country": "India"
+    },
+    "_id": "698c622bb57adddb34641a02",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "9114703231",
+    "items": [
+      {
+        "productId": "698b708db57adddb34641816",
+        "name": "test Product",
+        "price": 1,
+        "quantity": 1,
+        "image": "uploads/products/product-1770745996824-680907086.png"
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "razorpay",
+    "orderType": "product_order",
+    "orderStatus": "waiting_payment",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": "6a6dd776-16ae-49c8-84cf-c038e83adfc3",
+    "agentCode": "ADITYAKUMAR032",
+    "commission": 0,
+    "transactionId": "order_SEocU34Uqgp8wy",
+    "couponCode": "",
+    "createdAt": "2026-02-11T11:04:11.853Z",
+    "updatedAt": "2026-02-11T11:04:11.853Z",
+    "__v": 0,
+    "id": "698c622bb57adddb34641a02"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "_id": "698b7527e3787f189a109343",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "9937443231",
+    "items": [
+      {
+        "productId": "698b708db57adddb34641816",
+        "name": "test Product",
+        "price": 1,
+        "quantity": 1,
+        "image": "uploads/products/product-1770745996824-680907086.png"
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "razorpay",
+    "orderType": "product_order",
+    "orderStatus": "processing",
+    "paymentStatus": "completed",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": "",
+    "agentCode": "",
+    "commission": 0,
+    "transactionId": "order_SEXOHWcnuj9kdT",
+    "couponCode": "",
+    "createdAt": "2026-02-10T18:12:55.039Z",
+    "updatedAt": "2026-02-10T18:13:47.406Z",
+    "__v": 0,
+    "id": "698b7527e3787f189a109343"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "_id": "698b701007b9d38af5108608",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "9937443231",
+    "items": [
+      {
+        "productId": "697628e031aaee41fac32151",
+        "name": "Handcrafted dokra earrings- petal floral",
+        "price": 49,
+        "quantity": 1,
+        "image": "uploads/products/product-1769351391715-328971567.jpeg"
+      }
+    ],
+    "totalAmount": 49,
+    "paymentMethod": "razorpay",
+    "orderType": "product_order",
+    "orderStatus": "waiting_payment",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": "",
+    "agentCode": "",
+    "commission": 0,
+    "transactionId": "order_SEX1MDT721BClm",
+    "couponCode": "",
+    "createdAt": "2026-02-10T17:51:12.878Z",
+    "updatedAt": "2026-02-10T17:51:12.878Z",
+    "__v": 0,
+    "id": "698b701007b9d38af5108608"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "_id": "698b6fb107b9d38af51085e6",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "9937443231",
+    "items": [
+      {
+        "productId": "697628e031aaee41fac32151",
+        "name": "Handcrafted dokra earrings- petal floral",
+        "price": 49,
+        "quantity": 1,
+        "image": "uploads/products/product-1769351391715-328971567.jpeg"
+      }
+    ],
+    "totalAmount": 49,
+    "paymentMethod": "razorpay",
+    "orderType": "product_order",
+    "orderStatus": "waiting_payment",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": "",
+    "agentCode": "",
+    "commission": 0,
+    "transactionId": "order_SEWzgFxPMT9LeX",
+    "couponCode": "",
+    "createdAt": "2026-02-10T17:49:37.628Z",
+    "updatedAt": "2026-02-10T17:49:37.628Z",
+    "__v": 0,
+    "id": "698b6fb107b9d38af51085e6"
+  },
+  {
+    "address": {
+      "street": "Bhubneswari mandir main road, near Vinita puja mart, Telco, Birsanagar, Jamshedpur",
+      "city": "Jamshedpur",
+      "state": "bihar",
+      "pincode": "831004",
+      "country": "India"
+    },
+    "_id": "698b6e42b57adddb346417d3",
+    "customerName": "kausik kausik",
+    "email": "koushik048@gmail.com",
+    "phone": "9114703231",
+    "items": [
+      {
+        "productId": "697628e031aaee41fac32151",
+        "name": "Handcrafted dokra earrings- petal floral",
+        "price": 49,
+        "quantity": 1,
+        "image": "uploads/products/product-1769351391715-328971567.jpeg"
+      }
+    ],
+    "totalAmount": 49,
+    "paymentMethod": "razorpay",
+    "orderType": "product_order",
+    "orderStatus": "waiting_payment",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": "",
+    "agentCode": "",
+    "commission": 0,
+    "transactionId": "order_SEWtB3EnCM6P8h",
+    "couponCode": "",
+    "createdAt": "2026-02-10T17:43:31.398Z",
+    "updatedAt": "2026-02-10T17:43:31.398Z",
+    "__v": 0,
+    "id": "698b6e42b57adddb346417d3"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "_id": "698b6b54a40901c791278eba",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "9937443231",
+    "items": [
+      {
+        "productId": "697628e031aaee41fac32151",
+        "name": "Handcrafted dokra earrings- petal floral",
+        "price": 49,
+        "quantity": 1,
+        "image": "uploads/products/product-1769351391715-328971567.jpeg"
+      }
+    ],
+    "totalAmount": 49,
+    "paymentMethod": "razorpay",
+    "orderType": "product_order",
+    "orderStatus": "waiting_payment",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": "",
+    "agentCode": "",
+    "commission": 0,
+    "transactionId": "order_SEWg1Ihz74cmn5",
+    "couponCode": "",
+    "createdAt": "2026-02-10T17:31:00.839Z",
+    "updatedAt": "2026-02-10T17:31:00.839Z",
+    "__v": 0,
+    "id": "698b6b54a40901c791278eba"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "_id": "698b6b2ba40901c791278eb8",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "9937443231",
+    "items": [
+      {
+        "productId": "697628e031aaee41fac32151",
+        "name": "Handcrafted dokra earrings- petal floral",
+        "price": 49,
+        "quantity": 1,
+        "image": "uploads/products/product-1769351391715-328971567.jpeg"
+      }
+    ],
+    "totalAmount": 49,
+    "paymentMethod": "razorpay",
+    "orderType": "product_order",
+    "orderStatus": "waiting_payment",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": "",
+    "agentCode": "",
+    "commission": 0,
+    "transactionId": "order_SEWfHcPAGjSpZ8",
+    "couponCode": "",
+    "createdAt": "2026-02-10T17:30:19.067Z",
+    "updatedAt": "2026-02-10T17:30:19.067Z",
+    "__v": 0,
+    "id": "698b6b2ba40901c791278eb8"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "_id": "69872c4b0af697ad4979ea24",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar@gmail.com",
+    "phone": "919114703231",
+    "items": [
+      {
+        "name": "test Product",
+        "price": 1,
+        "quantity": 1,
+        "image": "uploads/products/product-1770465797245-693553223.png"
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "phonepe",
+    "orderType": "product_order",
+    "orderStatus": "processing",
+    "paymentStatus": "completed",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": null,
+    "commission": 0,
+    "transactionId": "MT1770466379237k6uvnm",
+    "createdAt": "2026-02-07T12:12:59.396Z",
+    "updatedAt": "2026-02-07T12:13:28.687Z",
+    "__v": 0,
+    "id": "69872c4b0af697ad4979ea24"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "_id": "69872a3599b267d663f6dd65",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar@gmail.com",
+    "phone": "919114703231",
+    "items": [
+      {
+        "name": "test Product",
+        "price": 1,
+        "quantity": 1,
+        "image": "uploads/products/product-1770465797245-693553223.png"
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "phonepe",
+    "orderType": "product_order",
+    "orderStatus": "confirmed",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": null,
+    "commission": 0,
+    "transactionId": "OMO2602071734075098324190W",
+    "createdAt": "2026-02-07T12:04:05.987Z",
+    "updatedAt": "2026-02-07T12:13:52.121Z",
+    "__v": 0,
+    "id": "69872a3599b267d663f6dd65"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "_id": "698725f94b840782113dfa13",
+    "customerName": "aditya aditya",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "9114703231",
+    "items": [
+      {
+        "productId": "685d00e2ceb821f468b79b68",
+        "name": "Divine Brass Ganesha Idol – Symbol of Wisdom & New Beginnings",
+        "price": 449,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1750925537/pawnshop-products/j2jkzojhzv59jdi4obl1.jpg"
+      },
+      {
+        "productId": "69762e5e31aaee41fac32329",
+        "name": "Handcrafted dokra earrings-PEACOCK",
+        "price": 99,
+        "quantity": 1,
+        "image": "uploads/products/product-1769352797887-240990979.jpeg"
+      }
+    ],
+    "totalAmount": 548,
+    "paymentMethod": "cod",
+    "orderType": "product_order",
+    "orderStatus": "processing",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 548,
+    "sellerToken": null,
+    "agentCode": null,
+    "commission": 0,
+    "createdAt": "2026-02-07T11:46:01.792Z",
+    "updatedAt": "2026-02-07T11:46:01.792Z",
+    "__v": 0,
+    "id": "698725f94b840782113dfa13"
+  },
+  {
+    "address": {
+      "street": "Prashant Mahendrakar \nSVR LUXURY PG GENTS,\n150, near Aadhiswar super market, Panduranga Nagar, Arekere, bannerghatta rd, Bengaluru, Karnataka 560076",
+      "city": "Bengaluru",
+      "state": "Karnataka ",
+      "pincode": "560076",
+      "country": "India"
+    },
+    "_id": "6986f6fc4d264379d3046411",
+    "customerName": "Prashant  Mahendrakar ",
+    "email": "prashantrm7007@gmail.com",
+    "phone": "89707 77070",
+    "items": [
+      {
+        "productId": "6866aaa9c03cea25520a39db",
+        "name": "Wooden Duck Medium – Handcrafted Décor for Timeless Charm",
+        "price": 399,
+        "quantity": 1,
+        "image": "uploads/products/product-1769926200563-449925990.jpg"
+      }
+    ],
+    "totalAmount": 399,
+    "paymentMethod": "phonepe",
+    "orderType": "product_order",
+    "orderStatus": "shipped",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": null,
+    "commission": 0,
+    "transactionId": "OMO2602071355345021030655W",
+    "createdAt": "2026-02-07T08:25:32.775Z",
+    "updatedAt": "2026-02-12T05:22:18.042Z",
+    "__v": 0,
+    "id": "6986f6fc4d264379d3046411"
+  },
+  {
+    "address": {
+      "street": "3/4 A,Komudi thottam,\nkambuliampatty,\nvijayamangalam,\nPerundurai",
+      "city": "Erode",
+      "state": "Tamilnadu",
+      "pincode": "638056",
+      "country": "India"
+    },
+    "_id": "698590734d264379d30453cf",
+    "customerName": "Gopalsamy KR",
+    "email": "rgopal91@gmail.com",
+    "phone": "9952725333",
+    "items": [
+      {
+        "productId": "6867ff8cb7ef7b53a3245377",
+        "name": "Wooden Decorative Vase – Handcrafted Elegance",
+        "price": 299,
+        "quantity": 1,
+        "image": "uploads/products/product-1769928118373-39954516.jpg"
+      },
+      {
+        "productId": "6866b70e22a801c7b09d73b7",
+        "name": "Elegant Wooden Ship Decor – Handcrafted Artistry",
+        "price": 749,
+        "quantity": 1,
+        "image": "uploads/products/product-1769881730848-413601738.jpg"
+      },
+      {
+        "productId": "6866ac59c03cea25520a3a13",
+        "name": "Elegant Wooden Deer Pair – Handcrafted Marvel",
+        "price": 849,
+        "quantity": 1,
+        "image": "uploads/products/product-1769882234902-408533910.jpg"
+      }
+    ],
+    "totalAmount": 1897,
+    "paymentMethod": "cod",
+    "orderType": "product_order",
+    "orderStatus": "shipped",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 1897,
+    "sellerToken": null,
+    "agentCode": null,
+    "commission": 0,
+    "createdAt": "2026-02-06T06:55:48.493Z",
+    "updatedAt": "2026-02-08T15:58:08.095Z",
+    "__v": 0,
+    "id": "698590734d264379d30453cf"
+  },
+  {
+    "address": {
+      "street": "Dfvc",
+      "city": "Jamshedpur ",
+      "state": "Ffhh",
+      "pincode": "831009",
+      "country": "India"
+    },
+    "_id": "69807cb603a9bcbe02c1b97c",
+    "customerName": "KOUSHIK CHAKRABORTY",
+    "email": "koushik048@gmail.com",
+    "phone": "918340624635",
+    "items": [
+      {
+        "name": "Bamboo Aura Hanging Lamp",
+        "price": 699,
+        "quantity": 1,
+        "image": "uploads/products/product-1770027660216-697582927.jpeg"
+      }
+    ],
+    "totalAmount": 699,
+    "paymentMethod": "cod",
+    "orderType": "product_order",
+    "orderStatus": "delivered",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 699,
+    "sellerToken": null,
+    "agentCode": null,
+    "commission": 0,
+    "createdAt": "2026-02-02T10:30:14.273Z",
+    "updatedAt": "2026-02-06T14:29:28.465Z",
+    "__v": 0,
+    "id": "69807cb603a9bcbe02c1b97c"
+  },
+  {
+    "address": {
+      "street": "Fggdd",
+      "city": "Online",
+      "state": "Online",
+      "pincode": "000000",
+      "country": "India"
+    },
+    "_id": "697e13d5b7a8183412533d82",
+    "customerName": "Koushik",
+    "email": "koushik10@gmail.com",
+    "phone": "918340624635",
+    "items": [
+      {
+        "productId": "plan_pro",
+        "name": "Pro Distribution Plan",
+        "price": 2,
+        "quantity": 1
+      }
+    ],
+    "totalAmount": 2,
+    "paymentMethod": "online",
+    "orderType": "plan_purchase",
+    "orderStatus": "processing",
+    "paymentStatus": "completed",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "commission": 0,
+    "transactionId": "PLANREG17698702930519snq92",
+    "createdAt": "2026-01-31T14:38:13.495Z",
+    "updatedAt": "2026-01-31T14:38:48.713Z",
+    "__v": 0,
+    "sellerToken": "697e13f8b7a8183412533d8b",
+    "id": "697e13d5b7a8183412533d82"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Online",
+      "state": "Online",
+      "pincode": "000000",
+      "country": "India"
+    },
+    "_id": "697e0111b7a8183412533bb3",
+    "customerName": "aditya",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "919114703231",
+    "items": [
+      {
+        "productId": "plan_starter",
+        "name": "Starter Distribution Plan",
+        "price": 1,
+        "quantity": 1
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "online",
+    "orderType": "plan_purchase",
+    "orderStatus": "processing",
+    "paymentStatus": "completed",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "commission": 0,
+    "transactionId": "PLANREG1769865489032p2ncuw",
+    "createdAt": "2026-01-31T13:18:09.714Z",
+    "updatedAt": "2026-01-31T13:18:45.604Z",
+    "__v": 0,
+    "sellerToken": "697e0135b7a8183412533bbb",
+    "id": "697e0111b7a8183412533bb3"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Online",
+      "state": "Online",
+      "pincode": "000000",
+      "country": "India"
+    },
+    "_id": "697dff3319adc15194a44cd4",
+    "customerName": "aditya",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "919114703231",
+    "items": [
+      {
+        "productId": "plan_starter",
+        "name": "Starter Distribution Plan",
+        "price": 1,
+        "quantity": 1
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "online",
+    "orderType": "plan_purchase",
+    "orderStatus": "waiting_payment",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "commission": 0,
+    "transactionId": "PLANREG1769865003148j94b5l",
+    "createdAt": "2026-01-31T13:10:11.571Z",
+    "updatedAt": "2026-01-31T13:10:11.571Z",
+    "__v": 0,
+    "id": "697dff3319adc15194a44cd4"
+  },
+  {
+    "address": {
+      "street": "Vshak z",
+      "city": "Online",
+      "state": "Online",
+      "pincode": "000000",
+      "country": "India"
+    },
+    "_id": "697c538430075af875c9e67e",
+    "customerName": "Mast",
+    "email": "mast@gmail.com",
+    "phone": "8340624633",
+    "items": [
+      {
+        "productId": "plan_unlimited",
+        "name": "Unlimited Distribution Plan",
+        "price": 3,
+        "quantity": 1
+      }
+    ],
+    "totalAmount": 3,
+    "paymentMethod": "online",
+    "orderType": "plan_purchase",
+    "orderStatus": "processing",
+    "paymentStatus": "completed",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "commission": 0,
+    "transactionId": "PLANREG1769755523699ak1zm9",
+    "createdAt": "2026-01-30T06:45:24.535Z",
+    "updatedAt": "2026-01-30T06:45:57.342Z",
+    "__v": 0,
+    "sellerToken": "697c53a130075af875c9e688",
+    "id": "697c538430075af875c9e67e"
+  },
+  {
+    "address": {
+      "street": "Gaiakbs",
+      "city": "Online",
+      "state": "Online",
+      "pincode": "000000",
+      "country": "India"
+    },
+    "_id": "697b49b0407149f3e3cf5ee3",
+    "customerName": "Koushik",
+    "email": "koushik1@gmail.com",
+    "phone": "8340624633",
+    "items": [
+      {
+        "productId": "plan_pro",
+        "name": "Pro Distribution Plan",
+        "price": 2,
+        "quantity": 1
+      }
+    ],
+    "totalAmount": 2,
+    "paymentMethod": "online",
+    "orderType": "plan_purchase",
+    "orderStatus": "processing",
+    "paymentStatus": "completed",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "commission": 0,
+    "transactionId": "PLANREG17696874719016fs4v0",
+    "createdAt": "2026-01-29T11:51:12.302Z",
+    "updatedAt": "2026-01-29T11:51:46.586Z",
+    "__v": 0,
+    "sellerToken": "697b49cf407149f3e3cf5eeb",
+    "id": "697b49b0407149f3e3cf5ee3"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Online",
+      "state": "Online",
+      "pincode": "000000",
+      "country": "India"
+    },
+    "_id": "697b33d73140eb3712d8c801",
+    "customerName": "Riko Craft Store",
+    "email": "koushik45@gmail.com",
+    "phone": "09114703231",
+    "items": [
+      {
+        "productId": "plan_starter",
+        "name": "Starter Distribution Plan",
+        "price": 1,
+        "quantity": 1
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "online",
+    "orderType": "plan_purchase",
+    "orderStatus": "processing",
+    "paymentStatus": "completed",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "commission": 0,
+    "transactionId": "PLANREG1769681878825nfjh8g",
+    "createdAt": "2026-01-29T10:17:59.388Z",
+    "updatedAt": "2026-01-29T10:18:21.549Z",
+    "__v": 0,
+    "sellerToken": "697b33ea3140eb3712d8c809",
+    "id": "697b33d73140eb3712d8c801"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Online",
+      "state": "Online",
+      "pincode": "000000",
+      "country": "India"
+    },
+    "_id": "697b337e1873a82da25473fb",
+    "customerName": "Riko Craft Store",
+    "email": "adityakumar00@gmail.com",
+    "phone": "09114703231",
+    "items": [
+      {
+        "productId": "plan_starter",
+        "name": "Starter Distribution Plan",
+        "price": 1,
+        "quantity": 1
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "online",
+    "orderType": "plan_purchase",
+    "orderStatus": "waiting_payment",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "commission": 0,
+    "transactionId": "PLANREG176968179074734qa1a",
+    "createdAt": "2026-01-29T10:16:30.922Z",
+    "updatedAt": "2026-01-29T10:16:30.922Z",
+    "__v": 0,
+    "id": "697b337e1873a82da25473fb"
+  },
+  {
+    "address": {
+      "street": "Fjgdyuvvcdfffffds",
+      "city": "Online",
+      "state": "Online",
+      "pincode": "000000",
+      "country": "India"
+    },
+    "_id": "697ae25e9e97a6883526d41f",
+    "customerName": "Koushik ",
+    "email": "koushik12@gmail.com",
+    "phone": "8340624637",
+    "items": [
+      {
+        "productId": "plan_starter",
+        "name": "Starter Distribution Plan",
+        "price": 1,
+        "quantity": 1
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "online",
+    "orderType": "plan_purchase",
+    "orderStatus": "processing",
+    "paymentStatus": "completed",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "commission": 0,
+    "transactionId": "PLANREG17696610217197dkgja",
+    "createdAt": "2026-01-29T04:30:22.637Z",
+    "updatedAt": "2026-01-29T04:30:53.280Z",
+    "__v": 0,
+    "sellerToken": "697ae2799e97a6883526d428",
+    "id": "697ae25e9e97a6883526d41f"
+  },
+  {
+    "address": {
+      "street": "House no. 50/D, Road no. 11, Shiv Singh bagan, Agrico",
+      "city": "Online",
+      "state": "Online",
+      "pincode": "000000",
+      "country": "India"
+    },
+    "_id": "69788238068632c88c9886e0",
+    "customerName": "Koushik ",
+    "email": "koushik0@gmail.com",
+    "phone": "08340624635",
+    "items": [
+      {
+        "productId": "plan_starter",
+        "name": "Starter Distribution Plan",
+        "price": 1,
+        "quantity": 1
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "online",
+    "orderType": "plan_purchase",
+    "orderStatus": "processing",
+    "paymentStatus": "completed",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "commission": 0,
+    "transactionId": "PLANREG1769505336149v8yace",
+    "createdAt": "2026-01-27T09:15:36.790Z",
+    "updatedAt": "2026-01-27T09:16:55.852Z",
+    "__v": 0,
+    "sellerToken": "69788284068632c88c9886f0",
+    "id": "69788238068632c88c9886e0"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Online",
+      "state": "Online",
+      "pincode": "000000",
+      "country": "India"
+    },
+    "_id": "6977c0092104622b29b8607c",
+    "customerName": "aditya",
+    "email": "koushik04@gmail.com",
+    "phone": "9114703231",
+    "items": [
+      {
+        "productId": "plan_starter",
+        "name": "Starter Distribution Plan",
+        "price": 1,
+        "quantity": 1
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "online",
+    "orderType": "plan_purchase",
+    "orderStatus": "processing",
+    "paymentStatus": "completed",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "commission": 0,
+    "transactionId": "PLANREG1769455624628m33vbg",
+    "createdAt": "2026-01-26T19:27:05.272Z",
+    "updatedAt": "2026-01-26T19:27:31.439Z",
+    "__v": 0,
+    "sellerToken": "6977c01e2104622b29b86085",
+    "id": "6977c0092104622b29b8607c"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Online",
+      "state": "Online",
+      "pincode": "000000",
+      "country": "India"
+    },
+    "_id": "6977be6090c056785146526b",
+    "customerName": "Riko Craft Store",
+    "email": "koushik04@gmail.com",
+    "phone": "koushik048@gmail.com",
+    "items": [
+      {
+        "productId": "plan_starter",
+        "name": "Starter Distribution Plan",
+        "price": 1,
+        "quantity": 1
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "online",
+    "orderType": "plan_purchase",
+    "orderStatus": "processing",
+    "paymentStatus": "completed",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "commission": 0,
+    "transactionId": "PLANREG1769455196663g7wn0f",
+    "createdAt": "2026-01-26T19:20:00.275Z",
+    "updatedAt": "2026-01-26T19:20:27.304Z",
+    "__v": 0,
+    "sellerToken": "6977be7890c0567851465273",
+    "id": "6977be6090c056785146526b"
+  },
+  {
+    "address": {
+      "street": "uicuiq",
+      "city": "Online",
+      "state": "Online",
+      "pincode": "000000",
+      "country": "India"
+    },
+    "_id": "6977b4fd44023075e43b4548",
+    "customerName": "Riko Craft Store",
+    "email": "koushik04@gmail.com",
+    "phone": "09114703231",
+    "items": [
+      {
+        "productId": "plan_starter",
+        "name": "Starter Distribution Plan",
+        "price": 1,
+        "quantity": 1
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "online",
+    "orderType": "plan_purchase",
+    "orderStatus": "waiting_payment",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "commission": 0,
+    "transactionId": "PLANREG1769452790776szgusi",
+    "createdAt": "2026-01-26T18:39:57.637Z",
+    "updatedAt": "2026-01-26T18:39:57.637Z",
+    "__v": 0,
+    "id": "6977b4fd44023075e43b4548"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Online",
+      "state": "Online",
+      "pincode": "000000",
+      "country": "India"
+    },
+    "_id": "6977b154b14627a1aa7c2c39",
+    "customerName": "aditya",
+    "email": "koushik04@gmail.com",
+    "phone": "koushik048@gmail.com",
+    "items": [
+      {
+        "productId": "plan_starter",
+        "name": "Starter Distribution Plan",
+        "price": 1,
+        "quantity": 1
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "online",
+    "orderType": "plan_purchase",
+    "orderStatus": "waiting_payment",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "commission": 0,
+    "transactionId": "PLANREG17694518583960t21u0",
+    "createdAt": "2026-01-26T18:24:20.843Z",
+    "updatedAt": "2026-01-26T18:24:20.843Z",
+    "__v": 0,
+    "id": "6977b154b14627a1aa7c2c39"
+  },
+  {
+    "address": {
+      "street": "jkac",
+      "city": "Online",
+      "state": "Online",
+      "pincode": "000000",
+      "country": "India"
+    },
+    "_id": "69779fa9b14627a1aa7c2b1f",
+    "customerName": "Riko Craft Store",
+    "email": "koushik04@gmail.com",
+    "phone": "koushik04@gmail.com",
+    "items": [
+      {
+        "productId": "plan_starter",
+        "name": "Starter Distribution Plan",
+        "price": 1,
+        "quantity": 1
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "online",
+    "orderType": "plan_purchase",
+    "orderStatus": "waiting_payment",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "commission": 0,
+    "transactionId": "PLANREG1769447334970mpddr3",
+    "createdAt": "2026-01-26T17:08:57.530Z",
+    "updatedAt": "2026-01-26T17:08:57.530Z",
+    "__v": 0,
+    "id": "69779fa9b14627a1aa7c2b1f"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Online",
+      "state": "Online",
+      "pincode": "000000",
+      "country": "India"
+    },
+    "_id": "69778e8db14627a1aa7c296f",
+    "customerName": "aditya",
+    "email": "koushik0@gmail.com",
+    "phone": "koushik048@gmail.com",
+    "items": [
+      {
+        "productId": "plan_starter",
+        "name": "Starter Distribution Plan",
+        "price": 15,
+        "quantity": 1
+      }
+    ],
+    "totalAmount": 15,
+    "paymentMethod": "online",
+    "orderType": "plan_purchase",
+    "orderStatus": "waiting_payment",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "commission": 0,
+    "transactionId": "PLANREG17694429547471bnc34",
+    "createdAt": "2026-01-26T15:55:57.837Z",
+    "updatedAt": "2026-01-26T15:55:57.837Z",
+    "__v": 0,
+    "id": "69778e8db14627a1aa7c296f"
+  },
+  {
+    "address": {
+      "street": "Ffhdsgbdrg",
+      "city": "Online",
+      "state": "Online",
+      "pincode": "000000",
+      "country": "India"
+    },
+    "_id": "69778c0031aaee41fac33935",
+    "customerName": "Koushik",
+    "email": "koushik123@gmail.com",
+    "phone": "8340624636",
+    "items": [
+      {
+        "productId": "plan_starter",
+        "name": "Starter Distribution Plan",
+        "price": 15000,
+        "quantity": 1
+      }
+    ],
+    "totalAmount": 15000,
+    "paymentMethod": "online",
+    "orderType": "plan_purchase",
+    "orderStatus": "waiting_payment",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "commission": 0,
+    "transactionId": "PLANREG1769442301865ddzvna",
+    "createdAt": "2026-01-26T15:45:04.700Z",
+    "updatedAt": "2026-01-26T15:45:04.700Z",
+    "__v": 0,
+    "id": "69778c0031aaee41fac33935"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Online",
+      "state": "Online",
+      "pincode": "000000",
+      "country": "India"
+    },
+    "_id": "6975258d31aaee41fac314fd",
+    "customerName": "Riko Craft Store",
+    "email": "koushik04@gmail.com",
+    "phone": "09114703231",
+    "items": [
+      {
+        "productId": "plan_starter",
+        "name": "Starter Distribution Plan",
+        "price": 15000,
+        "quantity": 1
+      }
+    ],
+    "totalAmount": 15000,
+    "paymentMethod": "online",
+    "orderType": "plan_purchase",
+    "orderStatus": "waiting_payment",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "commission": 0,
+    "transactionId": "PLANREG1769285002341ymybhh",
+    "createdAt": "2026-01-24T20:03:25.467Z",
+    "updatedAt": "2026-01-24T20:03:25.467Z",
+    "__v": 0,
+    "id": "6975258d31aaee41fac314fd"
+  },
+  {
+    "address": {
+      "street": "cqv",
+      "city": "Online",
+      "state": "Online",
+      "pincode": "000000",
+      "country": "India"
+    },
+    "_id": "6975255031aaee41fac313dd",
+    "customerName": "Riko Craft Store",
+    "email": "koushik04@gmail.com",
+    "phone": "09114703231",
+    "items": [
+      {
+        "productId": "plan_starter",
+        "name": "Starter Distribution Plan",
+        "price": 15000,
+        "quantity": 1
+      }
+    ],
+    "totalAmount": 15000,
+    "paymentMethod": "online",
+    "orderType": "plan_purchase",
+    "orderStatus": "waiting_payment",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "commission": 0,
+    "transactionId": "PLANREG1769284940284zf2yeb",
+    "createdAt": "2026-01-24T20:02:24.816Z",
+    "updatedAt": "2026-01-24T20:02:24.816Z",
+    "__v": 0,
+    "id": "6975255031aaee41fac313dd"
+  },
+  {
+    "address": {
+      "street": "bjq",
+      "city": "Online",
+      "state": "Online",
+      "pincode": "000000",
+      "country": "India"
+    },
+    "_id": "69751e843d1bf71949038336",
+    "customerName": "Riko Craft Store",
+    "email": "koushik04@gmail.com",
+    "phone": "09114703231",
+    "items": [
+      {
+        "productId": "plan_starter",
+        "name": "Starter Distribution Plan",
+        "price": 15000,
+        "quantity": 1
+      }
+    ],
+    "totalAmount": 15000,
+    "paymentMethod": "online",
+    "orderType": "plan_purchase",
+    "orderStatus": "waiting_payment",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": "69751e803d1bf71949038334",
+    "commission": 0,
+    "transactionId": "PLANREG1769283204117hjvxby",
+    "createdAt": "2026-01-24T19:33:24.237Z",
+    "updatedAt": "2026-01-24T19:33:24.237Z",
+    "__v": 0,
+    "id": "69751e843d1bf71949038336"
+  },
+  {
+    "address": {
+      "street": "qcq",
+      "city": "Online",
+      "state": "Online",
+      "pincode": "000000",
+      "country": "India"
+    },
+    "_id": "69751cdbe95b671f488cae17",
+    "customerName": "Riko Craft Store",
+    "email": "koushik04@gmail.com",
+    "phone": "09114703231",
+    "items": [
+      {
+        "productId": "plan_purchase",
+        "name": "Distributor Plan",
+        "price": 25000,
+        "quantity": 1
+      }
+    ],
+    "totalAmount": 25000,
+    "paymentMethod": "online",
+    "orderType": "plan_purchase",
+    "orderStatus": "waiting_payment",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "commission": 0,
+    "transactionId": "PLAN1769282779768z5t28b",
+    "createdAt": "2026-01-24T19:26:20.090Z",
+    "updatedAt": "2026-01-24T19:26:20.090Z",
+    "__v": 0,
+    "id": "69751cdbe95b671f488cae17"
+  },
+  {
+    "address": {
+      "street": "House no. 50/D, Road no. 11, Shiv Singh bagan, Agrico",
+      "city": "Jamshedpur",
+      "state": "Jharkhand",
+      "pincode": "831009",
+      "country": "India"
+    },
+    "_id": "697253aba561431b697004ea",
+    "customerName": "KOUSHIK CHAKRABORTY",
+    "email": "koushik048@gmail.com",
+    "phone": "8340624635",
+    "items": [
+      {
+        "productId": "685d07a7ceb821f468b79bc9",
         "name": "Majestic Brass Owl – Symbol of Wisdom & Protection",
         "price": 249,
-        "quantity": 2,
+        "quantity": 1,
         "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1750927270/pawnshop-products/c3x3kjvnglesfnuthxvk.jpg"
       },
       {
-        "name": "Divine Brass Ganesha Idol – Bless Your Space with Auspicious Energy",
-        "price": 749,
+        "productId": "686807f4f80824a9e3487ed4",
+        "name": "Handcrafted Wooden Miniature Hut Showpiece (Mini House)",
+        "price": 199,
         "quantity": 1,
-        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1750920623/pawnshop-products/ibed2cntvle1zhq4bzbn.jpg"
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751648243/pawnshop-products/tliad2p1ekr5ff3yn7it.jpg"
       }
     ],
-    "totalAmount": 1247,
+    "totalAmount": 448,
+    "paymentMethod": "cod",
+    "orderType": "product_order",
+    "orderStatus": "delivered",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 448,
+    "sellerToken": null,
+    "agentCode": null,
+    "commission": 0,
+    "createdAt": "2026-01-22T16:43:23.725Z",
+    "updatedAt": "2026-02-06T14:29:32.077Z",
+    "__v": 0,
+    "id": "697253aba561431b697004ea"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "orderType": "product_order",
+    "_id": "6967b1d6b41b2921846ae412",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "919114703231",
+    "items": [
+      {
+        "name": "test",
+        "price": 1,
+        "quantity": 1,
+        "image": "http://pawnbackend-xmqa.onrender.com/uploads/products/product-1768403029022-253864354.png"
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "phonepe",
+    "orderStatus": "waiting_payment",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": "6a6dd776-16ae-49c8-84cf-c038e83adfc3",
+    "commission": 0,
+    "transactionId": "OMO2601142040155033556077W",
+    "createdAt": "2026-01-14T15:10:14.984Z",
+    "updatedAt": "2026-01-14T15:10:15.699Z",
+    "__v": 0,
+    "id": "6967b1d6b41b2921846ae412"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "orderType": "product_order",
+    "_id": "6967b199b41b2921846ae112",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "919114703231",
+    "items": [
+      {
+        "name": "Tribal Dokra Round Pendant",
+        "price": 148.98,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dbwizqyzg/image/upload/v1764864801/pawnshop-products/puhfuyixxhddwk1gtvag.jpg"
+      }
+    ],
+    "totalAmount": 148.98,
+    "paymentMethod": "phonepe",
+    "orderStatus": "waiting_payment",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": "6a6dd776-16ae-49c8-84cf-c038e83adfc3",
+    "commission": 0,
+    "transactionId": "OMO2601142039144744120575W",
+    "createdAt": "2026-01-14T15:09:13.578Z",
+    "updatedAt": "2026-01-14T15:09:14.679Z",
+    "__v": 0,
+    "id": "6967b199b41b2921846ae112"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "orderType": "product_order",
+    "_id": "69679bd1a7ed99df66e7148d",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "919114703231",
+    "items": [
+      {
+        "name": "Handmade Tribal Art Earrings",
+        "price": 99,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751478046/pawnshop-products/vmudkyozv1rtwrgkk7gg.jpg"
+      }
+    ],
+    "totalAmount": 99,
     "paymentMethod": "cod",
     "orderStatus": "processing",
     "paymentStatus": "pending",
     "upfrontAmount": 0,
-    "remainingAmount": 1247,
+    "remainingAmount": 99,
     "sellerToken": "6a6dd776-16ae-49c8-84cf-c038e83adfc3",
+    "agentCode": "ADITYAKUMAR032",
     "commission": 0,
-    "_id": "6966b146575c41a6b7fbafe7",
-    "createdAt": "2026-01-13T20:55:34.353Z",
-    "updatedAt": "2026-01-13T20:55:34.353Z",
+    "createdAt": "2026-01-14T13:36:17.173Z",
+    "updatedAt": "2026-01-14T13:36:17.173Z",
     "__v": 0,
-    "id": "6966b146575c41a6b7fbafe7"
+    "id": "69679bd1a7ed99df66e7148d"
   },
   {
-    "customerName": "aditya Kumar",
-    "email": "adityakumar098k@gmail.com",
-    "phone": "919114703231",
     "address": {
       "street": "Burla",
       "city": "Sambalpur",
@@ -144,6 +2496,80 @@
       "pincode": "768018",
       "country": "India"
     },
+    "orderType": "product_order",
+    "_id": "69677482dd82ff2ea08751c1",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "919114703231",
+    "items": [
+      {
+        "name": "Handmade Tribal Art Earrings",
+        "price": 99,
+        "quantity": 2,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751478046/pawnshop-products/vmudkyozv1rtwrgkk7gg.jpg"
+      }
+    ],
+    "totalAmount": 198,
+    "paymentMethod": "cod",
+    "orderStatus": "processing",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 198,
+    "sellerToken": "6a6dd776-16ae-49c8-84cf-c038e83adfc3",
+    "agentCode": "ADITYAKUMAR032",
+    "commission": 0,
+    "createdAt": "2026-01-14T10:48:34.758Z",
+    "updatedAt": "2026-01-14T10:48:34.758Z",
+    "__v": 0,
+    "id": "69677482dd82ff2ea08751c1"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "orderType": "product_order",
+    "_id": "6966b3ed3329e525e4c73f48",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "919114703231",
+    "items": [
+      {
+        "name": "Exquisite Dokra Owl – Handcrafted Tribal Art",
+        "price": 499,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1750924058/pawnshop-products/aqytgy2majkcwsph9izy.jpg"
+      }
+    ],
+    "totalAmount": 499,
+    "paymentMethod": "cod",
+    "orderStatus": "processing",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 499,
+    "sellerToken": "6a6dd776-16ae-49c8-84cf-c038e83adfc3",
+    "commission": 0,
+    "createdAt": "2026-01-13T21:06:53.115Z",
+    "updatedAt": "2026-01-13T21:06:53.115Z",
+    "__v": 0,
+    "id": "6966b3ed3329e525e4c73f48"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "orderType": "product_order",
+    "_id": "6966b1a9f878b1cd4f58d528",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "919114703231",
     "items": [
       {
         "name": "Majestic Brass Owl – Symbol of Wisdom & Protection",
@@ -166,16 +2592,12 @@
     "remainingAmount": 1247,
     "sellerToken": null,
     "commission": 0,
-    "_id": "6966b1a9f878b1cd4f58d528",
     "createdAt": "2026-01-13T20:57:13.772Z",
     "updatedAt": "2026-01-13T20:57:13.772Z",
     "__v": 0,
     "id": "6966b1a9f878b1cd4f58d528"
   },
   {
-    "customerName": "aditya Kumar",
-    "email": "adityakumar098k@gmail.com",
-    "phone": "919114703231",
     "address": {
       "street": "Burla",
       "city": "Sambalpur",
@@ -183,33 +2605,437 @@
       "pincode": "768018",
       "country": "India"
     },
+    "orderType": "product_order",
+    "_id": "6966b146575c41a6b7fbafe7",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "9114703231",
     "items": [
       {
-        "name": "Handmade Tribal Art Earrings",
-        "price": 99,
+        "name": "Majestic Brass Owl – Symbol of Wisdom & Protection",
+        "price": 249,
         "quantity": 2,
-        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751478046/pawnshop-products/vmudkyozv1rtwrgkk7gg.jpg"
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1750927270/pawnshop-products/c3x3kjvnglesfnuthxvk.jpg"
+      },
+      {
+        "name": "Divine Brass Ganesha Idol – Bless Your Space with Auspicious Energy",
+        "price": 749,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1750920623/pawnshop-products/ibed2cntvle1zhq4bzbn.jpg"
       }
     ],
-    "totalAmount": 198,
+    "totalAmount": 1247,
     "paymentMethod": "cod",
     "orderStatus": "processing",
     "paymentStatus": "pending",
     "upfrontAmount": 0,
-    "remainingAmount": 198,
+    "remainingAmount": 1247,
     "sellerToken": "6a6dd776-16ae-49c8-84cf-c038e83adfc3",
-    "agentCode": "ADITYAKUMAR032",
     "commission": 0,
-    "_id": "69677482dd82ff2ea08751c1",
-    "createdAt": "2026-01-14T10:48:34.758Z",
-    "updatedAt": "2026-01-14T10:48:34.758Z",
+    "createdAt": "2026-01-13T20:55:34.353Z",
+    "updatedAt": "2026-01-13T20:55:34.353Z",
     "__v": 0,
-    "id": "69677482dd82ff2ea08751c1"
+    "id": "6966b146575c41a6b7fbafe7"
   },
   {
-    "customerName": "aditya Kumar",
-    "email": "adityakumar098k@gmail.com",
-    "phone": "919114703231",
+    "address": {
+      "street": "18 Jawahar rd.     chokkikulam ",
+      "city": "Madurai ",
+      "state": "Tamil nadu",
+      "pincode": "625002",
+      "country": "India"
+    },
+    "orderType": "product_order",
+    "_id": "69661f783329e525e4c71ab8",
+    "customerName": "Sowmini Ramesh ",
+    "email": "drsowmini@gmail.com",
+    "phone": "9994452147",
+    "items": [
+      {
+        "productId": "685d01d2ceb821f468b79b6b",
+        "name": "Divine Harmony: Lord Ganesha Playing Flute – Dokra Art",
+        "price": 399,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1750925778/pawnshop-products/sixykny9oeg1cwrg2hov.jpg"
+      },
+      {
+        "productId": "685cedb0ceb821f468b79b1f",
+        "name": "Divine Brass Ganesha Idol – Bless Your Space with Auspicious Energy",
+        "price": 749,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1750920623/pawnshop-products/ibed2cntvle1zhq4bzbn.jpg"
+      },
+      {
+        "productId": "685cf585ceb821f468b79b3d",
+        "name": "Eternal Love of Radha Krishna – Divine Brass Idol for Your Sacred Space",
+        "price": 1199,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1750922629/pawnshop-products/mbihaujrfnofpskmlzex.jpg"
+      },
+      {
+        "productId": "685cf875ceb821f468b79b53",
+        "name": "- Handcrafted Dokra Drummer Idol – Celebrating Tribal Rhythms in Brass",
+        "price": 1699,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1750923380/pawnshop-products/pwcvnnu7bnhti4b99wbm.jpg"
+      },
+      {
+        "productId": "685d1ce404c5040b13d4803f",
+        "name": "Terracotta shankh",
+        "price": 299,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1750932707/pawnshop-products/bz3cmrvh95ddbtcdyrnq.jpg"
+      },
+      {
+        "productId": "6866aaa9c03cea25520a39db",
+        "name": "Elegant Wooden Duck – Handcrafted Décor for Timeless Charm",
+        "price": 399,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751558824/pawnshop-products/nn2eibfmhyifbxots8w8.jpg"
+      },
+      {
+        "productId": "6863f2938e008aee5c4094d7",
+        "name": "Elegance in Wood: Graceful Handcrafted Bird Figurine",
+        "price": 749,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751380626/pawnshop-products/rvkjn7d6qodkwlgtpxzh.jpg"
+      },
+      {
+        "productId": "685d1db504c5040b13d48042",
+        "name": "Timeless Bond – A Tribute to Love in Clay",
+        "price": 999,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1750932916/pawnshop-products/afsyt5cgl0pnukkvqotc.jpg"
+      },
+      {
+        "productId": "685cec39ceb821f468b79b18",
+        "name": "Divine Harmony – Brass Krishna with Cow",
+        "price": 2200,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1750920248/pawnshop-products/uppcyizqdsknbobmaf4r.jpg"
+      }
+    ],
+    "totalAmount": 8692,
+    "paymentMethod": "cod",
+    "orderStatus": "shipped",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 8692,
+    "sellerToken": null,
+    "commission": 0,
+    "createdAt": "2026-01-13T10:33:28.190Z",
+    "updatedAt": "2026-02-03T13:54:30.552Z",
+    "__v": 0,
+    "id": "69661f783329e525e4c71ab8"
+  },
+  {
+    "address": {
+      "street": "4/1, Chellappa Garden St\nLock road south \nKotturpuram ",
+      "city": "Chennai",
+      "state": "Tamil Nadu",
+      "pincode": "600085",
+      "country": "India"
+    },
+    "orderType": "product_order",
+    "_id": "6965b2343329e525e4c6a46d",
+    "customerName": "Nirmala Nirmala ",
+    "email": "nirmalasrikanth31@gmail.com",
+    "phone": "9444325981",
+    "items": [
+      {
+        "productId": "6867ff8cb7ef7b53a3245377",
+        "name": "Wooden Decorative Vase – Handcrafted Elegance",
+        "price": 299,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751646091/pawnshop-products/t1obnx8rj3lqzvqbfbz3.jpg"
+      },
+      {
+        "productId": "6866a672c03cea25520a399d",
+        "name": "Handcrafted Wooden Multi-Purpose Holder with Twin Horse Design",
+        "price": 249,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751557745/pawnshop-products/ofxnldnap3qicbgkbo62.jpg"
+      }
+    ],
+    "totalAmount": 548,
+    "paymentMethod": "cod",
+    "orderStatus": "delivered",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 548,
+    "sellerToken": null,
+    "commission": 0,
+    "createdAt": "2026-01-13T02:47:16.353Z",
+    "updatedAt": "2026-01-27T15:40:39.041Z",
+    "__v": 0,
+    "id": "6965b2343329e525e4c6a46d"
+  },
+  {
+    "address": {
+      "street": "Trans yamuna coloney phase 2 Goyal city hospital ke pass hai",
+      "city": "string:Agra",
+      "state": "Uttar Pradesh",
+      "pincode": "282006",
+      "country": "India"
+    },
+    "orderType": "product_order",
+    "_id": "6964d6933329e525e4c46aed",
+    "customerName": "ANIKET LODHI",
+    "email": "anuragrajput08979@gmail.com",
+    "phone": "8979624218",
+    "items": [
+      {
+        "productId": "685d272e04c5040b13d480ab",
+        "name": "Grace in Clay – Handcrafted Terracotta Ganesha",
+        "price": 499,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1750935341/pawnshop-products/wzyyrveopvyyhyuwjwbr.jpg"
+      }
+    ],
+    "totalAmount": 499,
+    "paymentMethod": "cod",
+    "orderStatus": "delivered",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 499,
+    "sellerToken": null,
+    "commission": 0,
+    "createdAt": "2026-01-12T11:10:11.729Z",
+    "updatedAt": "2026-02-03T13:54:38.074Z",
+    "__v": 0,
+    "id": "6964d6933329e525e4c46aed"
+  },
+  {
+    "address": {
+      "street": "F- 8,9 D B city mall ",
+      "city": "Bhopal",
+      "state": "Madhya Pradesh",
+      "pincode": "462011",
+      "country": "India"
+    },
+    "orderType": "product_order",
+    "_id": "6960aa773329e525e4c3bfd3",
+    "customerName": "Rajesh Savita",
+    "email": "rajeshsavitacp@gmail.com",
+    "phone": "+919752404245",
+    "items": [
+      {
+        "productId": "6865619d942a661603811252",
+        "name": "Handcrafted Wooden Art – Maa Durga Face in Bamboo Frame",
+        "price": 199,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751474589/pawnshop-products/mbkurrrgereoynb4puuy.jpg"
+      },
+      {
+        "productId": "686563a6942a66160381125f",
+        "name": "Village Life Wooden Table Décor",
+        "price": 199,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751475109/pawnshop-products/n5nnvxxjdo9kd9x0qasu.jpg"
+      }
+    ],
+    "totalAmount": 398,
+    "paymentMethod": "cod",
+    "orderStatus": "delivered",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 398,
+    "sellerToken": null,
+    "commission": 0,
+    "createdAt": "2026-01-09T07:12:55.517Z",
+    "updatedAt": "2026-01-19T07:28:28.958Z",
+    "__v": 0,
+    "id": "6960aa773329e525e4c3bfd3"
+  },
+  {
+    "address": {
+      "street": "A 702, Durga Petals, Doddanekundi, Outer Ring Road, Adjacent to Rainbow Childrens Hospital",
+      "city": "Bangalore",
+      "state": "Karnataka",
+      "pincode": "560037",
+      "country": "India"
+    },
+    "orderType": "product_order",
+    "_id": "695f44433329e525e4c20001",
+    "customerName": "Venkat Ramana",
+    "email": "vbykadi@gmail.com",
+    "phone": "9980314348",
+    "items": [
+      {
+        "productId": "6866a9e7c03cea25520a39bd",
+        "name": "- Elegance on Your Wall – Handcrafted Wooden Deer Head",
+        "price": 899,
+        "quantity": 2,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751558631/pawnshop-products/zewsnviaw2gm7zh1jysh.jpg"
+      }
+    ],
+    "totalAmount": 1798,
+    "paymentMethod": "cod",
+    "orderStatus": "manufacturing",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 1798,
+    "sellerToken": null,
+    "commission": 0,
+    "createdAt": "2026-01-08T05:44:35.496Z",
+    "updatedAt": "2026-01-19T07:26:02.368Z",
+    "__v": 0,
+    "id": "695f44433329e525e4c20001"
+  },
+  {
+    "address": {
+      "street": "Silver Springs - Phase - 1\nBlock - B - 525 \n( Near - D Mart )",
+      "city": "A.B. Bypass Road. Indore.",
+      "state": "MP",
+      "pincode": "452020",
+      "country": "India"
+    },
+    "orderType": "product_order",
+    "_id": "695e03ad3329e525e4c0f554",
+    "customerName": "Jayesh Pandit",
+    "email": "jayeshpndt@gmail.com",
+    "phone": "+917999283095",
+    "items": [
+      {
+        "productId": "6866b66a22a801c7b09d73a0",
+        "name": "Handcrafted Wooden Horse Pair – Rikocraft Exclusive",
+        "price": 349,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751561832/pawnshop-products/ffozhjst4ncvfvt9zc4e.jpg"
+      }
+    ],
+    "totalAmount": 349,
+    "paymentMethod": "cod",
+    "orderStatus": "delivered",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 349,
+    "sellerToken": null,
+    "commission": 0,
+    "createdAt": "2026-01-07T06:56:45.354Z",
+    "updatedAt": "2026-01-19T07:28:44.002Z",
+    "__v": 0,
+    "id": "695e03ad3329e525e4c0f554"
+  },
+  {
+    "address": {
+      "street": "Vidya nagar wadsa road bardi, Armori ",
+      "city": "Armori",
+      "state": "Maharashtra",
+      "pincode": "441208",
+      "country": "India"
+    },
+    "orderType": "product_order",
+    "_id": "695d11dc3329e525e4c0270b",
+    "customerName": "Siddharth masram ",
+    "email": "meenamasram11@gmail.com",
+    "phone": "919823598132",
+    "items": [
+      {
+        "name": "Folk Dance Clay Art Wall Hanging",
+        "price": 699,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dbwizqyzg/image/upload/v1764687051/pawnshop-products/jxfkt7eaekioppubvwd2.jpg"
+      }
+    ],
+    "totalAmount": 699,
+    "paymentMethod": "cod",
+    "orderStatus": "delivered",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 699,
+    "sellerToken": null,
+    "commission": 0,
+    "createdAt": "2026-01-06T13:45:00.302Z",
+    "updatedAt": "2026-01-19T07:28:46.659Z",
+    "__v": 0,
+    "id": "695d11dc3329e525e4c0270b"
+  },
+  {
+    "address": {
+      "street": "9/2487 gali no. 18-A kailash nagar\nDelhi.. 110031",
+      "city": "Delhi",
+      "state": "Delhi",
+      "pincode": "110031",
+      "country": "India"
+    },
+    "orderType": "product_order",
+    "_id": "695d04563329e525e4c00b93",
+    "customerName": "Amarjeet Singh",
+    "email": "amarjeetsingh2867@gmail.com",
+    "phone": "9643216768",
+    "items": [
+      {
+        "productId": "685d07a7ceb821f468b79bc9",
+        "name": "Majestic Brass Owl – Symbol of Wisdom & Protection",
+        "price": 249,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1750927270/pawnshop-products/c3x3kjvnglesfnuthxvk.jpg"
+      },
+      {
+        "productId": "6933f2aae21de8fa89cf7767",
+        "name": "Handcrafted Tribal Dancing Dokra Pendant Jewellery",
+        "price": 149,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dbwizqyzg/image/upload/v1765012138/pawnshop-products/rcuvrue6yndxnezpgieh.jpg"
+      },
+      {
+        "productId": "6933eecfe21de8fa89cf770c",
+        "name": "Handcrafted Tribal Dokra basuri Pendant Jewellery",
+        "price": 149,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dbwizqyzg/image/upload/v1765011151/pawnshop-products/prdys8wvza5nnbmrmimx.jpg"
+      }
+    ],
+    "totalAmount": 547,
+    "paymentMethod": "cod",
+    "orderStatus": "delivered",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 547,
+    "sellerToken": null,
+    "commission": 0,
+    "createdAt": "2026-01-06T12:47:18.610Z",
+    "updatedAt": "2026-01-19T07:28:19.156Z",
+    "__v": 0,
+    "id": "695d04563329e525e4c00b93"
+  },
+  {
+    "address": {
+      "street": "212 sodpur 1st lane ",
+      "city": "Kolkata ",
+      "state": "West Bengal ",
+      "pincode": "700082",
+      "country": "India"
+    },
+    "orderType": "product_order",
+    "_id": "695be1ab3329e525e4be21cd",
+    "customerName": "Sanjoy  Das",
+    "email": "d45.sanjoy@gmail.com",
+    "phone": "9123057113",
+    "items": [
+      {
+        "productId": "685d296ff16e00cbb9e08ae5",
+        "name": "Handcrafted Terracotta Horse PAIR – Symbol of Tradition and Artistry",
+        "price": 199,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1750935919/pawnshop-products/qnyb3p1ubttuz2djo1xf.jpg"
+      }
+    ],
+    "totalAmount": 199,
+    "paymentMethod": "cod",
+    "orderStatus": "delivered",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 199,
+    "sellerToken": null,
+    "commission": 0,
+    "createdAt": "2026-01-05T16:07:07.513Z",
+    "updatedAt": "2026-01-13T03:17:32.655Z",
+    "__v": 0,
+    "id": "695be1ab3329e525e4be21cd"
+  },
+  {
     "address": {
       "street": "Burla",
       "city": "Sambalpur",
@@ -217,6 +3043,440 @@
       "pincode": "768018",
       "country": "India"
     },
+    "orderType": "product_order",
+    "_id": "695bd3d43329e525e4bde5a0",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "9114703231",
+    "items": [
+      {
+        "name": "Handmade Tribal Art Earrings",
+        "price": 99,
+        "quantity": 3,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751478046/pawnshop-products/vmudkyozv1rtwrgkk7gg.jpg"
+      },
+      {
+        "name": "Majestic Brass Owl – Symbol of Wisdom & Protection",
+        "price": 249,
+        "quantity": 2,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1750927270/pawnshop-products/c3x3kjvnglesfnuthxvk.jpg"
+      }
+    ],
+    "totalAmount": 795,
+    "paymentMethod": "cod",
+    "orderStatus": "processing",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 795,
+    "sellerToken": null,
+    "commission": 0,
+    "createdAt": "2026-01-05T15:08:04.750Z",
+    "updatedAt": "2026-01-05T15:08:04.750Z",
+    "__v": 0,
+    "id": "695bd3d43329e525e4bde5a0"
+  },
+  {
+    "address": {
+      "street": "M-76\nPrem Nagar\nUttam Nagar",
+      "city": "New Delhi",
+      "state": "Delhi",
+      "pincode": "110059",
+      "country": "India"
+    },
+    "orderType": "product_order",
+    "_id": "69578b753329e525e4b8dee1",
+    "customerName": "Ankit Singh",
+    "email": "ankitsinghca@gmail.com",
+    "phone": "8447872289",
+    "items": [
+      {
+        "productId": "68655c1e942a6616038111ee",
+        "name": "Elegant Wooden Deer Sculpture – Handcrafted Charm for Your Home",
+        "price": 699,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751473181/pawnshop-products/isvhgapevia5jgiihgyw.jpg"
+      },
+      {
+        "productId": "6863f2938e008aee5c4094d7",
+        "name": "Elegance in Wood: Graceful Handcrafted Bird Figurine",
+        "price": 749,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751380626/pawnshop-products/rvkjn7d6qodkwlgtpxzh.jpg"
+      },
+      {
+        "productId": "686807f4f80824a9e3487ed4",
+        "name": "Handcrafted Wooden Miniature Hut Showpiece (Mini House)",
+        "price": 199,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751648243/pawnshop-products/tliad2p1ekr5ff3yn7it.jpg"
+      },
+      {
+        "productId": "6866aaa9c03cea25520a39db",
+        "name": "Elegant Wooden Duck – Handcrafted Décor for Timeless Charm",
+        "price": 399,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751558824/pawnshop-products/nn2eibfmhyifbxots8w8.jpg"
+      }
+    ],
+    "totalAmount": 2046,
+    "paymentMethod": "cod",
+    "orderStatus": "delivered",
+    "paymentStatus": "pending",
+    "upfrontAmount": 79,
+    "remainingAmount": 2046,
+    "sellerToken": null,
+    "commission": 0,
+    "createdAt": "2026-01-02T09:10:13.019Z",
+    "updatedAt": "2026-01-09T11:34:13.727Z",
+    "__v": 0,
+    "id": "69578b753329e525e4b8dee1"
+  },
+  {
+    "address": {
+      "street": "Flat No. 1004, A Wing, 10th Floor, Shiv Koliwada CHS, Road No.29, Sion Bhandarwada, Opp Sion Croma, Sion East",
+      "city": "MUMBAI",
+      "state": "MAHARASHTRA",
+      "pincode": "400022",
+      "country": "India"
+    },
+    "orderType": "product_order",
+    "_id": "695772e93329e525e4b8c547",
+    "customerName": "Anilkumar Kondapol",
+    "email": "kondapolshop@gmail.com",
+    "phone": "9987060381",
+    "items": [
+      {
+        "name": "Hand-Painted Wooden Red Owl Idol – Traditional Religious Craft",
+        "price": 399,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751562970/pawnshop-products/qpxxzs4gv2n3fvyk2zx4.png"
+      },
+      {
+        "name": "Handcrafted Wooden Bullock Cart Showpiece",
+        "price": 499,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751472679/pawnshop-products/gto5fpizyu4xcgu2i60d.jpg"
+      },
+      {
+        "name": "Elegant Wooden Ship Decor – Handcrafted Artistry",
+        "price": 749,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751561998/pawnshop-products/jcbdvwz536nc1ncc24x1.jpg"
+      },
+      {
+        "name": "Elegant Wooden Deer Pair – Handcrafted Marvel",
+        "price": 849,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751559256/pawnshop-products/y0d6l2vujdbxifrika7d.jpg"
+      },
+      {
+        "name": "Dhokra Royal Elephant Sculpture",
+        "price": 699,
+        "quantity": 2,
+        "image": "https://res.cloudinary.com/dbwizqyzg/image/upload/v1764848245/pawnshop-products/reqcwflzyfu4fje4ufhl.jpg"
+      }
+    ],
+    "totalAmount": 3894,
+    "paymentMethod": "phonepe",
+    "orderStatus": "delivered",
+    "paymentStatus": "completed",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": null,
+    "commission": 0,
+    "createdAt": "2026-01-02T07:25:29.669Z",
+    "updatedAt": "2026-01-13T03:17:40.388Z",
+    "__v": 0,
+    "id": "695772e93329e525e4b8c547"
+  },
+  {
+    "address": {
+      "street": "No 6,2 nd stop annai illam,s.alangulam,kulamangulam road",
+      "city": "Madurai",
+      "state": "Tamil nadu",
+      "pincode": "625017",
+      "country": "India"
+    },
+    "orderType": "product_order",
+    "_id": "6954aaef3329e525e4b542db",
+    "customerName": "Rajesh Kumar",
+    "email": "janarajesh.86@gmail.com",
+    "phone": "8190016499",
+    "items": [
+      {
+        "productId": "6866b70e22a801c7b09d73b7",
+        "name": "Elegant Wooden Ship Decor – Handcrafted Artistry",
+        "price": 749,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751561998/pawnshop-products/jcbdvwz536nc1ncc24x1.jpg"
+      }
+    ],
+    "totalAmount": 749,
+    "paymentMethod": "phonepe",
+    "orderStatus": "delivered",
+    "paymentStatus": "completed",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": null,
+    "commission": 0,
+    "createdAt": "2025-12-31T04:47:43.095Z",
+    "updatedAt": "2026-01-09T11:34:08.038Z",
+    "__v": 0,
+    "id": "6954aaef3329e525e4b542db"
+  },
+  {
+    "address": {
+      "street": "House no. 50/D, Road no. 11, Shiv Singh bagan, Agrico",
+      "city": "Jamshedpur",
+      "state": "Jharkhand",
+      "pincode": "831009",
+      "country": "India"
+    },
+    "orderType": "product_order",
+    "_id": "695407333329e525e4b44c85",
+    "customerName": "Koushik Chakraborty",
+    "email": "koushik048@gmail.com",
+    "phone": "8340624635",
+    "items": [
+      {
+        "name": "Tribal Dokra Round Pendant",
+        "price": 148.98,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dbwizqyzg/image/upload/v1764864801/pawnshop-products/puhfuyixxhddwk1gtvag.jpg"
+      }
+    ],
+    "totalAmount": 148.98,
+    "paymentMethod": "cod",
+    "orderStatus": "delivered",
+    "paymentStatus": "pending",
+    "upfrontAmount": 79,
+    "remainingAmount": 148.98,
+    "sellerToken": "6e8f7fd6-cdde-4ddf-a857-829ef672453d",
+    "commission": 0,
+    "createdAt": "2025-12-30T17:09:07.450Z",
+    "updatedAt": "2025-12-31T06:37:58.868Z",
+    "__v": 0,
+    "id": "695407333329e525e4b44c85"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "orderType": "product_order",
+    "_id": "695404ce3329e525e4b448c3",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "9114703231",
+    "items": [
+      {
+        "name": "Handmade Tribal Art Earrings",
+        "price": 99,
+        "quantity": 6,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751478046/pawnshop-products/vmudkyozv1rtwrgkk7gg.jpg"
+      }
+    ],
+    "totalAmount": 594,
+    "paymentMethod": "cod",
+    "orderStatus": "delivered",
+    "paymentStatus": "pending",
+    "upfrontAmount": 1,
+    "remainingAmount": 594,
+    "sellerToken": null,
+    "commission": 0,
+    "createdAt": "2025-12-30T16:58:54.198Z",
+    "updatedAt": "2026-01-07T17:55:54.654Z",
+    "__v": 0,
+    "id": "695404ce3329e525e4b448c3"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "orderType": "product_order",
+    "_id": "695401263329e525e4b4382b",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "9114703231",
+    "items": [
+      {
+        "name": "Handmade Tribal Art Earrings",
+        "price": 99,
+        "quantity": 4,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751478046/pawnshop-products/vmudkyozv1rtwrgkk7gg.jpg"
+      }
+    ],
+    "totalAmount": 396,
+    "paymentMethod": "cod",
+    "orderStatus": "processing",
+    "paymentStatus": "completed",
+    "upfrontAmount": 1,
+    "remainingAmount": 396,
+    "sellerToken": null,
+    "commission": 0,
+    "createdAt": "2025-12-30T16:43:18.821Z",
+    "updatedAt": "2025-12-30T16:43:18.821Z",
+    "__v": 0,
+    "id": "695401263329e525e4b4382b"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "orderType": "product_order",
+    "_id": "6953cfde3329e525e4b3e1f4",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "9114703231",
+    "items": [
+      {
+        "name": "Handmade Tribal Art Earrings",
+        "price": 99,
+        "quantity": 10,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751478046/pawnshop-products/vmudkyozv1rtwrgkk7gg.jpg"
+      }
+    ],
+    "totalAmount": 990,
+    "paymentMethod": "phonepe",
+    "orderStatus": "processing",
+    "paymentStatus": "completed",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": null,
+    "commission": 0,
+    "createdAt": "2025-12-30T13:13:02.384Z",
+    "updatedAt": "2025-12-30T13:13:02.384Z",
+    "__v": 0,
+    "id": "6953cfde3329e525e4b3e1f4"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "orderType": "product_order",
+    "_id": "6953c89a3329e525e4b3d3b1",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "9114703231",
+    "items": [
+      {
+        "name": "Wooden Bullock Cart Showpiece – Village Scene Miniature",
+        "price": 199,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751646335/pawnshop-products/n2bnou7git66ijnv9qaz.jpg"
+      }
+    ],
+    "totalAmount": 199,
+    "paymentMethod": "cod",
+    "orderStatus": "processing",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 199,
+    "sellerToken": null,
+    "commission": 0,
+    "createdAt": "2025-12-30T12:42:02.213Z",
+    "updatedAt": "2025-12-30T12:42:02.213Z",
+    "__v": 0,
+    "id": "6953c89a3329e525e4b3d3b1"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "orderType": "product_order",
+    "_id": "6953ba2e3329e525e4b3b26d",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "9114703231",
+    "items": [
+      {
+        "productId": "6866b70e22a801c7b09d73b7",
+        "name": "Elegant Wooden Ship Decor – Handcrafted Artistry",
+        "price": 749,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751561998/pawnshop-products/jcbdvwz536nc1ncc24x1.jpg"
+      }
+    ],
+    "totalAmount": 749,
+    "paymentMethod": "cod",
+    "orderStatus": "processing",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 749,
+    "sellerToken": null,
+    "commission": 0,
+    "createdAt": "2025-12-30T11:40:30.189Z",
+    "updatedAt": "2025-12-30T11:40:30.189Z",
+    "__v": 0,
+    "id": "6953ba2e3329e525e4b3b26d"
+  },
+  {
+    "address": {
+      "street": "#143, 1st cross road, Central excise layout, bhoopasandra, Bengaluru-560094",
+      "city": "Bengaluru ",
+      "state": "Karnataka ",
+      "pincode": "560094",
+      "country": "India"
+    },
+    "orderType": "product_order",
+    "_id": "6953976a3329e525e4b35ff1",
+    "customerName": "Vedhika B M",
+    "email": "vedhika117@gmail.com",
+    "phone": "7892445988",
+    "items": [
+      {
+        "productId": "6866b70e22a801c7b09d73b7",
+        "name": "Elegant Wooden Ship Decor – Handcrafted Artistry",
+        "price": 749,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751561998/pawnshop-products/jcbdvwz536nc1ncc24x1.jpg"
+      }
+    ],
+    "totalAmount": 749,
+    "paymentMethod": "phonepe",
+    "orderStatus": "delivered",
+    "paymentStatus": "completed",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": null,
+    "commission": 0,
+    "createdAt": "2025-12-30T09:12:10.797Z",
+    "updatedAt": "2026-01-09T11:33:55.801Z",
+    "__v": 0,
+    "id": "6953976a3329e525e4b35ff1"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "orderType": "product_order",
+    "_id": "6953935e3329e525e4b32fe5",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "919114703231",
     "items": [
       {
         "name": "Handmade Tribal Art Earrings",
@@ -230,14 +3490,759 @@
     "orderStatus": "processing",
     "paymentStatus": "pending",
     "upfrontAmount": 0,
-    "remainingAmount": 99,
-    "sellerToken": "6a6dd776-16ae-49c8-84cf-c038e83adfc3",
-    "agentCode": "ADITYAKUMAR032",
+    "remainingAmount": 178,
+    "sellerToken": null,
     "commission": 0,
-    "_id": "69679bd1a7ed99df66e7148d",
-    "createdAt": "2026-01-14T13:36:17.173Z",
-    "updatedAt": "2026-01-14T13:36:17.173Z",
+    "createdAt": "2025-12-30T08:54:54.344Z",
+    "updatedAt": "2025-12-30T08:54:54.344Z",
     "__v": 0,
-    "id": "69679bd1a7ed99df66e7148d"
+    "id": "6953935e3329e525e4b32fe5"
+  },
+  {
+    "address": {
+      "street": "Flat no. 105, first floor, aura the pacific building, gandhi nagar, manpada road, Dombivli (east)",
+      "city": "Dombivli",
+      "state": "Maharashtra",
+      "pincode": "421201",
+      "country": "India"
+    },
+    "orderType": "product_order",
+    "_id": "69537a103329e525e4b2f164",
+    "customerName": "Sagar Jadhav",
+    "email": "jyotsingh13031@gmail.com",
+    "phone": "7738627168",
+    "items": [
+      {
+        "productId": "6863ec2dc04b21bc289eb1aa",
+        "name": "Legacy in Clay: The Poet Immortalized” “Rabindranath Tagore",
+        "price": 99,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751378988/pawnshop-products/zyjs45darixu4zzxufst.jpg"
+      },
+      {
+        "productId": "6868070af80824a9e3487eb2",
+        "name": "Rustic Wooden Village Hut Showpiece – Small",
+        "price": 149,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751648009/pawnshop-products/qnpkrjjriilgq5djobff.jpg"
+      },
+      {
+        "productId": "6865619d942a661603811252",
+        "name": "Handcrafted Wooden Art – Maa Durga Face in Bamboo Frame",
+        "price": 199,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751474589/pawnshop-products/mbkurrrgereoynb4puuy.jpg"
+      },
+      {
+        "productId": "6863ed2b8e008aee5c4094a6",
+        "name": "Grace of Ganesha in Earth’s Embrace Play Harmonium– Handcrafted Terracotta Art",
+        "price": 299,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751379242/pawnshop-products/cb6prqcgmnuemsii4eyb.jpg"
+      },
+      {
+        "productId": "6866b7d5071dc2323d61677f",
+        "name": "Wooden Craft Lakshmi Mata Idol",
+        "price": 899,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751562196/pawnshop-products/edyzgitknuckk8hmjyly.jpg"
+      }
+    ],
+    "totalAmount": 1645,
+    "paymentMethod": "phonepe",
+    "orderStatus": "delivered",
+    "paymentStatus": "completed",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": null,
+    "commission": 0,
+    "createdAt": "2025-12-30T07:06:56.606Z",
+    "updatedAt": "2026-01-09T11:33:58.967Z",
+    "__v": 0,
+    "id": "69537a103329e525e4b2f164"
+  },
+  {
+    "address": {
+      "street": "M-76, Prem Nagar Uttam Nagar",
+      "city": "New Delhi",
+      "state": "Delhi",
+      "pincode": "110059",
+      "country": "India"
+    },
+    "orderType": "product_order",
+    "_id": "694d29493329e525e4ad10c6",
+    "customerName": "Ankit Singh",
+    "email": "ankitsinghca@gmail.com",
+    "phone": "8447872289",
+    "items": [
+      {
+        "productId": "6866b70e22a801c7b09d73b7",
+        "name": "Elegant Wooden Ship Decor – Handcrafted Artistry",
+        "price": 749,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751561998/pawnshop-products/jcbdvwz536nc1ncc24x1.jpg"
+      }
+    ],
+    "totalAmount": 749,
+    "paymentMethod": "phonepe",
+    "orderStatus": "delivered",
+    "paymentStatus": "completed",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": null,
+    "commission": 0,
+    "createdAt": "2025-12-25T12:08:41.876Z",
+    "updatedAt": "2026-01-07T17:56:39.782Z",
+    "__v": 0,
+    "id": "694d29493329e525e4ad10c6"
+  },
+  {
+    "address": {
+      "street": "House no. 50/D, Road no. 11, Shiv Singh bagan, Agrico",
+      "city": "Jamshedpur",
+      "state": "Jharkhand",
+      "pincode": "831009",
+      "country": "India"
+    },
+    "orderType": "product_order",
+    "_id": "6948deb53329e525e4aabcc6",
+    "customerName": "Koushik Chakraborty",
+    "email": "koushik048@gmail.com",
+    "phone": "8340624635",
+    "items": [
+      {
+        "name": "Rustic Wooden Village Hut Showpiece – Small",
+        "price": 99,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751648009/pawnshop-products/qnpkrjjriilgq5djobff.jpg"
+      }
+    ],
+    "totalAmount": 99,
+    "paymentMethod": "phonepe",
+    "orderStatus": "delivered",
+    "paymentStatus": "completed",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": null,
+    "commission": 0,
+    "createdAt": "2025-12-22T06:01:25.983Z",
+    "updatedAt": "2025-12-22T15:20:00.899Z",
+    "__v": 0,
+    "id": "6948deb53329e525e4aabcc6"
+  },
+  {
+    "address": {
+      "street": "House no. 50/D, Road no. 11, Shiv Singh bagan, Agrico",
+      "city": "Jamshedpur",
+      "state": "Jharkhand",
+      "pincode": "831009",
+      "country": "India"
+    },
+    "orderType": "product_order",
+    "_id": "6948de503329e525e4aabc59",
+    "customerName": "Koushik Chakraborty",
+    "email": "koushik048@gmail.com",
+    "phone": "8340624635",
+    "items": [
+      {
+        "name": "Handcrafted Wooden Bullock Cart Showpiece",
+        "price": 499,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751472679/pawnshop-products/gto5fpizyu4xcgu2i60d.jpg"
+      }
+    ],
+    "totalAmount": 499,
+    "paymentMethod": "phonepe",
+    "orderStatus": "delivered",
+    "paymentStatus": "completed",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": null,
+    "commission": 0,
+    "createdAt": "2025-12-22T05:59:44.586Z",
+    "updatedAt": "2025-12-22T10:38:41.296Z",
+    "__v": 0,
+    "id": "6948de503329e525e4aabc59"
+  },
+  {
+    "address": {
+      "street": "F202 Casagrand Athens, Vanagaram Main Road, Ambattur",
+      "city": "Chennai",
+      "state": "Tamil Nadu",
+      "pincode": "600058",
+      "country": "India"
+    },
+    "orderType": "product_order",
+    "_id": "694636163329e525e4a95307",
+    "customerName": "Srinivasan M R",
+    "email": "techie.nivas@gmail.com",
+    "phone": "9840038097",
+    "items": [
+      {
+        "name": "Village Life Wooden Table Décor",
+        "price": 99,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751475109/pawnshop-products/n5nnvxxjdo9kd9x0qasu.jpg"
+      },
+      {
+        "name": "Rustic Wooden Village Hut Showpiece – Small",
+        "price": 99,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751648009/pawnshop-products/qnpkrjjriilgq5djobff.jpg"
+      },
+      {
+        "name": "WOODEN SMALL SHOWPIECE COW CAR",
+        "price": 99,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751475437/pawnshop-products/ul5demvztzhy8zk5ejs3.jpg"
+      },
+      {
+        "name": "Sail into Tradition – Handcrafted Wooden Boat Art by Rikocraft",
+        "price": 399,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751380371/pawnshop-products/vhzoalekldmaobdqt5hu.jpg"
+      }
+    ],
+    "totalAmount": 696,
+    "paymentMethod": "phonepe",
+    "orderStatus": "delivered",
+    "paymentStatus": "completed",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": null,
+    "commission": 0,
+    "createdAt": "2025-12-20T05:37:26.852Z",
+    "updatedAt": "2026-01-07T17:56:10.134Z",
+    "__v": 0,
+    "id": "694636163329e525e4a95307"
+  },
+  {
+    "address": {
+      "street": "House no. 50/D, Road no. 11, Shiv Singh bagan, Agrico",
+      "city": "Jamshedpur",
+      "state": "Jharkhand",
+      "pincode": "831009",
+      "country": "India"
+    },
+    "orderType": "product_order",
+    "_id": "69428a9ee21de8fa89d060bb",
+    "customerName": "Koushik Chakraborty",
+    "email": "koushik048@gmail.com",
+    "phone": "8340624635",
+    "items": [
+      {
+        "name": "Exquisite Dokra Owl – Handcrafted Tribal Art",
+        "price": 399,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1750924058/pawnshop-products/aqytgy2majkcwsph9izy.jpg"
+      }
+    ],
+    "totalAmount": 399,
+    "paymentMethod": "phonepe",
+    "orderStatus": "delivered",
+    "paymentStatus": "completed",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": null,
+    "commission": 0,
+    "createdAt": "2025-12-17T10:49:02.590Z",
+    "updatedAt": "2025-12-22T15:20:11.175Z",
+    "__v": 0,
+    "id": "69428a9ee21de8fa89d060bb"
+  },
+  {
+    "address": {
+      "street": "House no. 50/D, Road no. 11, Shiv Singh bagan, Agrico",
+      "city": "Jamshedpur",
+      "state": "Jharkhand",
+      "pincode": "831009",
+      "country": "India"
+    },
+    "orderType": "product_order",
+    "_id": "694110cfe21de8fa89d0485c",
+    "customerName": "Koushik Chakraborty",
+    "email": "koushik048@gmail.com",
+    "phone": "8340624635",
+    "items": [
+      {
+        "name": "Legacy in Clay: The Poet Immortalized” “Rabindranath Tagore",
+        "price": 99,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751378988/pawnshop-products/zyjs45darixu4zzxufst.jpg"
+      },
+      {
+        "name": "Handcrafted Terracotta Horse PAIR – Symbol of Tradition and Artistry",
+        "price": 199,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1750935919/pawnshop-products/qnyb3p1ubttuz2djo1xf.jpg"
+      }
+    ],
+    "totalAmount": 298,
+    "paymentMethod": "phonepe",
+    "orderStatus": "delivered",
+    "paymentStatus": "completed",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": null,
+    "commission": 0,
+    "createdAt": "2025-12-16T07:57:03.544Z",
+    "updatedAt": "2025-12-22T15:20:16.175Z",
+    "__v": 0,
+    "id": "694110cfe21de8fa89d0485c"
+  },
+  {
+    "address": {
+      "street": "House no. 50/D, Road no. 11, Shiv Singh bagan, Agrico",
+      "city": "Jamshedpur",
+      "state": "Jharkhand",
+      "pincode": "831009",
+      "country": "India"
+    },
+    "orderType": "product_order",
+    "_id": "69400ecde21de8fa89d035ab",
+    "customerName": "Koushik Chakraborty",
+    "email": "koushik048@gmail.com",
+    "phone": "8340624635",
+    "items": [
+      {
+        "name": "Handmade Tribal Art Earrings",
+        "price": 99,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751478046/pawnshop-products/vmudkyozv1rtwrgkk7gg.jpg"
+      }
+    ],
+    "totalAmount": 99,
+    "paymentMethod": "phonepe",
+    "orderStatus": "delivered",
+    "paymentStatus": "completed",
+    "upfrontAmount": 0,
+    "remainingAmount": 0,
+    "sellerToken": null,
+    "commission": 0,
+    "createdAt": "2025-12-15T13:36:13.747Z",
+    "updatedAt": "2025-12-22T15:20:23.507Z",
+    "__v": 0,
+    "id": "69400ecde21de8fa89d035ab"
+  },
+  {
+    "address": {
+      "street": "House no. 50/D, Road no. 11, Shiv Singh bagan, Agrico",
+      "city": "Jamshedpur",
+      "state": "Jharkhand",
+      "pincode": "831009",
+      "country": "India"
+    },
+    "orderType": "product_order",
+    "_id": "69400e61e21de8fa89d03424",
+    "customerName": "Koushik Chakraborty ",
+    "email": "koushik048@gmail.com",
+    "phone": "8340624635",
+    "items": [
+      {
+        "name": "Handmade Tribal Art Earrings",
+        "price": 99,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751478046/pawnshop-products/vmudkyozv1rtwrgkk7gg.jpg"
+      }
+    ],
+    "totalAmount": 99,
+    "paymentMethod": "cod",
+    "orderStatus": "delivered",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 99,
+    "sellerToken": null,
+    "commission": 0,
+    "createdAt": "2025-12-15T13:34:25.218Z",
+    "updatedAt": "2025-12-22T15:20:32.375Z",
+    "__v": 0,
+    "id": "69400e61e21de8fa89d03424"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "orderType": "product_order",
+    "_id": "69398142e21de8fa89cfce37",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "9114703231",
+    "items": [
+      {
+        "productId": "686563a6942a66160381125f",
+        "name": "Village Life Wooden Table Décor",
+        "price": 99,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751475109/pawnshop-products/n5nnvxxjdo9kd9x0qasu.jpg"
+      }
+    ],
+    "totalAmount": 99,
+    "paymentMethod": "cod",
+    "orderStatus": "processing",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 99,
+    "sellerToken": null,
+    "commission": 0,
+    "createdAt": "2025-12-10T14:18:42.662Z",
+    "updatedAt": "2025-12-10T14:18:42.662Z",
+    "__v": 0,
+    "id": "69398142e21de8fa89cfce37"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "orderType": "product_order",
+    "_id": "692dce9ce21de8fa89cf2f9a",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "919114703231",
+    "items": [
+      {
+        "name": "Village Life Wooden Table Décor",
+        "price": 99,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751475109/pawnshop-products/n5nnvxxjdo9kd9x0qasu.jpg"
+      }
+    ],
+    "totalAmount": 99,
+    "paymentMethod": "cod",
+    "orderStatus": "processing",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 99,
+    "sellerToken": null,
+    "commission": 0,
+    "createdAt": "2025-12-01T17:21:32.629Z",
+    "updatedAt": "2025-12-01T17:21:32.629Z",
+    "__v": 0,
+    "id": "692dce9ce21de8fa89cf2f9a"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "orderType": "product_order",
+    "_id": "692dcda9e21de8fa89cf2d5a",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "09114703231",
+    "items": [
+      {
+        "productId": "686563a6942a66160381125f",
+        "name": "Village Life Wooden Table Décor",
+        "price": 99,
+        "quantity": 2,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751475109/pawnshop-products/n5nnvxxjdo9kd9x0qasu.jpg"
+      }
+    ],
+    "totalAmount": 198,
+    "paymentMethod": "cod",
+    "orderStatus": "processing",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 198,
+    "sellerToken": null,
+    "commission": 0,
+    "createdAt": "2025-12-01T17:17:29.857Z",
+    "updatedAt": "2025-12-01T17:17:29.857Z",
+    "__v": 0,
+    "id": "692dcda9e21de8fa89cf2d5a"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "orderType": "product_order",
+    "_id": "692dcd94e21de8fa89cf2bd4",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "09114703231",
+    "items": [
+      {
+        "productId": "68656e8e942a6616038112ee",
+        "name": "Handmade Tribal Art Earrings – Cane & Threadwork with Owl Motif",
+        "price": 99,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751477902/pawnshop-products/cdelzwze3bloqdccs5sz.jpg"
+      }
+    ],
+    "totalAmount": 99,
+    "paymentMethod": "cod",
+    "orderStatus": "processing",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 99,
+    "sellerToken": null,
+    "commission": 0,
+    "createdAt": "2025-12-01T17:17:08.063Z",
+    "updatedAt": "2025-12-01T17:17:08.063Z",
+    "__v": 0,
+    "id": "692dcd94e21de8fa89cf2bd4"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "orderType": "product_order",
+    "_id": "692dcc44e21de8fa89cf298d",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "09114703231",
+    "items": [
+      {
+        "productId": "6866a672c03cea25520a399d",
+        "name": "Handcrafted Wooden Multi-Purpose Holder with Twin Horse Design",
+        "price": 199,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751557745/pawnshop-products/ofxnldnap3qicbgkbo62.jpg"
+      }
+    ],
+    "totalAmount": 199,
+    "paymentMethod": "cod",
+    "orderStatus": "processing",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 199,
+    "sellerToken": null,
+    "commission": 0,
+    "createdAt": "2025-12-01T17:11:32.164Z",
+    "updatedAt": "2025-12-01T17:11:32.164Z",
+    "__v": 0,
+    "id": "692dcc44e21de8fa89cf298d"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "orderType": "product_order",
+    "_id": "692dc92be21de8fa89cf28af",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "09114703231",
+    "items": [
+      {
+        "productId": "685cf9d7ceb821f468b79b57",
+        "name": "Handcrafted Dokra Bull – Symbol of Strength & Heritage",
+        "price": 499,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1750923734/pawnshop-products/kvn7n9scwlokzzo8koip.jpg"
+      }
+    ],
+    "totalAmount": 499,
+    "paymentMethod": "cod",
+    "orderStatus": "processing",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 499,
+    "sellerToken": "6ae1ef49-ee19-4304-aa69-204804ef1994",
+    "commission": 0,
+    "createdAt": "2025-12-01T16:58:19.872Z",
+    "updatedAt": "2025-12-01T16:58:19.872Z",
+    "__v": 0,
+    "id": "692dc92be21de8fa89cf28af"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "orderType": "product_order",
+    "_id": "692c9056e21de8fa89cf1c9b",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "919114703231",
+    "items": [
+      {
+        "name": "Village Life Wooden Table Décor",
+        "price": 99,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751475109/pawnshop-products/n5nnvxxjdo9kd9x0qasu.jpg"
+      }
+    ],
+    "totalAmount": 99,
+    "paymentMethod": "cod",
+    "orderStatus": "processing",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 99,
+    "sellerToken": null,
+    "commission": 0,
+    "createdAt": "2025-11-30T18:43:34.138Z",
+    "updatedAt": "2025-11-30T18:43:34.138Z",
+    "__v": 0,
+    "id": "692c9056e21de8fa89cf1c9b"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "orderType": "product_order",
+    "_id": "692c8fdde21de8fa89cf1b06",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "919114703231",
+    "items": [
+      {
+        "name": "Legacy in Clay: The Poet Immortalized” “Rabindranath Tagore",
+        "price": 99,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751378988/pawnshop-products/zyjs45darixu4zzxufst.jpg"
+      }
+    ],
+    "totalAmount": 99,
+    "paymentMethod": "cod",
+    "orderStatus": "processing",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 99,
+    "sellerToken": null,
+    "commission": 0,
+    "createdAt": "2025-11-30T18:41:33.483Z",
+    "updatedAt": "2025-11-30T18:41:33.483Z",
+    "__v": 0,
+    "id": "692c8fdde21de8fa89cf1b06"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "orderType": "product_order",
+    "_id": "692c8ecde21de8fa89cf19ca",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar@gmail.com",
+    "phone": "919114703231",
+    "items": [
+      {
+        "name": "Village Life Wooden Table Décor",
+        "price": 99,
+        "quantity": 2,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751475109/pawnshop-products/n5nnvxxjdo9kd9x0qasu.jpg"
+      },
+      {
+        "name": "TERRACOTTA Grace of Tribal Legacy in Clay - Play Harmonium",
+        "price": 299,
+        "quantity": 2,
+        "image": "https://res.cloudinary.com/dz8zcla5a/image/upload/v1751378500/pawnshop-products/xzyewx1w9os6gyyadcyy.jpg"
+      }
+    ],
+    "totalAmount": 796,
+    "paymentMethod": "cod",
+    "orderStatus": "processing",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 796,
+    "sellerToken": null,
+    "commission": 0,
+    "createdAt": "2025-11-30T18:37:01.443Z",
+    "updatedAt": "2025-11-30T18:37:01.443Z",
+    "__v": 0,
+    "id": "692c8ecde21de8fa89cf19ca"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "orderType": "product_order",
+    "_id": "692c8de9e21de8fa89cf17ab",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "9114703231",
+    "items": [
+      {
+        "productId": "692c78d7e21de8fa89cf1058",
+        "name": "test",
+        "price": 1,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dbwizqyzg/image/upload/v1764522199/pawnshop-products/we8yl4y3wh0jwlaktpki.png"
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "cod",
+    "orderStatus": "processing",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 1,
+    "sellerToken": null,
+    "commission": 0,
+    "createdAt": "2025-11-30T18:33:13.662Z",
+    "updatedAt": "2025-11-30T18:33:13.662Z",
+    "__v": 0,
+    "id": "692c8de9e21de8fa89cf17ab"
+  },
+  {
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "orderType": "product_order",
+    "_id": "692c8dace21de8fa89cf157e",
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "09114703231",
+    "items": [
+      {
+        "productId": "692c78d7e21de8fa89cf1058",
+        "name": "test",
+        "price": 1,
+        "quantity": 1,
+        "image": "https://res.cloudinary.com/dbwizqyzg/image/upload/v1764522199/pawnshop-products/we8yl4y3wh0jwlaktpki.png"
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "cod",
+    "orderStatus": "processing",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 1,
+    "sellerToken": "6ae1ef49-ee19-4304-aa69-204804ef1994",
+    "commission": 0,
+    "createdAt": "2025-11-30T18:32:12.596Z",
+    "updatedAt": "2025-11-30T18:32:12.596Z",
+    "__v": 0,
+    "id": "692c8dace21de8fa89cf157e"
   }
 ]

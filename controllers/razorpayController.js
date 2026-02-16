@@ -201,16 +201,28 @@ exports.verifySignature = async (req, res) => {
                 // Fetch payment details to get accurate customer info from Magic Checkout
                 try {
                     const payment = await razorpay.payments.fetch(razorpay_payment_id);
+                    let razorOrder = null;
+                    try {
+                        razorOrder = await razorpay.orders.fetch(razorpay_order_id);
+                    } catch (e) {
+                        console.log('Error fetching Razorpay order during verification:', e.message);
+                    }
 
                     // 1. Sync Customer Details (Overwrite placeholders with real data)
                     if (payment.email && payment.email.trim()) {
                         order.email = payment.email;
+                    } else if (razorOrder?.customer_details?.email) {
+                        order.email = razorOrder.customer_details.email;
                     }
+
                     if (payment.contact) {
                         order.phone = payment.contact;
+                    } else if (razorOrder?.customer_details?.contact) {
+                        order.phone = razorOrder.customer_details.contact;
                     }
+
                     // Capture name from various possible locations in Magic Checkout / Standard payload
-                    const capturedName = payment.notes?.customerName ||
+                    let capturedName = payment.notes?.customerName ||
                         payment.notes?.name ||
                         payment.notes?.customer_name ||
                         payment.notes?.contact_name ||
@@ -221,6 +233,17 @@ exports.verifySignature = async (req, res) => {
                         payment.notes?.['shipping_address.name'] ||
                         payment.notes?.['billing_address.name'] ||
                         (payment.notes?.shipping_address ? (typeof payment.notes.shipping_address === 'string' && payment.notes.shipping_address.startsWith('{') ? JSON.parse(payment.notes.shipping_address).name : payment.notes.shipping_address.name) : null);
+
+                    // If name is still placeholder or missing, check Order object
+                    if (!capturedName || capturedName === 'Valued Customer' || capturedName === 'TBD') {
+                        const orderName = razorOrder?.customer_details?.name ||
+                            razorOrder?.customer_details?.shipping_address?.name ||
+                            razorOrder?.customer_details?.billing_address?.name;
+
+                        if (orderName && orderName !== 'Valued Customer' && orderName !== 'TBD') {
+                            capturedName = orderName;
+                        }
+                    }
 
                     if (capturedName &&
                         typeof capturedName === 'string' &&
@@ -239,13 +262,17 @@ exports.verifySignature = async (req, res) => {
 
                     // 3. Robust Shipping Address Sync
                     const newAddress = { ...order.address };
-                    let ra = payment.shipping_address ||
+
+                    // Priority: Order object (Magic Checkout data) -> Payment object
+                    let ra = razorOrder?.customer_details?.shipping_address ||
+                        razorOrder?.customer_details?.billing_address ||
+                        payment.shipping_address ||
                         payment.customer_details?.shipping_address ||
                         payment.notes?.shipping_address ||
                         payment.notes?.address;
 
                     // Support for flat fields in notes if address is not a direct object/string
-                    if (!ra && payment.notes) {
+                    if (payment.notes) {
                         const n = payment.notes;
                         const line1 = n.shipping_address_line1 || n.shipping_address_street || n.address_line1 || n.line1 || n.street || n.address || n['shipping_address.line1'] || n['shipping_address.street'];
                         const city = n.shipping_address_city || n.address_city || n.city || n['shipping_address.city'];
@@ -253,13 +280,21 @@ exports.verifySignature = async (req, res) => {
                         const pincode = n.shipping_address_pincode || n.shipping_address_zip || n.address_pincode || n.pincode || n.zipcode || n.zip || n['shipping_address.pincode'] || n['shipping_address.zipcode'];
 
                         if (line1 || city || state) {
-                            ra = {
-                                line1,
-                                city,
-                                state,
-                                pincode,
-                                country: n.shipping_address_country || n.country || n['shipping_address.country'] || 'India'
-                            };
+                            if (!ra || typeof ra !== 'object' || ra === null) {
+                                ra = {
+                                    line1,
+                                    city,
+                                    state,
+                                    pincode,
+                                    country: n.shipping_address_country || n.country || n['shipping_address.country'] || 'India'
+                                };
+                            } else {
+                                // Fill in missing pieces
+                                if (!ra.line1 && !ra.street) ra.line1 = line1;
+                                if (!ra.city) ra.city = city;
+                                if (!ra.state) ra.state = state;
+                                if (!ra.pincode && !ra.zipcode) ra.pincode = pincode;
+                            }
                         }
                     }
 
@@ -284,7 +319,7 @@ exports.verifySignature = async (req, res) => {
                             // Extract other fields with fallbacks
                             if (ra.city && ra.city !== 'TBD') newAddress.city = ra.city;
                             if (ra.state && ra.state !== 'TBD') newAddress.state = ra.state;
-                            if (ra.pincode || ra.zipcode || ra.postal_code || ra.zip || ra.pincode) {
+                            if (ra.pincode || ra.zipcode || ra.postal_code || ra.zip) {
                                 const pc = ra.pincode || ra.zipcode || ra.postal_code || ra.zip;
                                 if (pc && pc !== 'TBD') newAddress.pincode = pc;
                             }
