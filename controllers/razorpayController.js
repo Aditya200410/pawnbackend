@@ -219,7 +219,8 @@ exports.verifySignature = async (req, res) => {
                         payment.billing_address?.name ||
                         payment.shipping_address?.name ||
                         payment.notes?.['shipping_address.name'] ||
-                        payment.notes?.['billing_address.name'];
+                        payment.notes?.['billing_address.name'] ||
+                        (payment.notes?.shipping_address ? (typeof payment.notes.shipping_address === 'string' && payment.notes.shipping_address.startsWith('{') ? JSON.parse(payment.notes.shipping_address).name : payment.notes.shipping_address.name) : null);
 
                     if (capturedName &&
                         typeof capturedName === 'string' &&
@@ -238,16 +239,18 @@ exports.verifySignature = async (req, res) => {
 
                     // 3. Robust Shipping Address Sync
                     const newAddress = { ...order.address };
-                    let ra = payment.shipping_address || payment.notes?.shipping_address || payment.notes?.address;
+                    let ra = payment.shipping_address ||
+                        payment.customer_details?.shipping_address ||
+                        payment.notes?.shipping_address ||
+                        payment.notes?.address;
 
                     // Support for flat fields in notes if address is not a direct object/string
                     if (!ra && payment.notes) {
-                        // Priority 1: Flat fields with prefixes
                         const n = payment.notes;
-                        const line1 = n.shipping_address_line1 || n.shipping_address_street || n.address_line1 || n.line1 || n.street || n.address || n['shipping_address.line1'];
+                        const line1 = n.shipping_address_line1 || n.shipping_address_street || n.address_line1 || n.line1 || n.street || n.address || n['shipping_address.line1'] || n['shipping_address.street'];
                         const city = n.shipping_address_city || n.address_city || n.city || n['shipping_address.city'];
                         const state = n.shipping_address_state || n.address_state || n.state || n['shipping_address.state'];
-                        const pincode = n.shipping_address_pincode || n.shipping_address_zip || n.address_pincode || n.pincode || n.zipcode || n.zip || n['shipping_address.pincode'];
+                        const pincode = n.shipping_address_pincode || n.shipping_address_zip || n.address_pincode || n.pincode || n.zipcode || n.zip || n['shipping_address.pincode'] || n['shipping_address.zipcode'];
 
                         if (line1 || city || state) {
                             ra = {
@@ -255,7 +258,7 @@ exports.verifySignature = async (req, res) => {
                                 city,
                                 state,
                                 pincode,
-                                country: n.shipping_address_country || n.country || 'India'
+                                country: n.shipping_address_country || n.country || n['shipping_address.country'] || 'India'
                             };
                         }
                     }
@@ -275,19 +278,19 @@ exports.verifySignature = async (req, res) => {
                             newAddress.street = ra;
                         } else if (typeof ra === 'object' && ra !== null) {
                             // Extract street/line1
-                            const street = ra.line1 || ra.street || (ra.line2 ? `${ra.line1} ${ra.line2}` : null);
+                            const street = ra.line1 || ra.street || ra.address_line1 || ra.address || (ra.line2 ? `${ra.line1} ${ra.line2}` : null);
                             if (street && street !== 'TBD') newAddress.street = street;
 
                             // Extract other fields with fallbacks
                             if (ra.city && ra.city !== 'TBD') newAddress.city = ra.city;
                             if (ra.state && ra.state !== 'TBD') newAddress.state = ra.state;
-                            if (ra.pincode || ra.zipcode || ra.postal_code || ra.zip) {
+                            if (ra.pincode || ra.zipcode || ra.postal_code || ra.zip || ra.pincode) {
                                 const pc = ra.pincode || ra.zipcode || ra.postal_code || ra.zip;
-                                if (pc !== 'TBD') newAddress.pincode = pc;
+                                if (pc && pc !== 'TBD') newAddress.pincode = pc;
                             }
-                            if (ra.country || ra.countryCode) {
-                                const c = ra.country || ra.countryCode;
-                                if (c !== 'TBD') newAddress.country = c;
+                            if (ra.country || ra.countryCode || ra.country_code) {
+                                const c = ra.country || ra.countryCode || ra.country_code;
+                                if (c && c !== 'TBD') newAddress.country = c;
                             }
                         }
                     } else if (payment.billing_address) {
@@ -298,6 +301,12 @@ exports.verifySignature = async (req, res) => {
                         if (ba.pincode || ba.zipcode) newAddress.pincode = ba.pincode || ba.zipcode;
                         if (ba.country && ba.country !== 'TBD') newAddress.country = ba.country;
                     }
+
+                    // Final safety check: if street is still TBD but we have line1 in payment/notes
+                    if (newAddress.street === 'TBD' && payment.notes?.line1) {
+                        newAddress.street = payment.notes.line1;
+                    }
+
 
                     order.address = newAddress;
                     order.markModified('address');
