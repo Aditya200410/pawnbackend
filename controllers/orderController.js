@@ -270,7 +270,32 @@ const getOrdersByEmail = async (req, res) => {
     }
 
     const orders = await Order.find(query).sort({ createdAt: -1 });
-    res.status(200).json({ success: true, orders });
+
+    // Filter orders based on user requirements for profile display
+    const filteredOrders = orders.filter(order => {
+      const pStatus = (order.paymentStatus || '').toLowerCase();
+      const oStatus = (order.orderStatus || '').toLowerCase();
+      const pMethod = (order.paymentMethod || '').toLowerCase();
+
+      // Show ONLINE orders ONLY if they are fully paid
+      if (pMethod !== 'cod') {
+        return pStatus === 'completed' || pStatus === 'paid';
+      }
+
+      // Show COD orders if they are not failed and not waiting for payment (including upfront)
+      if (pMethod === 'cod') {
+        const isFailed = pStatus === 'failed';
+        // 'waiting_payment' status and 'pending_upfront' are considered "Waiting Payment"
+        const isWaiting = oStatus === 'waiting_payment' || pStatus === 'pending_upfront';
+
+        // Use user's preference: show only if not failed and not waiting payment
+        return !isFailed && !isWaiting;
+      }
+
+      return true;
+    });
+
+    res.status(200).json({ success: true, orders: filteredOrders });
   } catch (error) {
     console.error('Error fetching orders:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch orders.', error: error.message });
