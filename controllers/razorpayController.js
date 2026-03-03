@@ -434,10 +434,11 @@ exports.getPromotions = async (req, res) => {
                 code: coupon.code,
                 name: coupon.code,
                 description: coupon.discountType === 'percentage'
-                    ? `Get ${coupon.discountValue}% off on orders above ₹${coupon.minPurchase}`
-                    : `Get ₹${coupon.discountValue} off on orders above ₹${coupon.minPurchase}`,
-                value_type: coupon.discountType === 'percentage' ? 'percentage' : 'fixed_amount',
-                offer_value: coupon.discountType === 'percentage' ? coupon.discountValue : (coupon.discountValue * 100), // fixed is in paise
+                    ? `Get ${coupon.discountValue}% off`
+                    : `Get ₹${coupon.discountValue} off`,
+                // ALWAYS use fixed_amount for list to avoid modal calculation bugs
+                value_type: 'fixed_amount',
+                offer_value: coupon.discountType === 'percentage' ? 0 : (coupon.discountValue * 100),
                 type: 'coupon'
             }));
 
@@ -512,31 +513,47 @@ exports.applyPromotion = async (req, res) => {
 
         // 4. Calculate Discount
         let discount = 0;
+        const discountValue = Number(coupon.discountValue) || 0;
+        const maxDiscount = Number(coupon.maxDiscount) || 0;
+
         if (coupon.discountType === 'percentage') {
-            if (!amount_in_paise) {
+            if (!amount_in_paise || isNaN(amount_in_paise)) {
                 return res.status(200).json({
                     error: { code: 'REQUIREMENT_NOT_MET', description: 'Order total could not be determined.' }
                 });
             }
-            discount = Math.round((amount_in_paise * coupon.discountValue) / 100);
+            discount = Math.round((amount_in_paise * discountValue) / 100);
+            if (maxDiscount > 0 && discount > (maxDiscount * 100)) {
+                discount = maxDiscount * 100;
+            }
         } else {
-            discount = coupon.discountValue * 100;
+            discount = discountValue * 100;
         }
 
-        if (coupon.maxDiscount && (discount > coupon.maxDiscount * 100)) {
-            discount = coupon.maxDiscount * 100;
+        // SANITY CHECK: discount should not exceed amount_in_paise
+        if (amount_in_paise > 0 && discount > amount_in_paise) {
+            discount = amount_in_paise;
         }
+
+        const finalDiscount = Math.max(0, Math.round(discount) || 0);
 
         // 5. Final Spec Compliant Success Response
-        return res.status(200).json({
+        // Including both 'promotion' (Spec 1.5) and flat fields (Spec 1.4) for hybrid compatibility
+        const responseData = {
             promotion: {
                 id: coupon._id.toString(),
                 code: coupon.code,
-                offer_value: Math.max(0, Math.round(discount)),
+                offer_value: finalDiscount,
                 value_type: coupon.discountType === 'percentage' ? 'percentage' : 'fixed_amount',
                 type: 'coupon'
-            }
-        });
+            },
+            // Legacy/1.4 fields for extra safety
+            valid: true,
+            discount_amount: finalDiscount,
+            coupon_code: coupon.code
+        };
+
+        return res.status(200).json(responseData);
 
     } catch (error) {
         console.error('MAGIC_CHECKOUT_APPLY_PROMOTION_ERROR:', error);

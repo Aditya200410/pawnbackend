@@ -80,7 +80,7 @@ app.use((req, res, next) => {
   }
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Content-Length, x-rtb-fingerprint-id');
-  res.header('Access-Control-Expose-Headers', 'Content-Length, X-Requested-With, x-rtb-fingerprint-id');
+  res.header('Access-Control-Expose-Headers', 'Content-Length', 'X-Requested-With', 'x-rtb-fingerprint-id');
   res.header('Access-Control-Allow-Credentials', 'true');
 
   // Consolidate Permissions-Policy into a single header
@@ -151,14 +151,19 @@ mongoose.connect(MONGODB_URI, {
 
 // API Routes - Detailed Debugging for Razorpay
 app.use((req, res, next) => {
-  if (req.originalUrl.includes('razorpay')) {
+  if (req.originalUrl && req.originalUrl.toLowerCase().includes('razorpay')) {
     const startTime = Date.now();
-    console.log(`>>> RAZORPAY REQUEST: ${req.method} ${req.originalUrl} | Payload: ${JSON.stringify(req.body)}`);
+    console.log(`[RAZORPAY_DEBUG_IN] ${req.method} ${req.originalUrl}`);
+    console.log(`[RAZORPAY_HEADERS] ${JSON.stringify(req.headers)}`);
+    console.log(`[RAZORPAY_BODY] ${JSON.stringify(req.body)}`);
 
-    // Intercept response to log content
     const originalJson = res.json;
     res.json = function (data) {
-      console.log(`<<< RAZORPAY RESPONSE [${res.statusCode}]: ${JSON.stringify(data).substring(0, 500)} | Duration: ${Date.now() - startTime}ms`);
+      try {
+        console.log(`[RAZORPAY_DEBUG_OUT] [${res.statusCode}] ${JSON.stringify(data).substring(0, 1000)} | ${Date.now() - startTime}ms`);
+      } catch (e) {
+        console.log(`[RAZORPAY_DEBUG_OUT] [${res.statusCode}] [Unstringifiable] | ${Date.now() - startTime}ms`);
+      }
       return originalJson.call(this, data);
     };
   }
@@ -180,11 +185,25 @@ app.use('/api/seller', sellerRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/data-page', require('./routes/dataPage'));
 
+// Direct Top-Level Mounts for Magic Checkout (Bypass any router weirdness)
+const razorpayController = require('./controllers/razorpayController');
+app.post(['*/razorpay/apply-promotion', '/razorpay/apply-promotion'], razorpayController.applyPromotion);
+app.post(['*/razorpay/get-promotions', '/razorpay/get-promotions'], razorpayController.getPromotions);
+app.post(['*/razorpay/shipping-info', '/razorpay/shipping-info'], razorpayController.getShippingInfo);
+
 app.use('/api/payment', paymentRoutes);
 app.use('/api/api/payment', paymentRoutes);
+app.use('/api', paymentRoutes);
 
-// Comprehensive fallback for ALL Razorpay Magic Checkout endpoints regardless of path prefixing
-app.all(/.*\/razorpay\/(shipping-info|get-promotions|apply-promotion|status|verify)/, (req, res, next) => {
+// Comprehensive fallback for ANY path containing razorpay
+app.all(/.*razorpay.*/, (req, res, next) => {
+  if (req.method === 'OPTIONS') return res.status(200).send();
+
+  // Normalize URL for router
+  if (req.originalUrl.includes('/razorpay/')) {
+    const parts = req.originalUrl.split('/razorpay/');
+    req.url = '/razorpay/' + parts[parts.length - 1];
+  }
   return paymentRoutes(req, res, next);
 });
 
