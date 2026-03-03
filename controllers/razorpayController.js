@@ -52,26 +52,20 @@ exports.createRazorpayOrder = async (req, res) => {
             country
         } = req.body;
 
-        // For Magic Checkout, we can allow missing customer details as they will be captured in the modal
-        // But we provide defaults to satisfy the schema if needed
-        const finalCustomerName = customerName || 'Valued Customer';
-        const finalEmail = (email && email.trim()) ? email : ' ';
-        const rawPhone = phone || '0000000000';
+        // CLEAN CUSTOMER DATA: If empty strings are sent, treat as undefined to let Magic Checkout capture them
+        const finalCustomerName = (customerName && customerName.trim()) ? customerName.trim() : undefined;
+        const finalEmail = (email && email.trim() && email.includes('@')) ? email.trim() : undefined;
+        let formattedPhone = undefined;
 
-        // Normalize phone to E.164 format for Razorpay
-        let formattedPhone = rawPhone.trim();
-        // Remove spaces, dashes, etc
-        formattedPhone = formattedPhone.replace(/[\s\-\(\)]/g, '');
-        if (!formattedPhone.startsWith('+')) {
-            if (formattedPhone.length === 10) {
-                formattedPhone = '+91' + formattedPhone;
-            } else if (formattedPhone.startsWith('91') && formattedPhone.length === 12) {
-                formattedPhone = '+' + formattedPhone;
-            }
+        if (phone && phone.trim()) {
+            let rawPhone = phone.trim().replace(/[\s\-\(\)]/g, '');
+            if (rawPhone.length === 10) formattedPhone = '+91' + rawPhone;
+            else if (rawPhone.startsWith('91') && rawPhone.length === 12) formattedPhone = '+' + rawPhone;
+            else if (rawPhone.startsWith('+')) formattedPhone = rawPhone;
+            else formattedPhone = rawPhone; // Fallback
         }
 
         // Determine payment amount in paise
-        // Use finalTotal if available, else use amount, else use totalAmount
         const paymentAmountRupees = finalTotal || amount || totalAmount || 0;
         if (paymentAmountRupees <= 0) {
             return res.status(400).json({ success: false, message: 'Invalid payment amount' });
@@ -84,45 +78,53 @@ exports.createRazorpayOrder = async (req, res) => {
             amount: Math.round(paymentAmountRupees * 100), // amount in paise
             currency: "INR",
             receipt: merchantOrderId,
-            line_items_total: Math.round(paymentAmountRupees * 100), // MANDATORY for Magic Checkout
+            line_items_total: Math.round(paymentAmountRupees * 100),
             line_items: (items || []).map(item => ({
                 name: item.name || 'Product',
                 quantity: item.quantity || 1,
                 price: Math.round((item.price || item.product?.price || 0) * 100),
                 offer_price: Math.round((item.price || item.product?.price || 0) * 100),
-                sku: item.productId || item.id || 'N/A'
+                sku: (item.productId || item.id || 'N/A').toString()
             })),
             notes: {
-                customerName: finalCustomerName,
-                email: finalEmail,
-                phone: formattedPhone,
+                customerName: finalCustomerName || 'Guest',
+                email: finalEmail || 'None',
+                phone: formattedPhone || 'None',
                 sellerToken: sellerToken || '',
                 agentCode: agentCode || '',
                 orderType: orderType || 'product_order'
             },
             payment: {
                 capture: 'automatic',
-            },
-            customer_details: {
-                name: finalCustomerName,
-                email: finalEmail,
-                contact: formattedPhone,
-                billing_address: {
-                    line1: address || 'TBD',
-                    city: city || 'TBD',
-                    state: state || 'TBD',
-                    zipcode: pincode || 'TBD',
-                    country: 'IN'
-                },
-                shipping_address: {
-                    line1: address || 'TBD',
-                    city: city || 'TBD',
-                    state: state || 'TBD',
-                    zipcode: pincode || 'TBD',
-                    country: 'IN'
-                }
             }
         };
+
+        // ONLY add customer_details if we have them, otherwise Magic Checkout captures them
+        if (finalCustomerName || finalEmail || formattedPhone) {
+            options.customer_details = {
+                name: finalCustomerName,
+                email: finalEmail,
+                contact: formattedPhone
+            };
+
+            // Only add address if provided, otherwise Magic Checkout's "Magic" captures it
+            if (address && address !== 'TBD' && city && city !== 'TBD') {
+                options.customer_details.billing_address = {
+                    line1: address,
+                    city: city,
+                    state: state || '',
+                    zipcode: pincode || '',
+                    country: 'IN'
+                };
+                options.customer_details.shipping_address = {
+                    line1: address,
+                    city: city,
+                    state: state || '',
+                    zipcode: pincode || '',
+                    country: 'IN'
+                };
+            }
+        }
 
         const razorpayOrder = await razorpay.orders.create(options);
 
@@ -138,12 +140,12 @@ exports.createRazorpayOrder = async (req, res) => {
         // Save Order in DB first so it exists when Magic Checkout calls apply-promotion
         const newOrder = new Order({
             transactionId: razorpayOrder.id,
-            customerName: finalCustomerName,
-            email: finalEmail,
-            phone: formattedPhone,
+            customerName: finalCustomerName || 'Guest User',
+            email: finalEmail || `guest_${Date.now()}@rikocraft.com`,
+            phone: formattedPhone || '0000000000',
             address: addressObj,
             items: items || [],
-            totalAmount: totalAmount || paymentAmountRupees,
+            totalAmount: paymentAmountRupees,
             paymentMethod: paymentMethod || 'online',
             paymentStatus: 'pending',
             orderStatus: 'waiting_payment',
@@ -404,7 +406,8 @@ exports.getShippingInfo = async (req, res) => {
         res.json(response);
     } catch (error) {
         console.error('Magic Checkout Shipping Info Error:', error);
-        res.status(500).json({ serviceable: false });
+        // Returning 200 OK with serviceable: false is the spec-compliant way to handle errors
+        res.status(200).json({ serviceable: false });
     }
 };
 

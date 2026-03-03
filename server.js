@@ -180,14 +180,12 @@ app.use('/api/seller', sellerRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/data-page', require('./routes/dataPage'));
 
-// Support both single and double API prefixes for payment (Double API compatibility)
 app.use('/api/payment', paymentRoutes);
 app.use('/api/api/payment', paymentRoutes);
 
-// Fallback for Magic Checkout if prefixes vary
-app.all('*/razorpay/apply-promotion', (req, res, next) => {
-  if (req.originalUrl.includes('/api/')) return paymentRoutes(req, res, next);
-  next();
+// Comprehensive fallback for ALL Razorpay Magic Checkout endpoints regardless of path prefixing
+app.all(/.*\/razorpay\/(shipping-info|get-promotions|apply-promotion|status|verify)/, (req, res, next) => {
+  return paymentRoutes(req, res, next);
 });
 
 app.use('/api/withdrawal', require('./routes/withdrawal'));
