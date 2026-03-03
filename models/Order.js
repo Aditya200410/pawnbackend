@@ -33,8 +33,13 @@ const orderSchema = new mongoose.Schema({
   orderStatus: {
     type: String,
     default: 'processing',
-    enum: ['processing', 'confirmed', 'manufacturing', 'shipped', 'delivered', 'waiting_payment']
+    enum: [
+      'processing', 'confirmed', 'manufacturing', 'shipped', 'delivered', 'waiting_payment',
+      'replacement_requested', 'approved_replacement', 'shipped_replacement', 'delivered_replacement'
+    ]
   },
+  replacementReason: { type: String, required: false },
+  replacementRequestDate: { type: Date, required: false },
   paymentStatus: {
     type: String,
     required: true,

@@ -521,9 +521,67 @@ async function sendOrderStatusUpdateEmail(order) {
   }
 }
 
+// Request replacement for an order
+const requestReplacement = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+
+    if (!reason || reason.trim().length < 20) {
+      return res.status(400).json({
+        success: false,
+        message: 'Replacement reason must be at least 20 characters long.'
+      });
+    }
+
+    const order = await Order.findById(id);
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order not found.' });
+    }
+
+    // Check if order is delivered
+    if (order.orderStatus !== 'delivered') {
+      return res.status(400).json({
+        success: false,
+        message: `Replacement can only be requested for delivered orders. Current status: ${order.orderStatus}`
+      });
+    }
+
+    order.orderStatus = 'replacement_requested';
+    order.replacementReason = reason;
+    order.replacementRequestDate = new Date();
+
+    await order.save();
+
+    // Update JSON file too
+    try {
+      const ordersJsonPath = path.join(__dirname, '../data/orders.json');
+      const data = await fs.readFile(ordersJsonPath, 'utf8');
+      let orders = JSON.parse(data);
+      const orderIndex = orders.findIndex(o => (o._id ? o._id.toString() : o.id) === id);
+      if (orderIndex !== -1) {
+        orders[orderIndex] = order.toObject({ virtuals: true });
+        await fs.writeFile(ordersJsonPath, JSON.stringify(orders, null, 2));
+      }
+    } catch (err) {
+      console.error('Failed to update orders.json for replacement:', err);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Replacement request submitted successfully.',
+      order
+    });
+  } catch (error) {
+    console.error('Error requesting replacement:', error);
+    res.status(500).json({ success: false, message: 'Failed to request replacement.', error: error.message });
+  }
+};
+
 module.exports = {
   createOrder,
   getOrdersByEmail,
   getOrderById,
   sendOrderStatusUpdateEmail,
-}; 
+  requestReplacement,
+};

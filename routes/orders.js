@@ -4,7 +4,7 @@ const Order = require("../models/Order");
 const router = express.Router();
 const fs = require('fs');
 const path = require('path');
-const { createOrder, getOrdersByEmail, getOrderById, sendOrderStatusUpdateEmail } = require('../controllers/orderController');
+const { createOrder, getOrdersByEmail, getOrderById, sendOrderStatusUpdateEmail, requestReplacement } = require('../controllers/orderController');
 const { authenticateToken, isAdmin } = require('../middleware/auth');
 
 const ordersFilePath = path.join(__dirname, '../data/orders.json');
@@ -65,7 +65,7 @@ router.put("/:id/status", authenticateToken, isAdmin, async (req, res) => {
     const { orderStatus } = req.body;
 
     // Validate status
-    if (!['processing', 'confirmed', 'manufacturing', 'shipped', 'delivered'].includes(orderStatus)) {
+    if (!['processing', 'confirmed', 'manufacturing', 'shipped', 'delivered', 'waiting_payment', 'replacement_requested', 'approved_replacement', 'shipped_replacement', 'delivered_replacement'].includes(orderStatus)) {
       return res.status(400).json({ success: false, message: 'Invalid order status' });
     }
 
@@ -116,7 +116,7 @@ router.put("/:id", authenticateToken, isAdmin, async (req, res) => {
     const updateData = req.body;
 
     // Validate orderStatus if provided
-    if (updateData.orderStatus && !['processing', 'confirmed', 'manufacturing', 'shipped', 'delivered'].includes(updateData.orderStatus)) {
+    if (updateData.orderStatus && !['processing', 'confirmed', 'manufacturing', 'shipped', 'delivered', 'waiting_payment', 'replacement_requested', 'approved_replacement', 'shipped_replacement', 'delivered_replacement'].includes(updateData.orderStatus)) {
       return res.status(400).json({ success: false, message: 'Invalid order status' });
     }
 
@@ -169,5 +169,8 @@ router.get('/', getOrdersByEmail);
 // Route to get a single order by its ID
 // GET /api/orders/:id
 router.get('/:id', getOrderById);
+
+// Route to request replacement
+router.post("/:id/request-replacement", requestReplacement);
 
 module.exports = router;
