@@ -450,11 +450,14 @@ exports.getPromotions = async (req, res) => {
  * Validates and applies a coupon code
  */
 exports.applyPromotion = async (req, res) => {
+    // START REQUEST LOGGING
+    const razorpay_order_id = req.body.order_id || req.body.razorpay_order_id || req.query.order_id;
+    const code = (req.body.code || req.body.coupon_code || req.body.promotion_code || '').toString().trim().toUpperCase();
+    console.log(`[MC_APPLY_START] Order: ${razorpay_order_id} | Code: ${code} | Body: ${JSON.stringify(req.body)}`);
+
     try {
-        // Strict specification handler
-        const code = (req.body.code || req.body.coupon_code || req.body.promotion_code || '').toString().trim().toUpperCase();
-        const razorpay_order_id = req.body.order_id || req.body.razorpay_order_id;
-        let amount_in_paise = req.body.order_amount || req.body.amount || req.body.total_amount;
+        // FAST PARSING (Already normalized code above)
+        let amount_in_paise = Number(req.body.order_amount || req.body.amount || req.body.total_amount);
 
         if (!code) {
             return res.status(200).json({
@@ -462,12 +465,13 @@ exports.applyPromotion = async (req, res) => {
             });
         }
 
-        // 1. Efficient Order Lookup (Wait if needed, but here we expect it to exist)
+        // 1. ULTRA-FAST Order Lookup using hints
         if ((!amount_in_paise || isNaN(amount_in_paise)) && razorpay_order_id) {
             const dbOrder = await Order.findOne({
                 $or: [
                     { transactionId: razorpay_order_id },
-                    { merchantTransactionId: razorpay_order_id }
+                    { merchantTransactionId: razorpay_order_id },
+                    { orderNumber: razorpay_order_id }
                 ]
             }).select('totalAmount').lean();
 
@@ -508,12 +512,12 @@ exports.applyPromotion = async (req, res) => {
         if (coupon.discountType === 'percentage') {
             if (!amount_in_paise) {
                 return res.status(200).json({
-                    error: { code: 'REQUIREMENT_NOT_MET', description: 'Order total could not be determined for discount calculation.' }
+                    error: { code: 'REQUIREMENT_NOT_MET', description: 'Order total could not be determined.' }
                 });
             }
             discount = Math.round((amount_in_paise * coupon.discountValue) / 100);
         } else {
-            discount = coupon.discountValue * 100; // Fixed INR to Paise
+            discount = coupon.discountValue * 100;
         }
 
         if (coupon.maxDiscount && (discount > coupon.maxDiscount * 100)) {
@@ -534,7 +538,7 @@ exports.applyPromotion = async (req, res) => {
     } catch (error) {
         console.error('MAGIC_CHECKOUT_APPLY_PROMOTION_ERROR:', error);
         return res.status(200).json({
-            error: { code: 'SERVER_ERROR', description: 'Unable to process promotion at this time.' }
+            error: { code: 'SERVER_ERROR', description: 'Unable to process promotion.' }
         });
     }
 };

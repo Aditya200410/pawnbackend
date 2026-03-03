@@ -51,6 +51,11 @@ const orderSchema = new mongoose.Schema({
   couponCode: { type: String, required: false }, // Coupon code if applied
 }, { timestamps: true });
 
+// Add indexes for fast Razorpay lookups
+orderSchema.index({ transactionId: 1 });
+orderSchema.index({ merchantTransactionId: 1 });
+orderSchema.index({ orderNumber: 1 });
+
 // Pre-save hook to generate orderNumber
 orderSchema.pre('save', async function (next) {
   if (this.isNew && !this.orderNumber) {

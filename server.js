@@ -36,18 +36,24 @@ const allowedOrigins = [
 
   "https://admin.rikocraft.com",
   'https://pawnadmin-thnt.vercel.app',
-  'https://pawn-shop-git-local-host-api-used-aditya200410s-projects.vercel.app'
+  'https://pawn-shop-git-local-host-api-used-aditya200410s-projects.vercel.app',
+  'https://api.razorpay.com',
+  'https://checkout.razorpay.com'
 ];
 
-function isVercelPreview(origin) {
-  // If you want to allow all Vercel preview deploys for this project, keep this regex:
-  return /^https:\/\/pawn-shop-git-.*-aditya200410s-projects\.vercel\.app$/.test(origin);
+function isSafeOrigin(origin) {
+  if (!origin) return true;
+  if (allowedOrigins.includes(origin)) return true;
+  // Allow all Vercel previews
+  if (/^https:\/\/pawn-shop-git-.*-aditya200410s-projects\.vercel\.app$/.test(origin)) return true;
+  // Allow all Razorpay subdomains for Magic Checkout
+  if (origin.endsWith('.razorpay.com')) return true;
+  return false;
 }
 
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin) || isVercelPreview(origin)) {
+    if (isSafeOrigin(origin)) {
       callback(null, true);
     } else {
       console.log('CORS blocked origin:', origin);
@@ -56,7 +62,7 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'Access-Control-Allow-Origin', 'Content-Length', 'x-rtb-fingerprint-id'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'Access-Control-Allow-Origin', 'Content-Length', 'x-rtb-fingerprint-id', 'x-customer-access-token', 'x-customer-session-read-token', 'x-session-token'],
   exposedHeaders: ['Content-Length', 'X-Requested-With', 'x-rtb-fingerprint-id'],
   preflightContinue: false,
   optionsSuccessStatus: 204
@@ -139,7 +145,22 @@ mongoose.connect(MONGODB_URI, {
 }).then(() => console.log("MongoDB connected to:", MONGODB_URI))
   .catch(err => console.error("MongoDB connection error:", err));
 
-// API Routes
+// API Routes - Detailed Debugging for Razorpay
+app.use((req, res, next) => {
+  if (req.originalUrl.includes('razorpay')) {
+    const startTime = Date.now();
+    console.log(`>>> RAZORPAY REQUEST: ${req.method} ${req.originalUrl} | Payload: ${JSON.stringify(req.body)}`);
+
+    // Intercept response to log content
+    const originalJson = res.json;
+    res.json = function (data) {
+      console.log(`<<< RAZORPAY RESPONSE [${res.statusCode}]: ${JSON.stringify(data).substring(0, 500)} | Duration: ${Date.now() - startTime}ms`);
+      return originalJson.call(this, data);
+    };
+  }
+  next();
+});
+
 const paymentRoutes = require('./routes/payment');
 app.use("/api/shop", shopRoutes);
 app.use("/api/orders", orderRoutes);
@@ -158,6 +179,12 @@ app.use('/api/data-page', require('./routes/dataPage'));
 // Support both single and double API prefixes for payment (Double API compatibility)
 app.use('/api/payment', paymentRoutes);
 app.use('/api/api/payment', paymentRoutes);
+
+// Fallback for Magic Checkout if prefixes vary
+app.all('*/razorpay/apply-promotion', (req, res, next) => {
+  if (req.originalUrl.includes('/api/')) return paymentRoutes(req, res, next);
+  next();
+});
 
 app.use('/api/withdrawal', require('./routes/withdrawal'));
 app.use('/api/commission', require('./routes/commission'));
