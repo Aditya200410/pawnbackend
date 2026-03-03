@@ -460,21 +460,20 @@ exports.applyPromotion = async (req, res) => {
     console.log(`[MC_APPLY_START] Order: ${razorpay_order_id} | Code: ${code} | Body: ${JSON.stringify(req.body)}`);
 
     try {
-        // FAST PARSING (Already normalized code above)
         let amount_in_paise = Number(req.body.order_amount || req.body.amount || req.body.total_amount);
 
         if (!code) {
             return res.status(200).json({
-                error: { code: 'INVALID_PROMOTION', description: 'Coupon code is required.' }
+                error: { code: 'INVALID_PROMOTION', description: 'Please verify the code and try again.' }
             });
         }
 
-        // 1. ULTRA-FAST Order Lookup using hints
+        // 1. Order Lookup using the "receipt" (merchantTransactionId) or standard ID
         if ((!amount_in_paise || isNaN(amount_in_paise)) && razorpay_order_id) {
             const dbOrder = await Order.findOne({
                 $or: [
+                    { merchantTransactionId: razorpay_order_id }, // Priority: Razorpay sends 'receipt' as order_id here
                     { transactionId: razorpay_order_id },
-                    { merchantTransactionId: razorpay_order_id },
                     { orderNumber: razorpay_order_id }
                 ]
             }).select('totalAmount').lean();
@@ -494,7 +493,7 @@ exports.applyPromotion = async (req, res) => {
 
         if (!coupon) {
             return res.status(200).json({
-                error: { code: 'INVALID_PROMOTION', description: 'Coupon is not recognized or has expired.' }
+                error: { code: 'INVALID_PROMOTION', description: 'The specified promotion code is not recognised or does not exist in the system.' }
             });
         }
 
@@ -507,7 +506,13 @@ exports.applyPromotion = async (req, res) => {
 
         if (amount_in_paise && amount_in_paise < (coupon.minPurchase * 100)) {
             return res.status(200).json({
-                error: { code: 'REQUIREMENT_NOT_MET', description: `Minimum order of ₹${coupon.minPurchase} required.` }
+                error: { code: 'REQUIREMENT_NOT_MET', description: `Review the promotion's terms. Minimum cart value of ₹${coupon.minPurchase} required.` }
+            });
+        }
+
+        if (!amount_in_paise && coupon.discountType === 'percentage') {
+            return res.status(200).json({
+                error: { code: 'REQUIREMENT_NOT_MET', description: 'Review the promotion\'s terms and adjust the cart contents accordingly.' }
             });
         }
 
@@ -517,11 +522,6 @@ exports.applyPromotion = async (req, res) => {
         const maxDiscount = Number(coupon.maxDiscount) || 0;
 
         if (coupon.discountType === 'percentage') {
-            if (!amount_in_paise || isNaN(amount_in_paise)) {
-                return res.status(200).json({
-                    error: { code: 'REQUIREMENT_NOT_MET', description: 'Order total could not be determined.' }
-                });
-            }
             discount = Math.round((amount_in_paise * discountValue) / 100);
             if (maxDiscount > 0 && discount > (maxDiscount * 100)) {
                 discount = maxDiscount * 100;
@@ -537,28 +537,21 @@ exports.applyPromotion = async (req, res) => {
 
         const finalDiscount = Math.max(0, Math.round(discount) || 0);
 
-        // 5. Final Spec Compliant Success Response
-        // Including both 'promotion' (Spec 1.5) and flat fields (Spec 1.4) for hybrid compatibility
-        const responseData = {
+        // 5. Spec 1.5 Success Response
+        return res.status(200).json({
             promotion: {
                 id: coupon._id.toString(),
                 code: coupon.code,
                 offer_value: finalDiscount,
-                value_type: coupon.discountType === 'percentage' ? 'percentage' : 'fixed_amount',
+                value_type: 'fixed_amount', // Always return fixed_amount for final discount for stability
                 type: 'coupon'
-            },
-            // Legacy/1.4 fields for extra safety
-            valid: true,
-            discount_amount: finalDiscount,
-            coupon_code: coupon.code
-        };
-
-        return res.status(200).json(responseData);
+            }
+        });
 
     } catch (error) {
         console.error('MAGIC_CHECKOUT_APPLY_PROMOTION_ERROR:', error);
         return res.status(200).json({
-            error: { code: 'SERVER_ERROR', description: 'Unable to process promotion.' }
+            error: { code: 'INVALID_PROMOTION', description: 'Something went wrong. Please check the code and try again.' }
         });
     }
 };
