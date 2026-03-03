@@ -41,11 +41,15 @@ const allowedOrigins = [
   'https://checkout.razorpay.com'
 ];
 
+function isVercelPreview(origin) {
+  return /^https:\/\/pawn-shop-git-.*-aditya200410s-projects\.vercel\.app$/.test(origin);
+}
+
 function isSafeOrigin(origin) {
   if (!origin) return true;
   if (allowedOrigins.includes(origin)) return true;
   // Allow all Vercel previews
-  if (/^https:\/\/pawn-shop-git-.*-aditya200410s-projects\.vercel\.app$/.test(origin)) return true;
+  if (isVercelPreview(origin)) return true;
   // Allow all Razorpay subdomains for Magic Checkout
   if (origin.endsWith('.razorpay.com')) return true;
   return false;
