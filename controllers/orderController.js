@@ -539,11 +539,11 @@ const requestReplacement = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Order not found.' });
     }
 
-    // Check if order is delivered
-    if (order.orderStatus !== 'delivered') {
+    // Check if order is delivered or processing
+    if (!['delivered', 'processing'].includes(order.orderStatus)) {
       return res.status(400).json({
         success: false,
-        message: `Replacement can only be requested for delivered orders. Current status: ${order.orderStatus}`
+        message: `Replacement can only be requested for delivered or processing orders. Current status: ${order.orderStatus}`
       });
     }
 
