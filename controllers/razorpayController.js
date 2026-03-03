@@ -30,9 +30,9 @@ exports.createRazorpayOrder = async (req, res) => {
     try {
         const {
             amount, // amount to be paid now (rupees)
-            customerName,
-            email,
-            phone,
+            customerName: rawCustomerName,
+            email: rawEmail,
+            phone: rawPhone,
             items,
             totalAmount,
             shippingCost,
@@ -53,16 +53,16 @@ exports.createRazorpayOrder = async (req, res) => {
         } = req.body;
 
         // CLEAN CUSTOMER DATA: If empty strings are sent, treat as undefined to let Magic Checkout capture them
-        const finalCustomerName = (customerName && customerName.trim()) ? customerName.trim() : undefined;
-        const finalEmail = (email && email.trim() && email.includes('@')) ? email.trim() : undefined;
+        const finalCustomerName = (rawCustomerName && rawCustomerName.trim()) ? rawCustomerName.trim() : undefined;
+        const finalEmail = (rawEmail && rawEmail.trim() && rawEmail.includes('@')) ? rawEmail.trim() : undefined;
         let formattedPhone = undefined;
 
-        if (phone && phone.trim()) {
-            let rawPhone = phone.trim().replace(/[\s\-\(\)]/g, '');
-            if (rawPhone.length === 10) formattedPhone = '+91' + rawPhone;
-            else if (rawPhone.startsWith('91') && rawPhone.length === 12) formattedPhone = '+' + rawPhone;
-            else if (rawPhone.startsWith('+')) formattedPhone = rawPhone;
-            else formattedPhone = rawPhone; // Fallback
+        if (rawPhone && rawPhone.trim()) {
+            let phoneToFormat = rawPhone.trim().replace(/[\s\-\(\)]/g, '');
+            if (phoneToFormat.length === 10) formattedPhone = '+91' + phoneToFormat;
+            else if (phoneToFormat.startsWith('91') && phoneToFormat.length === 12) formattedPhone = '+' + phoneToFormat;
+            else if (phoneToFormat.startsWith('+')) formattedPhone = phoneToFormat;
+            else formattedPhone = phoneToFormat; // Fallback
         }
 
         // Determine payment amount in paise
@@ -457,7 +457,8 @@ exports.applyPromotion = async (req, res) => {
     // START REQUEST LOGGING
     const razorpay_order_id = req.body.order_id || req.body.razorpay_order_id || req.query.order_id;
     const code = (req.body.code || req.body.coupon_code || req.body.promotion_code || '').toString().trim().toUpperCase();
-    console.log(`[MC_APPLY_START] Order: ${razorpay_order_id} | Code: ${code} | Body: ${JSON.stringify(req.body)}`);
+    console.log(`[MC_APPLY_START] Order: ${razorpay_order_id} | Code: ${code}`);
+    console.log(`[MC_APPLY_BODY] Full Body: ${JSON.stringify(req.body)}`);
 
     try {
         let amount_in_paise = Number(req.body.order_amount || req.body.amount || req.body.total_amount);
