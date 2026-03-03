@@ -187,9 +187,9 @@ app.use('/api/data-page', require('./routes/dataPage'));
 
 // Direct Top-Level Mounts for Magic Checkout (Bypass any router weirdness)
 const razorpayController = require('./controllers/razorpayController');
-app.post(['*/razorpay/apply-promotion', '/razorpay/apply-promotion'], razorpayController.applyPromotion);
-app.post(['*/razorpay/get-promotions', '/razorpay/get-promotions'], razorpayController.getPromotions);
-app.post(['*/razorpay/shipping-info', '/razorpay/shipping-info'], razorpayController.getShippingInfo);
+app.post(['*/razorpay/apply-promotion', '/razorpay/apply-promotion', '*/v1/magic_checkout/merchant/coupon/apply'], razorpayController.applyPromotion);
+app.post(['*/razorpay/get-promotions', '/razorpay/get-promotions', '*/v1/magic_checkout/merchant/promotions'], razorpayController.getPromotions);
+app.post(['*/razorpay/shipping-info', '/razorpay/shipping-info', '*/v1/magic_checkout/merchant/shipping-info'], razorpayController.getShippingInfo);
 
 app.use('/api/payment', paymentRoutes);
 app.use('/api/api/payment', paymentRoutes);

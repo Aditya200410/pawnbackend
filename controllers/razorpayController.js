@@ -456,12 +456,14 @@ exports.getPromotions = async (req, res) => {
 exports.applyPromotion = async (req, res) => {
     // START REQUEST LOGGING
     const razorpay_order_id = req.body.order_id || req.body.razorpay_order_id || req.query.order_id;
+    const session_token = req.body.session_token || req.headers['x-session-token'];
     const code = (req.body.code || req.body.coupon_code || req.body.promotion_code || '').toString().trim().toUpperCase();
-    console.log(`[MC_APPLY_START] Order: ${razorpay_order_id} | Code: ${code}`);
+
+    console.log(`[MC_APPLY_START] Order: ${razorpay_order_id} | Session: ${session_token} | Code: ${code}`);
     console.log(`[MC_APPLY_BODY] Full Body: ${JSON.stringify(req.body)}`);
 
     try {
-        let amount_in_paise = Number(req.body.order_amount || req.body.amount || req.body.total_amount);
+        let amount_in_paise = Number(req.body.order_amount || req.body.amount || req.body.total_amount || 0);
 
         if (!code) {
             return res.status(200).json({
@@ -469,19 +471,26 @@ exports.applyPromotion = async (req, res) => {
             });
         }
 
-        // 1. Order Lookup using the "receipt" (merchantTransactionId) or standard ID
-        if ((!amount_in_paise || isNaN(amount_in_paise)) && razorpay_order_id) {
+        // 1. Order Lookup - Critical for Magic Checkout session validation
+        // Priority: Merchant Order (receipt) -> transactionId (razorpay_order_id)
+        if (amount_in_paise <= 0 && razorpay_order_id) {
             const dbOrder = await Order.findOne({
                 $or: [
-                    { merchantTransactionId: razorpay_order_id }, // Priority: Razorpay sends 'receipt' as order_id here
                     { transactionId: razorpay_order_id },
+                    { merchantTransactionId: razorpay_order_id },
                     { orderNumber: razorpay_order_id }
                 ]
             }).select('totalAmount').lean();
 
             if (dbOrder) {
                 amount_in_paise = Math.round(dbOrder.totalAmount * 100);
+                console.log(`[MC_APPLY] Found order in DB, amount: ${amount_in_paise}`);
             }
+        }
+
+        // Safety check: if amount is still 0, we might have a session issue
+        if (amount_in_paise <= 0) {
+            console.log(`[MC_APPLY_WARNING] No order amount found for ID ${razorpay_order_id}. Manual coupon apply might be needed.`);
         }
 
         // 2. Coupon Lookup
