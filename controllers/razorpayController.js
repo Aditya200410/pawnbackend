@@ -452,7 +452,36 @@ exports.getPromotions = async (req, res) => {
  */
 exports.applyPromotion = async (req, res) => {
     try {
-        const { code, order_amount } = req.body;
+        console.log('Magic Checkout Apply Promotion received:', req.body);
+
+        // Handle various possible payload keys
+        const code = (req.body.code || req.body.coupon_code || req.body.promotion_code || '').trim();
+        let order_amount = req.body.order_amount || req.body.amount || req.body.total_amount;
+        const razorpay_order_id = req.body.order_id || req.body.razorpay_order_id;
+
+        if (!code) {
+            return res.status(200).json({ valid: false, message: 'Coupon code is required' });
+        }
+
+        // If order_amount is missing, try to fetch it from our DB using order_id
+        if ((!order_amount || isNaN(order_amount)) && razorpay_order_id) {
+            try {
+                const order = await Order.findOne({ transactionId: razorpay_order_id });
+                if (order) {
+                    order_amount = Math.round(order.totalAmount * 100);
+                }
+            } catch (dbErr) {
+                console.error('Error fetching order for amount verification:', dbErr);
+            }
+        }
+
+        // Final fallback for missing amount
+        if (!order_amount || isNaN(order_amount)) {
+            // If we really can't get the amount, we might have to assume it's valid for now 
+            // or return an error. Returning an error is safer for the merchant.
+            return res.status(200).json({ valid: false, message: 'Order structure verification failed' });
+        }
+
         const now = new Date();
         const startOfToday = new Date();
         startOfToday.setHours(0, 0, 0, 0);
@@ -473,7 +502,8 @@ exports.applyPromotion = async (req, res) => {
             return res.status(200).json({ valid: false, message: 'Coupon usage limit exceeded' });
         }
 
-        if (order_amount < coupon.minPurchase * 100) { // order_amount is in paise
+        // Check minimum purchase (minPurchase is in INR, order_amount is in paise)
+        if (order_amount < coupon.minPurchase * 100) {
             return res.status(200).json({
                 valid: false,
                 message: `Minimum order amount of ₹${coupon.minPurchase} required`
@@ -492,6 +522,9 @@ exports.applyPromotion = async (req, res) => {
             discount_amount = coupon.maxDiscount * 100;
         }
 
+        // Safety check to ensure we never return NaN
+        if (isNaN(discount_amount)) discount_amount = 0;
+
         res.json({
             valid: true,
             discount_amount,
@@ -499,7 +532,7 @@ exports.applyPromotion = async (req, res) => {
         });
     } catch (error) {
         console.error('Magic Checkout Apply Promotion Error:', error);
-        res.status(200).json({ valid: false, message: 'Error applying coupon' });
+        res.status(200).json({ valid: false, message: 'Error processing coupon' });
     }
 };
 
