@@ -418,19 +418,26 @@ exports.getShippingInfo = async (req, res) => {
  */
 exports.getPromotions = async (req, res) => {
     try {
+        const now = new Date();
+        const startOfToday = new Date();
+        startOfToday.setHours(0, 0, 0, 0);
+
         const activeCoupons = await Coupon.find({
             isActive: true,
-            endDate: { $gt: new Date() }
+            startDate: { $lte: now },
+            endDate: { $gte: startOfToday }
         });
 
-        const promotions = activeCoupons.map(coupon => ({
-            code: coupon.code,
-            description: coupon.discountType === 'percentage'
-                ? `Get ${coupon.discountValue}% off on orders above ₹${coupon.minPurchase}`
-                : `Get ₹${coupon.discountValue} off on orders above ₹${coupon.minPurchase}`,
-            discount_type: coupon.discountType === 'percentage' ? 'percentage' : 'flat',
-            discount_value: coupon.discountType === 'percentage' ? coupon.discountValue : (coupon.discountValue * 100)
-        }));
+        const promotions = activeCoupons
+            .filter(coupon => coupon.usageLimit === null || coupon.usedCount < coupon.usageLimit)
+            .map(coupon => ({
+                code: coupon.code,
+                description: coupon.discountType === 'percentage'
+                    ? `Get ${coupon.discountValue}% off on orders above ₹${coupon.minPurchase}`
+                    : `Get ₹${coupon.discountValue} off on orders above ₹${coupon.minPurchase}`,
+                discount_type: coupon.discountType === 'percentage' ? 'percentage' : 'flat',
+                discount_value: coupon.discountType === 'percentage' ? coupon.discountValue : (coupon.discountValue * 100)
+            }));
 
         res.json({ promotions });
     } catch (error) {
@@ -446,18 +453,28 @@ exports.getPromotions = async (req, res) => {
 exports.applyPromotion = async (req, res) => {
     try {
         const { code, order_amount } = req.body;
+        const now = new Date();
+        const startOfToday = new Date();
+        startOfToday.setHours(0, 0, 0, 0);
+
         const coupon = await Coupon.findOne({
             code: code.toUpperCase(),
             isActive: true,
-            endDate: { $gt: new Date() }
+            startDate: { $lte: now },
+            endDate: { $gte: startOfToday }
         });
 
         if (!coupon) {
-            return res.status(400).json({ valid: false, message: 'Invalid or expired coupon' });
+            return res.status(200).json({ valid: false, message: 'Invalid or expired coupon' });
+        }
+
+        // Check usage limit
+        if (coupon.usageLimit !== null && coupon.usedCount >= coupon.usageLimit) {
+            return res.status(200).json({ valid: false, message: 'Coupon usage limit exceeded' });
         }
 
         if (order_amount < coupon.minPurchase * 100) { // order_amount is in paise
-            return res.status(400).json({
+            return res.status(200).json({
                 valid: false,
                 message: `Minimum order amount of ₹${coupon.minPurchase} required`
             });
@@ -470,6 +487,11 @@ exports.applyPromotion = async (req, res) => {
             discount_amount = coupon.discountValue * 100;
         }
 
+        // Apply max discount if specified
+        if (coupon.maxDiscount && (discount_amount > coupon.maxDiscount * 100)) {
+            discount_amount = coupon.maxDiscount * 100;
+        }
+
         res.json({
             valid: true,
             discount_amount,
@@ -477,7 +499,7 @@ exports.applyPromotion = async (req, res) => {
         });
     } catch (error) {
         console.error('Magic Checkout Apply Promotion Error:', error);
-        res.status(500).json({ valid: false, message: 'Internal server error' });
+        res.status(200).json({ valid: false, message: 'Error applying coupon' });
     }
 };
 

@@ -27,13 +27,16 @@ exports.createCoupon = async (req, res) => {
       return res.status(400).json({ message: "Coupon code already exists" });
     }
 
+    const expiry = new Date(expiryDate);
+    expiry.setHours(23, 59, 59, 999);
+
     const newCoupon = new Coupon({
       code: code.toUpperCase(),
       discountType: 'percentage',
       discountValue: Number(discountPercentage),
       usageLimit: Number(maxUses),
       minPurchase: Number(minOrderAmount),
-      endDate: new Date(expiryDate),
+      endDate: expiry,
       isActive: isActive !== undefined ? isActive : true,
       startDate: new Date()
     });
@@ -50,7 +53,7 @@ exports.createCoupon = async (req, res) => {
 exports.updateCoupon = async (req, res) => {
   try {
     const { code, name, discountPercentage, maxUses, minOrderAmount, expiryDate, isActive } = req.body;
-    
+
     // Check if coupon exists
     const coupon = await Coupon.findById(req.params.id);
     if (!coupon) {
@@ -65,6 +68,12 @@ exports.updateCoupon = async (req, res) => {
       }
     }
 
+    let expiry = coupon.endDate;
+    if (expiryDate) {
+      expiry = new Date(expiryDate);
+      expiry.setHours(23, 59, 59, 999);
+    }
+
     const updatedCoupon = await Coupon.findByIdAndUpdate(
       req.params.id,
       {
@@ -73,7 +82,7 @@ exports.updateCoupon = async (req, res) => {
         discountValue: discountPercentage ? Number(discountPercentage) : coupon.discountValue,
         usageLimit: maxUses ? Number(maxUses) : coupon.usageLimit,
         minPurchase: minOrderAmount ? Number(minOrderAmount) : coupon.minPurchase,
-        endDate: expiryDate ? new Date(expiryDate) : coupon.endDate,
+        endDate: expiry,
         isActive: isActive !== undefined ? isActive : coupon.isActive
       },
       { new: true }
@@ -112,7 +121,7 @@ exports.validateCoupon = async (req, res) => {
       });
     }
 
-    const coupon = await Coupon.findOne({ 
+    const coupon = await Coupon.findOne({
       code: code.toUpperCase(),
       isActive: true,
       startDate: { $lte: new Date() },
@@ -144,7 +153,7 @@ exports.validateCoupon = async (req, res) => {
 
     // Calculate discount
     let discountAmount = (cartTotal * coupon.discountValue) / 100;
-    
+
     // Apply max discount if specified
     if (coupon.maxDiscount && discountAmount > coupon.maxDiscount) {
       discountAmount = coupon.maxDiscount;
@@ -176,7 +185,7 @@ exports.validateCoupon = async (req, res) => {
 exports.applyCoupon = async (req, res) => {
   try {
     const { code } = req.body;
-    
+
     const coupon = await Coupon.findOneAndUpdate(
       { code: code.toUpperCase() },
       { $inc: { usedCount: 1 } },
