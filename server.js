@@ -139,14 +139,7 @@ mongoose.connect(MONGODB_URI, {
 }).then(() => console.log("MongoDB connected to:", MONGODB_URI))
   .catch(err => console.error("MongoDB connection error:", err));
 
-// API Routes - Detailed Debugging for Razorpay
-app.use((req, res, next) => {
-  if (req.originalUrl.includes('payment')) {
-    console.log(`[PAYMENT DEBUG] ${req.method} ${req.originalUrl}`);
-  }
-  next();
-});
-
+// API Routes
 const paymentRoutes = require('./routes/payment');
 app.use("/api/shop", shopRoutes);
 app.use("/api/orders", orderRoutes);

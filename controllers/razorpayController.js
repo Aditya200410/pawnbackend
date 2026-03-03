@@ -135,7 +135,7 @@ exports.createRazorpayOrder = async (req, res) => {
             country: country || 'India'
         };
 
-        // Save Order in DB
+        // Save Order in DB first so it exists when Magic Checkout calls apply-promotion
         const newOrder = new Order({
             transactionId: razorpayOrder.id,
             customerName: finalCustomerName,
@@ -161,19 +161,15 @@ exports.createRazorpayOrder = async (req, res) => {
         res.json({
             success: true,
             orderId: razorpayOrder.id,
-            merchantOrderId: merchantOrderId,
-            amount: razorpayOrder.amount,
-            key: process.env.RAZORPAY_KEY_ID
+            key: process.env.RAZORPAY_KEY_ID,
+            amount: Math.round(paymentAmountRupees * 100),
+            currency: "INR",
+            receipt: merchantOrderId
         });
 
     } catch (error) {
-        console.error('Razorpay Order Creation Error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to initiate payment',
-            error: error.message,
-            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-        });
+        console.error('Create Razorpay Order Error:', error);
+        res.status(500).json({ success: false, message: 'Failed to create order' });
     }
 };
 
