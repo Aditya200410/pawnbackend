@@ -526,13 +526,27 @@ exports.applyPromotion = async (req, res) => {
         if (isNaN(discount_amount)) discount_amount = 0;
 
         res.json({
+            // Magic Checkout format
             valid: true,
             discount_amount,
+
+            // Standard Checkout format
+            success: true,
+            data: {
+                discount: discount_amount,
+                amount: discount_amount, // fallback
+                message: 'Coupon applied successfully'
+            },
+
             message: 'Coupon applied successfully'
         });
     } catch (error) {
         console.error('Magic Checkout Apply Promotion Error:', error);
-        res.status(200).json({ valid: false, message: 'Error processing coupon' });
+        res.status(200).json({
+            valid: false,
+            success: false,
+            message: 'Error processing coupon'
+        });
     }
 };
 

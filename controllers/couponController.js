@@ -121,23 +121,27 @@ exports.validateCoupon = async (req, res) => {
       });
     }
 
+    const now = new Date();
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
     const coupon = await Coupon.findOne({
-      code: code.toUpperCase(),
+      code: (code || '').toUpperCase(),
       isActive: true,
-      startDate: { $lte: new Date() },
-      endDate: { $gt: new Date() }
+      startDate: { $lte: now },
+      endDate: { $gte: startOfToday }
     });
 
     if (!coupon) {
-      return res.status(404).json({
+      return res.status(200).json({
         success: false,
-        message: 'Invalid or expired coupon code'
+        message: 'Invalid or expired coupon code.'
       });
     }
 
     // Check minimum purchase requirement
     if (cartTotal < coupon.minPurchase) {
-      return res.status(400).json({
+      return res.status(200).json({
         success: false,
         message: `Minimum purchase of ₹${coupon.minPurchase} required to use this coupon`
       });
@@ -145,9 +149,9 @@ exports.validateCoupon = async (req, res) => {
 
     // Check usage limit
     if (coupon.usageLimit !== null && coupon.usedCount >= coupon.usageLimit) {
-      return res.status(400).json({
+      return res.status(200).json({
         success: false,
-        message: 'Coupon usage limit exceeded'
+        message: 'Coupon usage limit exceeded. This coupon cannot be used anymore.'
       });
     }
 

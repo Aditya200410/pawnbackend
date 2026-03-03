@@ -251,10 +251,24 @@ async function finalizeOrder(order) {
       }
     }
 
-    // 3. Save to orders.json
+    // 3. Increment coupon usage
+    if (order.couponCode) {
+      try {
+        const CouponModel = require('../models/coupon');
+        await CouponModel.findOneAndUpdate(
+          { code: order.couponCode.toUpperCase() },
+          { $inc: { usedCount: 1 } }
+        );
+        console.log(`Coupon usage incremented for: ${order.couponCode}`);
+      } catch (err) {
+        console.error('Failed to increment coupon usage:', err);
+      }
+    }
+
+    // 4. Save to orders.json
     await appendOrderToJson(order);
 
-    // 4. Send email
+    // 5. Send email
     await sendOrderConfirmationEmail(order);
 
     console.log(`Order ${order._id} finalized successfully.`);
