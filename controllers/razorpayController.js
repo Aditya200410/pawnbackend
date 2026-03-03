@@ -432,11 +432,13 @@ exports.getPromotions = async (req, res) => {
             .filter(coupon => coupon.usageLimit === null || coupon.usedCount < coupon.usageLimit)
             .map(coupon => ({
                 code: coupon.code,
+                name: coupon.code,
                 description: coupon.discountType === 'percentage'
                     ? `Get ${coupon.discountValue}% off on orders above ₹${coupon.minPurchase}`
                     : `Get ₹${coupon.discountValue} off on orders above ₹${coupon.minPurchase}`,
-                discount_type: coupon.discountType === 'percentage' ? 'percentage' : 'flat',
-                discount_value: coupon.discountType === 'percentage' ? coupon.discountValue : (coupon.discountValue * 100)
+                value_type: coupon.discountType === 'percentage' ? 'percentage' : 'fixed_amount',
+                offer_value: coupon.discountType === 'percentage' ? coupon.discountValue : (coupon.discountValue * 100), // fixed is in paise
+                type: 'coupon'
             }));
 
         res.json({ promotions });
@@ -452,18 +454,22 @@ exports.getPromotions = async (req, res) => {
  */
 exports.applyPromotion = async (req, res) => {
     try {
-        console.log('Magic Checkout Apply Promotion received:', req.body);
+        console.log('Magic Checkout Apply Promotion received 1.5 spec:', req.body);
 
-        // Handle various possible payload keys
-        const code = (req.body.code || req.body.coupon_code || req.body.promotion_code || '').trim();
-        let order_amount = req.body.order_amount || req.body.amount || req.body.total_amount;
-        const razorpay_order_id = req.body.order_id || req.body.razorpay_order_id;
+        const code = (req.body.code || req.body.coupon_code || '').trim();
+        let order_amount = req.body.order_amount || req.body.amount;
+        const razorpay_order_id = req.body.order_id;
 
         if (!code) {
-            return res.status(200).json({ valid: false, message: 'Coupon code is required' });
+            return res.status(400).json({
+                error: {
+                    code: 'INVALID_PROMOTION',
+                    description: 'Coupon code is required'
+                }
+            });
         }
 
-        // If order_amount is missing, try to fetch it from our DB using order_id
+        // Fetch amount from DB if missing - Magic Checkout often sends just order_id
         if ((!order_amount || isNaN(order_amount)) && razorpay_order_id) {
             try {
                 const order = await Order.findOne({ transactionId: razorpay_order_id });
@@ -471,42 +477,41 @@ exports.applyPromotion = async (req, res) => {
                     order_amount = Math.round(order.totalAmount * 100);
                 }
             } catch (dbErr) {
-                console.error('Error fetching order for amount verification:', dbErr);
+                console.error('Error fetching order amount:', dbErr);
             }
         }
-
-        // Final fallback for missing amount
-        if (!order_amount || isNaN(order_amount)) {
-            // If we really can't get the amount, we might have to assume it's valid for now 
-            // or return an error. Returning an error is safer for the merchant.
-            return res.status(200).json({ valid: false, message: 'Order structure verification failed' });
-        }
-
-        const now = new Date();
-        const startOfToday = new Date();
-        startOfToday.setHours(0, 0, 0, 0);
 
         const coupon = await Coupon.findOne({
             code: code.toUpperCase(),
             isActive: true,
-            startDate: { $lte: now },
-            endDate: { $gte: startOfToday }
+            startDate: { $lte: new Date() },
+            endDate: { $gte: new Date(new Date().setHours(0, 0, 0, 0)) }
         });
 
         if (!coupon) {
-            return res.status(200).json({ valid: false, message: 'Invalid or expired coupon' });
+            return res.status(400).json({
+                error: {
+                    code: 'INVALID_PROMOTION',
+                    description: 'The specified promotion code is not recognised or has expired.'
+                }
+            });
         }
 
-        // Check usage limit
         if (coupon.usageLimit !== null && coupon.usedCount >= coupon.usageLimit) {
-            return res.status(200).json({ valid: false, message: 'Coupon usage limit exceeded' });
+            return res.status(400).json({
+                error: {
+                    code: 'INVALID_PROMOTION',
+                    description: 'Usage limit for this coupon has been reached.'
+                }
+            });
         }
 
-        // Check minimum purchase (minPurchase is in INR, order_amount is in paise)
-        if (order_amount < coupon.minPurchase * 100) {
-            return res.status(200).json({
-                valid: false,
-                message: `Minimum order amount of ₹${coupon.minPurchase} required`
+        if (order_amount && order_amount < coupon.minPurchase * 100) {
+            return res.status(400).json({
+                error: {
+                    code: 'REQUIREMENT_NOT_MET',
+                    description: `Minimum order amount of ₹${coupon.minPurchase} required.`
+                }
             });
         }
 
@@ -517,35 +522,27 @@ exports.applyPromotion = async (req, res) => {
             discount_amount = coupon.discountValue * 100;
         }
 
-        // Apply max discount if specified
         if (coupon.maxDiscount && (discount_amount > coupon.maxDiscount * 100)) {
             discount_amount = coupon.maxDiscount * 100;
         }
 
-        // Safety check to ensure we never return NaN
-        if (isNaN(discount_amount)) discount_amount = 0;
-
+        // SPEC 1.5 RESPONSE
         res.json({
-            // Magic Checkout format
-            valid: true,
-            discount_amount,
-
-            // Standard Checkout format
-            success: true,
-            data: {
-                discount: discount_amount,
-                amount: discount_amount, // fallback
-                message: 'Coupon applied successfully'
-            },
-
-            message: 'Coupon applied successfully'
+            promotion: {
+                code: coupon.code,
+                offer_value: discount_amount, // in paise
+                value_type: coupon.discountType === 'percentage' ? 'percentage' : 'fixed_amount',
+                type: 'coupon'
+            }
         });
+
     } catch (error) {
-        console.error('Magic Checkout Apply Promotion Error:', error);
-        res.status(200).json({
-            valid: false,
-            success: false,
-            message: 'Error processing coupon'
+        console.error('Magic Checkout 1.5 Apply Error:', error);
+        res.status(500).json({
+            error: {
+                code: 'SERVER_ERROR',
+                description: 'Internal server error processing promotion'
+            }
         });
     }
 };
