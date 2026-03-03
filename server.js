@@ -140,11 +140,19 @@ mongoose.connect(MONGODB_URI, {
   .catch(err => console.error("MongoDB connection error:", err));
 
 // API Routes
+app.use((req, res, next) => {
+  if (req.path.includes('payment/razorpay')) {
+    console.log(`[RAZORPAY DEBUG] ${req.method} ${req.path}`);
+  }
+  next();
+});
+
+const paymentRoutes = require('./routes/payment');
 app.use("/api/shop", shopRoutes);
 app.use("/api/orders", orderRoutes);
 app.use('/api/bestseller', bestSellerRoutes);
 app.use('/api/auth', authRoutes);
-app.use('/api/admin/auth', adminAuthRoutes); // Admin authentication routes
+app.use('/api/admin/auth', adminAuthRoutes);
 app.use('/api/loved', lovedRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/featured-products', featuredProductRoutes);
@@ -153,7 +161,11 @@ app.use('/api/hero-carousel', heroCarouselRoutes);
 app.use('/api/seller', sellerRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/data-page', require('./routes/dataPage'));
-app.use('/api/payment', require('./routes/payment'));
+
+// Support both single and double API prefixes for payment (Double API compatibility)
+app.use('/api/payment', paymentRoutes);
+app.use('/api/api/payment', paymentRoutes);
+
 app.use('/api/withdrawal', require('./routes/withdrawal'));
 app.use('/api/commission', require('./routes/commission'));
 app.use('/api/reviews', require('./routes/reviews'));
