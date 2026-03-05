@@ -148,6 +148,22 @@ const syncOrderDataWithRazorpay = async (order, payment, razorOrder) => {
         }
     }
 
+    // 5. Sync Payment Method (Crucial for Magic Checkout COD support)
+    if (payment?.method) {
+        const method = payment.method === 'cod' ? 'cod' : 'online';
+        if (order.paymentMethod !== method) {
+            console.log(`[RAZORPAY_SYNC] Syncing Payment Method for order ${order._id}: ${order.paymentMethod} -> ${method}`);
+            order.paymentMethod = method;
+            dataChanged = true;
+
+            // If it's COD from Magic Checkout, update status accordingly
+            if (method === 'cod' && order.orderStatus === 'waiting_payment') {
+                order.paymentStatus = 'pending'; // COD is pending until delivered
+                order.orderStatus = 'processing';
+            }
+        }
+    }
+
     return dataChanged;
 };
 
@@ -194,7 +210,7 @@ exports.createRazorpayOrder = async (req, res) => {
         }
 
         // Determine payment amount in paise
-        const paymentAmountRupees = finalTotal || amount || totalAmount || 0;
+        const paymentAmountRupees = amount || finalTotal || totalAmount || 0;
         if (paymentAmountRupees <= 0) {
             return res.status(400).json({ success: false, message: 'Invalid payment amount' });
         }
@@ -273,13 +289,14 @@ exports.createRazorpayOrder = async (req, res) => {
             phone: formattedPhone || '0000000000',
             address: addressObj,
             items: items || [],
-            totalAmount: paymentAmountRupees,
+            totalAmount: finalTotal || totalAmount || paymentAmountRupees,
             paymentMethod: paymentMethod || 'online',
             paymentStatus: 'pending',
             orderStatus: 'waiting_payment',
             orderType: orderType || 'product_order',
             upfrontAmount: upfrontAmount || 0,
             remainingAmount: remainingAmount || 0,
+            codExtraCharge: codExtraCharge || 0,
             sellerToken: sellerToken || '',
             agentCode: agentCode || '',
             couponCode: couponCode || '',
@@ -370,11 +387,22 @@ exports.verifySignature = async (req, res) => {
  */
 exports.getShippingInfo = async (req, res) => {
     try {
-        // Updated to match 1.4 Interact with Shipping Info API docs
-        const { order_id, razorpay_order_id, email, contact, addresses } = req.body;
-        console.log('Magic Checkout Shipping Info Request:', { order_id, razorpay_order_id, email, contact, count: addresses?.length });
+        const { order_id, razorpay_order_id, addresses } = req.body;
+        const id = razorpay_order_id || order_id;
+
+        console.log('Magic Checkout Shipping Info Request:', { id, count: addresses?.length });
+
+        // Check if order already has COD charge included
+        let alreadyHasCodCharge = false;
+        if (id) {
+            const order = await Order.findOne({ transactionId: id }).lean();
+            if (order && order.codExtraCharge > 0) {
+                alreadyHasCodCharge = true;
+            }
+        }
 
         const codAmount = await getCodAmount();
+        const baseCodFee = alreadyHasCodCharge ? 0 : (codAmount * 100);
 
         // Map shipping options to EACH address as required by Razorpay
         const updatedAddresses = (addresses || []).map(addr => ({
@@ -390,7 +418,7 @@ exports.getShippingInfo = async (req, res) => {
                 }
             ],
             cod_available: true,
-            cod_fee: codAmount * 100
+            cod_fee: baseCodFee
         }));
 
         const response = {
@@ -401,7 +429,6 @@ exports.getShippingInfo = async (req, res) => {
         res.json(response);
     } catch (error) {
         console.error('Magic Checkout Shipping Info Error:', error);
-        // Returning 200 OK with serviceable: false is the spec-compliant way to handle errors
         res.status(200).json({ serviceable: false });
     }
 };

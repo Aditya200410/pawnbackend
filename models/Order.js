@@ -50,6 +50,7 @@ const orderSchema = new mongoose.Schema({
   sellerToken: { type: String, required: false }, // Track which seller referred this order
   agentCode: { type: String, required: false }, // Track which agent referred this order
   commission: { type: Number, default: 0 }, // Commission amount for this order
+  codExtraCharge: { type: Number, default: 0 }, // COD extra charge
   transactionId: { type: String, required: false }, // PhonePe/Razorpay transaction ID
   merchantTransactionId: { type: String, required: false }, // Internal order ID (e.g. PLANREG...)
   orderNumber: { type: String, unique: true }, // Human-readable order number (e.g. RC-1001)
