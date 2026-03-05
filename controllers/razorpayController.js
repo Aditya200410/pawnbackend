@@ -24,6 +24,134 @@ const getCodAmount = async () => {
 };
 
 /**
+ * Helper to sync Order with Razorpay Payment/Order data
+ * Used by Verify, Webhook, and Status Sync
+ */
+const syncOrderDataWithRazorpay = async (order, payment, razorOrder) => {
+    let dataChanged = false;
+
+    // 1. Sync Customer Details (Email/Phone)
+    if (payment?.email && payment.email.trim() && (!order.email || order.email.includes('guest'))) {
+        order.email = payment.email;
+        dataChanged = true;
+    } else if (razorOrder?.customer_details?.email && (!order.email || order.email.includes('guest'))) {
+        order.email = razorOrder.customer_details.email;
+        dataChanged = true;
+    }
+
+    if (payment?.contact && (order.phone === '0000000000' || !order.phone)) {
+        order.phone = payment.contact;
+        dataChanged = true;
+    } else if (razorOrder?.customer_details?.contact && (order.phone === '0000000000' || !order.phone)) {
+        order.phone = razorOrder.customer_details.contact;
+        dataChanged = true;
+    }
+
+    // 2. Sync Name
+    let capturedName = payment?.notes?.customerName ||
+        payment?.notes?.name ||
+        payment?.notes?.customer_name ||
+        payment?.notes?.contact_name ||
+        payment?.customer?.name ||
+        payment?.customer_details?.name ||
+        payment?.billing_address?.name ||
+        payment?.shipping_address?.name ||
+        payment?.notes?.['shipping_address.name'] ||
+        payment?.notes?.['billing_address.name'];
+
+    // If name is still placeholder or missing, check Order object
+    if (!capturedName || capturedName === 'Valued Customer' || capturedName === 'TBD' || capturedName === 'Guest') {
+        const orderName = razorOrder?.customer_details?.name ||
+            razorOrder?.customer_details?.shipping_address?.name ||
+            razorOrder?.customer_details?.billing_address?.name;
+
+        if (orderName && orderName !== 'Valued Customer' && orderName !== 'TBD' && orderName !== 'Guest') {
+            capturedName = orderName;
+        }
+    }
+
+    if (capturedName &&
+        typeof capturedName === 'string' &&
+        capturedName.trim().length > 0 &&
+        capturedName !== 'Valued Customer' &&
+        capturedName !== 'TBD' &&
+        capturedName !== 'Guest' &&
+        order.customerName !== capturedName
+    ) {
+        console.log(`[RAZORPAY_SYNC] Syncing Name: ${order.customerName} -> ${capturedName}`);
+        order.customerName = capturedName;
+        dataChanged = true;
+    }
+
+    // 3. Sync Amount
+    if (payment?.amount) {
+        const newAmount = payment.amount / 100;
+        if (Math.abs(order.totalAmount - newAmount) > 0.01) {
+            order.totalAmount = newAmount;
+            dataChanged = true;
+        }
+    }
+
+    // 4. Robust Shipping Address Sync
+    const isAddressMissing = order.address?.street === 'TBD' || !order.address?.street || order.address?.city === 'TBD';
+    if (isAddressMissing) {
+        let ra = razorOrder?.customer_details?.shipping_address ||
+            razorOrder?.customer_details?.billing_address ||
+            payment?.shipping_address ||
+            payment?.customer_details?.shipping_address ||
+            payment?.notes?.shipping_address ||
+            payment?.notes?.address;
+
+        // Support for flat fields in notes
+        if (payment?.notes) {
+            const n = payment.notes;
+            const line1 = n.shipping_address_line1 || n.shipping_address_street || n.address_line1 || n.line1 || n.street || n.address || n['shipping_address.line1'] || n['shipping_address.street'];
+            const city = n.shipping_address_city || n.address_city || n.city || n['shipping_address.city'];
+            const state = n.shipping_address_state || n.address_state || n.state || n['shipping_address.state'];
+            const pincode = n.shipping_address_pincode || n.shipping_address_zip || n.address_pincode || n.pincode || n.zipcode || n.zip || n['shipping_address.pincode'] || n['shipping_address.zipcode'];
+
+            if (line1 || city || state) {
+                if (!ra || typeof ra !== 'object' || ra === null) {
+                    ra = { line1, city, state, pincode, country: n.shipping_address_country || n.country || n['shipping_address.country'] || 'India' };
+                } else {
+                    if (!ra.line1 && !ra.street) ra.line1 = line1;
+                    if (!ra.city) ra.city = city;
+                    if (!ra.state) ra.state = state;
+                    if (!ra.pincode && !ra.zipcode) ra.pincode = pincode;
+                }
+            }
+        }
+
+        if (ra) {
+            const newAddress = { ...order.address };
+            if (typeof ra === 'string' && (ra.startsWith('{') || ra.startsWith('['))) {
+                try { ra = JSON.parse(ra); } catch (e) { }
+            }
+
+            if (typeof ra === 'string' && ra.trim().length > 0 && ra !== 'TBD') {
+                newAddress.street = ra;
+            } else if (typeof ra === 'object' && ra !== null) {
+                const street = ra.line1 || ra.street || ra.address_line1 || ra.address || (ra.line2 ? `${ra.line1} ${ra.line2}` : null);
+                if (street && street !== 'TBD') newAddress.street = street;
+                if (ra.city && ra.city !== 'TBD') newAddress.city = ra.city;
+                if (ra.state && ra.state !== 'TBD') newAddress.state = ra.state;
+                const pc = ra.pincode || ra.zipcode || ra.postal_code || ra.zip;
+                if (pc && pc !== 'TBD') newAddress.pincode = pc;
+            }
+
+            if (JSON.stringify(newAddress) !== JSON.stringify(order.address)) {
+                console.log(`[RAZORPAY_SYNC] Syncing Address for order ${order._id}`);
+                order.address = newAddress;
+                order.markModified('address');
+                dataChanged = true;
+            }
+        }
+    }
+
+    return dataChanged;
+};
+
+/**
  * Create a Razorpay Order for Magic Checkout
  */
 exports.createRazorpayOrder = async (req, res) => {
@@ -206,151 +334,18 @@ exports.verifySignature = async (req, res) => {
                         console.log('Error fetching Razorpay order during verification:', e.message);
                     }
 
-                    // 1. Sync Customer Details (Overwrite placeholders with real data)
-                    if (payment.email && payment.email.trim()) {
-                        order.email = payment.email;
-                    } else if (razorOrder?.customer_details?.email) {
-                        order.email = razorOrder.customer_details.email;
-                    }
+                    // Use comprehensive sync helper
+                    await syncOrderDataWithRazorpay(order, payment, razorOrder);
 
-                    if (payment.contact) {
-                        order.phone = payment.contact;
-                    } else if (razorOrder?.customer_details?.contact) {
-                        order.phone = razorOrder.customer_details.contact;
-                    }
-
-                    // Capture name from various possible locations in Magic Checkout / Standard payload
-                    let capturedName = payment.notes?.customerName ||
-                        payment.notes?.name ||
-                        payment.notes?.customer_name ||
-                        payment.notes?.contact_name ||
-                        payment.customer?.name ||
-                        payment.customer_details?.name ||
-                        payment.billing_address?.name ||
-                        payment.shipping_address?.name ||
-                        payment.notes?.['shipping_address.name'] ||
-                        payment.notes?.['billing_address.name'] ||
-                        (payment.notes?.shipping_address ? (typeof payment.notes.shipping_address === 'string' && payment.notes.shipping_address.startsWith('{') ? JSON.parse(payment.notes.shipping_address).name : payment.notes.shipping_address.name) : null);
-
-                    // If name is still placeholder or missing, check Order object
-                    if (!capturedName || capturedName === 'Valued Customer' || capturedName === 'TBD') {
-                        const orderName = razorOrder?.customer_details?.name ||
-                            razorOrder?.customer_details?.shipping_address?.name ||
-                            razorOrder?.customer_details?.billing_address?.name;
-
-                        if (orderName && orderName !== 'Valued Customer' && orderName !== 'TBD') {
-                            capturedName = orderName;
-                        }
-                    }
-
-                    if (capturedName &&
-                        typeof capturedName === 'string' &&
-                        capturedName.trim().length > 0 &&
-                        capturedName !== 'Valued Customer' &&
-                        capturedName !== 'TBD'
-                    ) {
-                        console.log('Captured Real Customer Name:', capturedName);
-                        order.customerName = capturedName;
-                    }
-
-                    // 2. Sync Actual Paid Amount (paise to INR)
-                    if (payment.amount) {
-                        order.totalAmount = payment.amount / 100;
-                    }
-
-                    // 3. Robust Shipping Address Sync
-                    const newAddress = { ...order.address };
-
-                    // Priority: Order object (Magic Checkout data) -> Payment object
-                    let ra = razorOrder?.customer_details?.shipping_address ||
-                        razorOrder?.customer_details?.billing_address ||
-                        payment.shipping_address ||
-                        payment.customer_details?.shipping_address ||
-                        payment.notes?.shipping_address ||
-                        payment.notes?.address;
-
-                    // Support for flat fields in notes if address is not a direct object/string
-                    if (payment.notes) {
-                        const n = payment.notes;
-                        const line1 = n.shipping_address_line1 || n.shipping_address_street || n.address_line1 || n.line1 || n.street || n.address || n['shipping_address.line1'] || n['shipping_address.street'];
-                        const city = n.shipping_address_city || n.address_city || n.city || n['shipping_address.city'];
-                        const state = n.shipping_address_state || n.address_state || n.state || n['shipping_address.state'];
-                        const pincode = n.shipping_address_pincode || n.shipping_address_zip || n.address_pincode || n.pincode || n.zipcode || n.zip || n['shipping_address.pincode'] || n['shipping_address.zipcode'];
-
-                        if (line1 || city || state) {
-                            if (!ra || typeof ra !== 'object' || ra === null) {
-                                ra = {
-                                    line1,
-                                    city,
-                                    state,
-                                    pincode,
-                                    country: n.shipping_address_country || n.country || n['shipping_address.country'] || 'India'
-                                };
-                            } else {
-                                // Fill in missing pieces
-                                if (!ra.line1 && !ra.street) ra.line1 = line1;
-                                if (!ra.city) ra.city = city;
-                                if (!ra.state) ra.state = state;
-                                if (!ra.pincode && !ra.zipcode) ra.pincode = pincode;
-                            }
-                        }
-                    }
-
-                    if (ra) {
-                        if (typeof ra === 'string') {
-                            const trimmedRa = ra.trim();
-                            if (trimmedRa.startsWith('{') || trimmedRa.startsWith('[')) {
-                                try {
-                                    const parsed = JSON.parse(trimmedRa);
-                                    if (parsed && typeof parsed === 'object') ra = parsed;
-                                } catch (e) { /* not valid json, use as string */ }
-                            }
-                        }
-
-                        if (typeof ra === 'string' && ra.trim().length > 0 && ra !== 'TBD') {
-                            newAddress.street = ra;
-                        } else if (typeof ra === 'object' && ra !== null) {
-                            // Extract street/line1
-                            const street = ra.line1 || ra.street || ra.address_line1 || ra.address || (ra.line2 ? `${ra.line1} ${ra.line2}` : null);
-                            if (street && street !== 'TBD') newAddress.street = street;
-
-                            // Extract other fields with fallbacks
-                            if (ra.city && ra.city !== 'TBD') newAddress.city = ra.city;
-                            if (ra.state && ra.state !== 'TBD') newAddress.state = ra.state;
-                            if (ra.pincode || ra.zipcode || ra.postal_code || ra.zip) {
-                                const pc = ra.pincode || ra.zipcode || ra.postal_code || ra.zip;
-                                if (pc && pc !== 'TBD') newAddress.pincode = pc;
-                            }
-                            if (ra.country || ra.countryCode || ra.country_code) {
-                                const c = ra.country || ra.countryCode || ra.country_code;
-                                if (c && c !== 'TBD') newAddress.country = c;
-                            }
-                        }
-                    } else if (payment.billing_address) {
-                        const ba = payment.billing_address;
-                        if (ba.line1 && ba.line1 !== 'TBD') newAddress.street = ba.line1 || ba.street;
-                        if (ba.city && ba.city !== 'TBD') newAddress.city = ba.city;
-                        if (ba.state && ba.state !== 'TBD') newAddress.state = ba.state;
-                        if (ba.pincode || ba.zipcode) newAddress.pincode = ba.pincode || ba.zipcode;
-                        if (ba.country && ba.country !== 'TBD') newAddress.country = ba.country;
-                    }
-
-                    // Final safety check: if street is still TBD but we have line1 in payment/notes
-                    if (newAddress.street === 'TBD' && payment.notes?.line1) {
-                        newAddress.street = payment.notes.line1;
-                    }
-
-
-                    order.address = newAddress;
-                    order.markModified('address');
                 } catch (fetchError) {
-                    console.error('Error fetching Razorpay payment details:', fetchError);
+                    console.error('Error fetching Razorpay payment details during verification:', fetchError);
                 }
 
                 order.paymentStatus = 'completed';
                 order.orderStatus = 'processing';
                 order.notes = order.notes || {};
                 order.notes.razorpay_payment_id = razorpay_payment_id;
+                order.notes.payment_source = 'verify_call';
 
                 // SAVE BEFORE FINALIZE
                 await order.save();
@@ -606,30 +601,15 @@ exports.handleWebhook = async (req, res) => {
             if (order && order.paymentStatus !== 'completed') {
                 console.log(`[RAZORPAY_WEBHOOK] Processing captured payment for order: ${order._id}`);
 
-                // Sync details from payment object if missing
-                if (payment.email && (!order.email || order.email.includes('guest'))) order.email = payment.email;
-                if (payment.contact && (!order.phone || order.phone === '0000000000')) order.phone = payment.contact;
-
-                // Sync amount
-                if (payment.amount) order.totalAmount = payment.amount / 100;
-
-                // Sync address if TBD
-                if (order.address?.street === 'TBD' || !order.address?.street) {
-                    const notes = payment.notes || {};
-                    const shipping = payment.shipping_address || {};
-
-                    const street = shipping.line1 || notes.shipping_address_line1 || notes.line1 || notes.address;
-                    const city = shipping.city || notes.shipping_address_city || notes.city;
-                    const state = shipping.state || notes.shipping_address_state || notes.state;
-                    const pincode = shipping.pincode || notes.shipping_address_pincode || notes.pincode || notes.zipcode;
-
-                    if (street) order.address.street = street;
-                    if (city) order.address.city = city;
-                    if (state) order.address.state = state;
-                    if (pincode) order.address.pincode = pincode;
-
-                    order.markModified('address');
+                // Sync details from payment object using comprehensive helper
+                let razorOrder = null;
+                try {
+                    razorOrder = await razorpay.orders.fetch(razorpay_order_id);
+                } catch (e) {
+                    console.log('Error fetching Razorpay order during webhook:', e.message);
                 }
+
+                await syncOrderDataWithRazorpay(order, payment, razorOrder);
 
                 order.paymentStatus = 'completed';
                 order.orderStatus = 'processing';
@@ -681,37 +661,36 @@ exports.getRazorpayStatus = async (req, res) => {
         if (order.paymentStatus === 'completed') status = 'success';
         else if (order.paymentStatus === 'failed') status = 'failed';
 
-        // Proactive Sync: If status is still pending in DB, verify with Razorpay API directly
-        if (status === 'pending') {
+        // Sync if TBD regardless of payment status (Fix for missing data)
+        const isTBD = order.customerName === 'Guest User' || order.address?.street === 'TBD' || order.address?.city === 'TBD';
+
+        if (status === 'pending' || isTBD) {
             try {
                 const rpOrder = await razorpay.orders.fetch(orderId);
                 const payments = await razorpay.orders.fetchPayments(orderId);
-
                 const capturedPayment = payments.items.find(p => p.status === 'captured');
 
-                if (capturedPayment) {
-                    console.log(`[RAZORPAY_SYNC] Found captured payment ${capturedPayment.id} for pending order ${order._id}. Syncing...`);
+                if (capturedPayment || rpOrder.status === 'paid') {
+                    const payment = capturedPayment || payments.items[0];
 
-                    order.paymentStatus = 'completed';
-                    order.orderStatus = 'processing';
-                    order.notes = order.notes || {};
-                    order.notes.razorpay_payment_id = capturedPayment.id;
-                    order.notes.payment_source = 'api_sync';
+                    // Comprehensive Sync
+                    const changed = await syncOrderDataWithRazorpay(order, payment, rpOrder);
 
-                    // Sync customer details if missing
-                    if (capturedPayment.email && (!order.email || order.email.includes('guest'))) order.email = capturedPayment.email;
-                    if (capturedPayment.contact && (!order.phone || order.phone === '0000000000')) order.phone = capturedPayment.contact;
+                    if (status === 'pending') {
+                        console.log(`[RAZORPAY_SYNC] Finalizing pending order ${order._id} found as PAID/CAPTURED in Razorpay.`);
+                        order.paymentStatus = 'completed';
+                        order.orderStatus = 'processing';
+                        order.notes = order.notes || {};
+                        order.notes.razorpay_payment_id = payment?.id;
+                        order.notes.payment_source = 'api_sync';
 
-                    await order.save();
-                    await finalizeOrder(order);
-                    status = 'success';
-                } else if (rpOrder.status === 'paid') {
-                    // Sometimes payments list is slow, but order status is paid
-                    order.paymentStatus = 'completed';
-                    order.orderStatus = 'processing';
-                    await order.save();
-                    await finalizeOrder(order);
-                    status = 'success';
+                        await order.save();
+                        await finalizeOrder(order);
+                        status = 'success';
+                    } else if (changed) {
+                        console.log(`[RAZORPAY_SYNC] Updating missing data for already completed order ${order._id}`);
+                        await order.save();
+                    }
                 }
             } catch (syncError) {
                 console.error('[RAZORPAY_SYNC] Failed to sync status with Razorpay API:', syncError.message);
