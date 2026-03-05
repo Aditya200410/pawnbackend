@@ -567,6 +567,105 @@ exports.applyPromotion = async (req, res) => {
 };
 
 /**
+ * Handle Razorpay Webhooks
+ */
+exports.handleWebhook = async (req, res) => {
+    const signature = req.headers['x-razorpay-signature'];
+    const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
+
+    if (!signature || !secret) {
+        console.error('Webhook Error: Missing signature or secret');
+        return res.status(400).json({ success: false, message: 'Missing signature or secret' });
+    }
+
+    try {
+        const body = JSON.stringify(req.body);
+        const expectedSignature = crypto
+            .createHmac('sha256', secret)
+            .update(body)
+            .digest('hex');
+
+        if (expectedSignature !== signature) {
+            console.error('Webhook Error: Invalid signature');
+            return res.status(400).json({ success: false, message: 'Invalid signature' });
+        }
+
+        const event = req.body.event;
+        const payload = req.body.payload;
+
+        console.log(`[RAZORPAY_WEBHOOK] Received event: ${event}`);
+
+        if (event === 'payment.captured') {
+            const payment = payload.payment.entity;
+            const razorpay_payment_id = payment.id;
+            const razorpay_order_id = payment.order_id;
+
+            // Find order by transactionId (which stores razorpay_order_id)
+            const order = await Order.findOne({ transactionId: razorpay_order_id });
+
+            if (order && order.paymentStatus !== 'completed') {
+                console.log(`[RAZORPAY_WEBHOOK] Processing captured payment for order: ${order._id}`);
+
+                // Sync details from payment object if missing
+                if (payment.email && (!order.email || order.email.includes('guest'))) order.email = payment.email;
+                if (payment.contact && (!order.phone || order.phone === '0000000000')) order.phone = payment.contact;
+
+                // Sync amount
+                if (payment.amount) order.totalAmount = payment.amount / 100;
+
+                // Sync address if TBD
+                if (order.address?.street === 'TBD' || !order.address?.street) {
+                    const notes = payment.notes || {};
+                    const shipping = payment.shipping_address || {};
+
+                    const street = shipping.line1 || notes.shipping_address_line1 || notes.line1 || notes.address;
+                    const city = shipping.city || notes.shipping_address_city || notes.city;
+                    const state = shipping.state || notes.shipping_address_state || notes.state;
+                    const pincode = shipping.pincode || notes.shipping_address_pincode || notes.pincode || notes.zipcode;
+
+                    if (street) order.address.street = street;
+                    if (city) order.address.city = city;
+                    if (state) order.address.state = state;
+                    if (pincode) order.address.pincode = pincode;
+
+                    order.markModified('address');
+                }
+
+                order.paymentStatus = 'completed';
+                order.orderStatus = 'processing';
+                order.notes = order.notes || {};
+                order.notes.razorpay_payment_id = razorpay_payment_id;
+                order.notes.payment_source = 'webhook';
+
+                await order.save();
+                await finalizeOrder(order);
+
+                console.log(`[RAZORPAY_WEBHOOK] Order ${order._id} successfully updated via webhook`);
+            } else if (!order) {
+                console.warn(`[RAZORPAY_WEBHOOK] Order not found for transactionId: ${razorpay_order_id}`);
+            }
+        } else if (event === 'payment.failed') {
+            const payment = payload.payment.entity;
+            const razorpay_order_id = payment.order_id;
+
+            const order = await Order.findOne({ transactionId: razorpay_order_id });
+            if (order && order.paymentStatus === 'pending') {
+                order.paymentStatus = 'failed';
+                order.notes = order.notes || {};
+                order.notes.failure_reason = payment.error_description || 'Unknown error';
+                await order.save();
+                console.log(`[RAZORPAY_WEBHOOK] Order ${order._id} marked as failed via webhook`);
+            }
+        }
+
+        res.json({ status: 'ok' });
+    } catch (error) {
+        console.error('Razorpay Webhook Error:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+};
+
+/**
  * Get Status of a Razorpay Order
  */
 exports.getRazorpayStatus = async (req, res) => {
@@ -581,6 +680,43 @@ exports.getRazorpayStatus = async (req, res) => {
         let status = 'pending';
         if (order.paymentStatus === 'completed') status = 'success';
         else if (order.paymentStatus === 'failed') status = 'failed';
+
+        // Proactive Sync: If status is still pending in DB, verify with Razorpay API directly
+        if (status === 'pending') {
+            try {
+                const rpOrder = await razorpay.orders.fetch(orderId);
+                const payments = await razorpay.orders.fetchPayments(orderId);
+
+                const capturedPayment = payments.items.find(p => p.status === 'captured');
+
+                if (capturedPayment) {
+                    console.log(`[RAZORPAY_SYNC] Found captured payment ${capturedPayment.id} for pending order ${order._id}. Syncing...`);
+
+                    order.paymentStatus = 'completed';
+                    order.orderStatus = 'processing';
+                    order.notes = order.notes || {};
+                    order.notes.razorpay_payment_id = capturedPayment.id;
+                    order.notes.payment_source = 'api_sync';
+
+                    // Sync customer details if missing
+                    if (capturedPayment.email && (!order.email || order.email.includes('guest'))) order.email = capturedPayment.email;
+                    if (capturedPayment.contact && (!order.phone || order.phone === '0000000000')) order.phone = capturedPayment.contact;
+
+                    await order.save();
+                    await finalizeOrder(order);
+                    status = 'success';
+                } else if (rpOrder.status === 'paid') {
+                    // Sometimes payments list is slow, but order status is paid
+                    order.paymentStatus = 'completed';
+                    order.orderStatus = 'processing';
+                    await order.save();
+                    await finalizeOrder(order);
+                    status = 'success';
+                }
+            } catch (syncError) {
+                console.error('[RAZORPAY_SYNC] Failed to sync status with Razorpay API:', syncError.message);
+            }
+        }
 
         res.json({
             success: true,
