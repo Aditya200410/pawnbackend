@@ -185,11 +185,11 @@ app.use('/api/seller', sellerRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/data-page', require('./routes/dataPage'));
 
-// Direct Top-Level Mounts for Magic Checkout (Bypass any router weirdness)
+// Direct Top-Level Mounts for Magic Checkout (ROOT and /api paths)
 const razorpayController = require('./controllers/razorpayController');
-app.post(['*/razorpay/apply-promotion', '/razorpay/apply-promotion', '*/v1/magic_checkout/merchant/coupon/apply'], razorpayController.applyPromotion);
-app.post(['*/razorpay/get-promotions', '/razorpay/get-promotions', '*/v1/magic_checkout/merchant/promotions'], razorpayController.getPromotions);
-app.post(['*/razorpay/shipping-info', '/razorpay/shipping-info', '*/v1/magic_checkout/merchant/shipping-info'], razorpayController.getShippingInfo);
+app.post(['/razorpay/apply-promotion', '/api/razorpay/apply-promotion', '/v1/magic_checkout/merchant/coupon/apply', '/api/v1/magic_checkout/merchant/coupon/apply'], razorpayController.applyPromotion);
+app.post(['/razorpay/get-promotions', '/api/razorpay/get-promotions', '/v1/magic_checkout/merchant/promotions', '/api/v1/magic_checkout/merchant/promotions'], razorpayController.getPromotions);
+app.post(['/razorpay/shipping-info', '/api/razorpay/shipping-info', '/v1/magic_checkout/merchant/shipping-info', '/api/v1/magic_checkout/merchant/shipping-info'], razorpayController.getShippingInfo);
 
 app.use('/api/payment', paymentRoutes);
 app.use('/api/api/payment', paymentRoutes);

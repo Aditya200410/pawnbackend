@@ -4244,5 +4244,50 @@
     "updatedAt": "2025-11-30T18:32:12.596Z",
     "__v": 0,
     "id": "692c8dace21de8fa89cf157e"
+  },
+  {
+    "customerName": "aditya Kumar",
+    "email": "adityakumar@gmail.com",
+    "phone": "919114703231",
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "items": [
+      {
+        "productId": "69909ef02118cc326b047f19",
+        "name": "Bamboo Weave Storage Box with Lid - BA34",
+        "price": 498.99,
+        "quantity": 1,
+        "image": "uploads/products/product-1771085552013-226373049.jpeg"
+      },
+      {
+        "productId": "6866a73ac03cea25520a39ab",
+        "name": "Elegant Wooden Pen Stand – Artistry Meets Utility - WC34",
+        "price": 189,
+        "quantity": 1,
+        "image": "uploads/products/product-1771744192060-973866859.jpeg"
+      }
+    ],
+    "totalAmount": 687.99,
+    "paymentMethod": "cod",
+    "orderType": "product_order",
+    "orderStatus": "processing",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 687.99,
+    "sellerToken": null,
+    "agentCode": null,
+    "commission": 0,
+    "codExtraCharge": 0,
+    "_id": "69aa07dfdcbca6bf03987411",
+    "createdAt": "2026-03-05T22:46:55.807Z",
+    "updatedAt": "2026-03-05T22:46:55.807Z",
+    "orderNumber": "RC-50815807258",
+    "__v": 0,
+    "id": "69aa07dfdcbca6bf03987411"
   }
 ]

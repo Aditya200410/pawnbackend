@@ -461,6 +461,7 @@ exports.getPromotions = async (req, res) => {
                 // ALWAYS use fixed_amount for list to avoid modal calculation bugs
                 value_type: 'fixed_amount',
                 offer_value: coupon.discountType === 'percentage' ? 0 : (coupon.discountValue * 100),
+                offer_amount: coupon.discountType === 'percentage' ? 0 : (coupon.discountValue * 100), // redundant Field for 1.4/1.5 mix
                 type: 'coupon'
             }));
 
@@ -477,15 +478,16 @@ exports.getPromotions = async (req, res) => {
  */
 exports.applyPromotion = async (req, res) => {
     // START REQUEST LOGGING
-    const razorpay_order_id = req.body.order_id || req.body.razorpay_order_id || req.query.order_id;
-    const session_token = req.body.session_token || req.headers['x-session-token'];
-    const code = (req.body.code || req.body.coupon_code || req.body.promotion_code || '').toString().trim().toUpperCase();
+    const body = req.body || {};
+    const razorpay_order_id = body.order_id || body.razorpay_order_id || req.query.order_id;
+    const session_token = body.session_token || req.headers['x-session-token'];
+    const code = (body.code || body.coupon_code || body.promotion_code || '').toString().trim().toUpperCase();
 
     console.log(`[MC_APPLY_START] Order: ${razorpay_order_id} | Session: ${session_token} | Code: ${code}`);
-    console.log(`[MC_APPLY_BODY] Full Body: ${JSON.stringify(req.body)}`);
+    console.log(`[MC_APPLY_BODY] Full Body: ${JSON.stringify(body)}`);
 
     try {
-        let amount_in_paise = Number(req.body.order_amount || req.body.amount || req.body.total_amount || 0);
+        let amount_in_paise = Number(body.order_amount || body.amount || body.total_amount || 0);
 
         if (!code) {
             return res.status(200).json({
@@ -569,14 +571,21 @@ exports.applyPromotion = async (req, res) => {
 
         const finalDiscount = Math.max(0, Math.round(discount) || 0);
 
-        // 5. Spec 1.5 Success Response
+        // 5. Spec 1.4/1.5 Success Response
+        console.log(`[MC_APPLY_SUCCESS] Discount: ${finalDiscount} for Code: ${code}`);
+
         return res.status(200).json({
+            status: 'success',
+            amount: finalDiscount, // For 1.4
+            offer_amount: finalDiscount, // For 1.5 early spec
             promotion: {
                 id: coupon._id.toString(),
                 code: coupon.code,
-                offer_value: finalDiscount,
-                value_type: 'fixed_amount', // Always return fixed_amount for final discount for stability
-                type: 'coupon'
+                offer_value: finalDiscount, // For 1.5 latest spec
+                offer_amount: finalDiscount, // For 1.5 older spec
+                value_type: 'fixed_amount',
+                type: 'coupon',
+                status: 'applied' // Spec 1.5 requirement
             }
         });
 
