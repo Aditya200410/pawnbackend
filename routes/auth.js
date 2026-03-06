@@ -217,35 +217,41 @@ router.post('/register', async (req, res) => {
 
 // POST /otp-login
 router.post('/otp-login', async (req, res) => {
-  const { identifier, email } = req.body;
+  const { identifier, email: providedEmail } = req.body;
   if (!identifier) {
     return res.status(400).json({ message: 'Email or phone is required' });
   }
   try {
     let user;
     const emailPattern = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
     if (emailPattern.test(identifier)) {
       user = await User.findOne({ email: identifier });
     } else {
-      user = await User.findOne({ phone: identifier });
-      if (!user && !identifier.startsWith('91')) {
-        // Try with 91 prefix if not already there
-        user = await User.findOne({ phone: '91' + identifier });
+      // It's a phone number
+      let cleanPhone = identifier;
+      if (!identifier.startsWith('91') && identifier.length === 10) {
+        cleanPhone = '91' + identifier;
+      }
+      user = await User.findOne({ phone: cleanPhone });
+
+      if (!user) {
+        // Create new user if not found - automatic signup
+        user = new User({
+          phone: cleanPhone,
+          name: 'User ' + cleanPhone.slice(-4),
+          email: providedEmail || undefined // Use provided email if any, else undefined for sparse index
+        });
+        await user.save();
+        console.log(`Auto-created user for phone: ${cleanPhone}`);
       }
     }
 
     if (!user) {
-      return res.status(404).json({ message: 'No account found. Please sign up.' });
+      return res.status(404).json({ message: 'Could not find or create user.' });
     }
 
-    // If both are provided, ensure they match for extra security
-    if (email && user.email !== email && user.phone !== identifier) {
-      // This check is a bit tricky, but basically if they provided an email 
-      // that doesn't match the user found by phone, we should probably warn them.
-      // However, let's keep it simple for now as requested.
-    }
-
-    const token = jwt.sign({ id: user._id, email: user.email }, JWT_SECRET, { expiresIn: '24h' });
+    const token = jwt.sign({ id: user._id, email: user.email, phone: user.phone }, JWT_SECRET, { expiresIn: '24h' });
     res.json({ token, user: { id: user._id, name: user.name, email: user.email, phone: user.phone } });
   } catch (err) {
     console.error('OTP Login error:', err);
