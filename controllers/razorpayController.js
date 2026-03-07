@@ -1,5 +1,6 @@
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
+const { autoLoginUser } = require('../utils/authHelper');
 const Order = require('../models/Order');
 const PendingRegistration = require('../models/PendingRegistration');
 const Seller = require('../models/Seller');
@@ -369,6 +370,19 @@ exports.verifySignature = async (req, res) => {
 
                 // Finalize Order (stock, email, etc.)
                 await finalizeOrder(order);
+
+                // Auto-login or create account for the customer
+                const authData = await autoLoginUser({
+                    email: order.email,
+                    phone: order.phone,
+                    customerName: order.customerName
+                });
+
+                return res.json({
+                    success: true,
+                    message: 'Payment verified successfully',
+                    auth: authData
+                });
             }
 
             res.json({ success: true, message: 'Payment verified successfully' });
@@ -733,10 +747,20 @@ exports.getRazorpayStatus = async (req, res) => {
             }
         }
 
+        let authData = null;
+        if (status === 'success') {
+            authData = await autoLoginUser({
+                email: order.email,
+                phone: order.phone,
+                customerName: order.customerName
+            });
+        }
+
         res.json({
             success: true,
             status,
-            data: order
+            data: order,
+            auth: authData
         });
     } catch (error) {
         console.error('Razorpay Status Error:', error);

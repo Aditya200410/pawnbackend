@@ -1,5 +1,6 @@
 const axios = require('axios');
 const crypto = require('crypto');
+const { autoLoginUser } = require('../utils/authHelper');
 require('dotenv').config();
 const Order = require('../models/Order');
 const { sendOrderConfirmationEmail } = require('./orderController');
@@ -456,6 +457,15 @@ exports.getPhonePeStatus = async (req, res) => {
         }
       }
 
+      let authData = null;
+      if (isCompleted) {
+        authData = await autoLoginUser({
+          email: response.data?.metaInfo?.udf2 || (response.data?.metaInfo?.email) || undefined,
+          phone: response.data?.metaInfo?.udf3 || (response.data?.metaInfo?.phone) || undefined,
+          customerName: response.data?.metaInfo?.udf1 || (response.data?.metaInfo?.customerName) || 'User'
+        });
+      }
+
       return res.json({
         success: isCompleted,
         data: {
@@ -469,6 +479,7 @@ exports.getPhonePeStatus = async (req, res) => {
           detailedErrorCode: response.data.detailedErrorCode,
           errorContext: response.data.errorContext
         },
+        auth: authData,
         message: isCompleted ? 'Payment completed' : (response.data.state === 'FAILED' ? 'Payment failed' : 'Payment pending')
       });
     } else if (response.data && response.data.success === false) {

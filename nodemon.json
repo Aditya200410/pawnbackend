@@ -1,0 +1,10 @@
+{
+    "ignore": [
+        "**/data/*.json",
+        "**/data/orders.json",
+        "data/*",
+        "public/uploads/*",
+        "node_modules/*"
+    ],
+    "delay": "1"
+}

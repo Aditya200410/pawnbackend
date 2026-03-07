@@ -80,13 +80,15 @@ router.put("/:id/status", authenticateToken, isAdmin, async (req, res) => {
       return res.status(404).json({ success: false, message: 'Order not found' });
     }
 
-    // Update in JSON file
+    // Update in JSON file (Commented out to prevent nodemon restart)
+    /*
     const orders = readOrders();
     const orderIndex = orders.findIndex(order => order._id.toString() === id);
     if (orderIndex !== -1) {
       orders[orderIndex] = updatedOrder.toObject({ virtuals: true });
       writeOrders(orders);
     }
+    */
 
     // Send status update email (non-blocking)
     sendOrderStatusUpdateEmail(updatedOrder).catch(err => console.error('Order status update email error:', err));
@@ -136,13 +138,15 @@ router.put("/:id", authenticateToken, isAdmin, async (req, res) => {
       return res.status(404).json({ success: false, message: 'Order not found' });
     }
 
-    // Update in JSON file
+    // Update in JSON file (Commented out to prevent nodemon restart)
+    /*
     const orders = readOrders();
     const orderIndex = orders.findIndex(order => order._id.toString() === id);
     if (orderIndex !== -1) {
       orders[orderIndex] = updatedOrder.toObject({ virtuals: true });
       writeOrders(orders);
     }
+    */
 
     res.json({ success: true, order: updatedOrder });
   } catch (error) {

@@ -244,6 +244,11 @@ router.post('/otp-login', async (req, res) => {
         });
         await user.save();
         console.log(`Auto-created user for phone: ${cleanPhone}`);
+      } else if (providedEmail && !user.email) {
+        // Update email for existing user if they don't have one
+        user.email = providedEmail;
+        await user.save();
+        console.log(`Updated email for existing user ${cleanPhone}: ${providedEmail}`);
       }
     }
 

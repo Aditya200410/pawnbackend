@@ -4342,5 +4342,694 @@
     "orderNumber": "RC-87059471241",
     "__v": 0,
     "id": "69ac1c13ee42d86ec42ec6b2"
+  },
+  {
+    "customerName": "aditya Kumar",
+    "email": "adityakkkk@gmail.com",
+    "phone": "9876543210",
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "items": [
+      {
+        "productId": "6990a3a52118cc326b048010",
+        "name": "Sunbeam Barrel Hanging Lamp - BA37",
+        "price": 499,
+        "quantity": 1,
+        "image": "uploads/products/product-1771086756883-87142582.jpeg"
+      }
+    ],
+    "totalAmount": 449.1,
+    "paymentMethod": "cod",
+    "orderType": "product_order",
+    "orderStatus": "processing",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 449.1,
+    "sellerToken": null,
+    "agentCode": null,
+    "commission": 0,
+    "codExtraCharge": 0,
+    "couponCode": "START",
+    "_id": "69ac275fe057cf10cfe3f566",
+    "createdAt": "2026-03-07T13:25:51.387Z",
+    "updatedAt": "2026-03-07T13:25:51.387Z",
+    "orderNumber": "RC-89951388948",
+    "__v": 0,
+    "id": "69ac275fe057cf10cfe3f566"
+  },
+  {
+    "customerName": "aditya Kumar",
+    "email": "adityakkkk@gmail.com",
+    "phone": "9876543210",
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "items": [
+      {
+        "productId": "6990a3a52118cc326b048010",
+        "name": "Sunbeam Barrel Hanging Lamp - BA37",
+        "price": 499,
+        "quantity": 1,
+        "image": "uploads/products/product-1771086756883-87142582.jpeg"
+      }
+    ],
+    "totalAmount": 449.1,
+    "paymentMethod": "cod",
+    "orderType": "product_order",
+    "orderStatus": "processing",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 449.1,
+    "sellerToken": null,
+    "agentCode": null,
+    "commission": 0,
+    "codExtraCharge": 0,
+    "couponCode": "START",
+    "_id": "69ac276783a35ba22d559109",
+    "createdAt": "2026-03-07T13:25:59.469Z",
+    "updatedAt": "2026-03-07T13:25:59.469Z",
+    "orderNumber": "RC-89959470674",
+    "__v": 0,
+    "id": "69ac276783a35ba22d559109"
+  },
+  {
+    "customerName": "aditya Kumar",
+    "email": "adityakkkk@gmail.com",
+    "phone": "9876543210",
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "items": [
+      {
+        "productId": "6990a3a52118cc326b048010",
+        "name": "Sunbeam Barrel Hanging Lamp - BA37",
+        "price": 499,
+        "quantity": 1,
+        "image": "uploads/products/product-1771086756883-87142582.jpeg"
+      }
+    ],
+    "totalAmount": 449.1,
+    "paymentMethod": "cod",
+    "orderType": "product_order",
+    "orderStatus": "processing",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 449.1,
+    "sellerToken": null,
+    "agentCode": null,
+    "commission": 0,
+    "codExtraCharge": 0,
+    "couponCode": "START",
+    "_id": "69ac276a12e764a60d497246",
+    "createdAt": "2026-03-07T13:26:02.478Z",
+    "updatedAt": "2026-03-07T13:26:02.478Z",
+    "orderNumber": "RC-89962479444",
+    "__v": 0,
+    "id": "69ac276a12e764a60d497246"
+  },
+  {
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "9876543210",
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "items": [
+      {
+        "productId": "69a71fcd72367df559531de2",
+        "name": "test Product",
+        "price": 1,
+        "quantity": 1,
+        "image": "uploads/products/product-1772560333128-302420780.jpg"
+      }
+    ],
+    "totalAmount": 0.9,
+    "paymentMethod": "cod",
+    "orderType": "product_order",
+    "orderStatus": "processing",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 0.9,
+    "sellerToken": null,
+    "agentCode": null,
+    "commission": 0,
+    "codExtraCharge": 0,
+    "couponCode": "START",
+    "_id": "69ac279cb65866de88c5a2e9",
+    "createdAt": "2026-03-07T13:26:52.250Z",
+    "updatedAt": "2026-03-07T13:26:52.250Z",
+    "orderNumber": "RC-90012251011",
+    "__v": 0,
+    "id": "69ac279cb65866de88c5a2e9"
+  },
+  {
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "9876543210",
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "items": [
+      {
+        "productId": "69a71fcd72367df559531de2",
+        "name": "test Product",
+        "price": 1,
+        "quantity": 1,
+        "image": "uploads/products/product-1772560333128-302420780.jpg"
+      }
+    ],
+    "totalAmount": 0.9,
+    "paymentMethod": "cod",
+    "orderType": "product_order",
+    "orderStatus": "processing",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 0.9,
+    "sellerToken": null,
+    "agentCode": null,
+    "commission": 0,
+    "codExtraCharge": 0,
+    "couponCode": "START",
+    "_id": "69ac279ef2877bf83bf7364f",
+    "createdAt": "2026-03-07T13:26:54.956Z",
+    "updatedAt": "2026-03-07T13:26:54.956Z",
+    "orderNumber": "RC-90014964098",
+    "__v": 0,
+    "id": "69ac279ef2877bf83bf7364f"
+  },
+  {
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "9876543210",
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "items": [
+      {
+        "productId": "69a71fcd72367df559531de2",
+        "name": "test Product",
+        "price": 1,
+        "quantity": 1,
+        "image": "uploads/products/product-1772560333128-302420780.jpg"
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "cod",
+    "orderType": "product_order",
+    "orderStatus": "processing",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 1,
+    "sellerToken": null,
+    "agentCode": null,
+    "commission": 0,
+    "codExtraCharge": 0,
+    "_id": "69ac2862cc7856b0bcdf316d",
+    "createdAt": "2026-03-07T13:30:10.904Z",
+    "updatedAt": "2026-03-07T13:30:10.904Z",
+    "orderNumber": "RC-90210906461",
+    "__v": 0,
+    "id": "69ac2862cc7856b0bcdf316d"
+  },
+  {
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "9876543210",
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "items": [
+      {
+        "productId": "69a71fcd72367df559531de2",
+        "name": "test Product",
+        "price": 1,
+        "quantity": 1,
+        "image": "uploads/products/product-1772560333128-302420780.jpg"
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "cod",
+    "orderType": "product_order",
+    "orderStatus": "processing",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 1,
+    "sellerToken": null,
+    "agentCode": null,
+    "commission": 0,
+    "codExtraCharge": 0,
+    "_id": "69ac2865e137731b3eebd709",
+    "createdAt": "2026-03-07T13:30:13.935Z",
+    "updatedAt": "2026-03-07T13:30:13.935Z",
+    "orderNumber": "RC-90213936463",
+    "__v": 0,
+    "id": "69ac2865e137731b3eebd709"
+  },
+  {
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "9876543210",
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "items": [
+      {
+        "productId": "69a71fcd72367df559531de2",
+        "name": "test Product",
+        "price": 1,
+        "quantity": 1,
+        "image": "uploads/products/product-1772560333128-302420780.jpg"
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "cod",
+    "orderType": "product_order",
+    "orderStatus": "processing",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 1,
+    "sellerToken": null,
+    "agentCode": null,
+    "commission": 0,
+    "codExtraCharge": 0,
+    "_id": "69ac286cae16d74af948358e",
+    "createdAt": "2026-03-07T13:30:20.651Z",
+    "updatedAt": "2026-03-07T13:30:20.651Z",
+    "orderNumber": "RC-90220652934",
+    "__v": 0,
+    "id": "69ac286cae16d74af948358e"
+  },
+  {
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "9876543210",
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "items": [
+      {
+        "productId": "69a71fcd72367df559531de2",
+        "name": "test Product",
+        "price": 1,
+        "quantity": 1,
+        "image": "uploads/products/product-1772560333128-302420780.jpg"
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "cod",
+    "orderType": "product_order",
+    "orderStatus": "processing",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 1,
+    "sellerToken": null,
+    "agentCode": null,
+    "commission": 0,
+    "codExtraCharge": 0,
+    "_id": "69ac28704635a117b466bd65",
+    "createdAt": "2026-03-07T13:30:24.469Z",
+    "updatedAt": "2026-03-07T13:30:24.469Z",
+    "orderNumber": "RC-90224470313",
+    "__v": 0,
+    "id": "69ac28704635a117b466bd65"
+  },
+  {
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "9876543210",
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "items": [
+      {
+        "productId": "69a71fcd72367df559531de2",
+        "name": "test Product",
+        "price": 1,
+        "quantity": 1,
+        "image": "uploads/products/product-1772560333128-302420780.jpg"
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "cod",
+    "orderType": "product_order",
+    "orderStatus": "processing",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 1,
+    "sellerToken": null,
+    "agentCode": null,
+    "commission": 0,
+    "codExtraCharge": 0,
+    "_id": "69ac28b16a7fe69c94e2d58d",
+    "createdAt": "2026-03-07T13:31:29.560Z",
+    "updatedAt": "2026-03-07T13:31:29.560Z",
+    "orderNumber": "RC-90289561830",
+    "__v": 0,
+    "id": "69ac28b16a7fe69c94e2d58d"
+  },
+  {
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "9876543210",
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "items": [
+      {
+        "productId": "69a71fcd72367df559531de2",
+        "name": "test Product",
+        "price": 1,
+        "quantity": 1,
+        "image": "uploads/products/product-1772560333128-302420780.jpg"
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "cod",
+    "orderType": "product_order",
+    "orderStatus": "processing",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 1,
+    "sellerToken": null,
+    "agentCode": null,
+    "commission": 0,
+    "codExtraCharge": 0,
+    "_id": "69ac28b40ca2a88443663215",
+    "createdAt": "2026-03-07T13:31:32.467Z",
+    "updatedAt": "2026-03-07T13:31:32.467Z",
+    "orderNumber": "RC-90292468731",
+    "__v": 0,
+    "id": "69ac28b40ca2a88443663215"
+  },
+  {
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "9876543210",
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "items": [
+      {
+        "productId": "69a71fcd72367df559531de2",
+        "name": "test Product",
+        "price": 1,
+        "quantity": 1,
+        "image": "uploads/products/product-1772560333128-302420780.jpg"
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "cod",
+    "orderType": "product_order",
+    "orderStatus": "processing",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 1,
+    "sellerToken": null,
+    "agentCode": null,
+    "commission": 0,
+    "codExtraCharge": 0,
+    "_id": "69ac294164832a34ee02be30",
+    "createdAt": "2026-03-07T13:33:53.856Z",
+    "updatedAt": "2026-03-07T13:33:53.856Z",
+    "orderNumber": "RC-90433857699",
+    "__v": 0,
+    "id": "69ac294164832a34ee02be30"
+  },
+  {
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "9876543210",
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "items": [
+      {
+        "productId": "69a71fcd72367df559531de2",
+        "name": "test Product",
+        "price": 1,
+        "quantity": 1,
+        "image": "uploads/products/product-1772560333128-302420780.jpg"
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "cod",
+    "orderType": "product_order",
+    "orderStatus": "processing",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 1,
+    "sellerToken": null,
+    "agentCode": null,
+    "commission": 0,
+    "codExtraCharge": 0,
+    "_id": "69ac2944572cb5416915603f",
+    "createdAt": "2026-03-07T13:33:56.601Z",
+    "updatedAt": "2026-03-07T13:33:56.601Z",
+    "orderNumber": "RC-90436602371",
+    "__v": 0,
+    "id": "69ac2944572cb5416915603f"
+  },
+  {
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "9876543210",
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "items": [
+      {
+        "productId": "69a71fcd72367df559531de2",
+        "name": "test Product",
+        "price": 1,
+        "quantity": 1,
+        "image": "uploads/products/product-1772560333128-302420780.jpg"
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "cod",
+    "orderType": "product_order",
+    "orderStatus": "processing",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 1,
+    "sellerToken": null,
+    "agentCode": null,
+    "commission": 0,
+    "codExtraCharge": 0,
+    "_id": "69ac2970610650c3a6f4cd92",
+    "createdAt": "2026-03-07T13:34:40.982Z",
+    "updatedAt": "2026-03-07T13:34:40.982Z",
+    "orderNumber": "RC-90480983096",
+    "__v": 0,
+    "id": "69ac2970610650c3a6f4cd92"
+  },
+  {
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "9876543210",
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "items": [
+      {
+        "productId": "69a71fcd72367df559531de2",
+        "name": "test Product",
+        "price": 1,
+        "quantity": 1,
+        "image": "uploads/products/product-1772560333128-302420780.jpg"
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "cod",
+    "orderType": "product_order",
+    "orderStatus": "processing",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 1,
+    "sellerToken": null,
+    "agentCode": null,
+    "commission": 0,
+    "codExtraCharge": 0,
+    "_id": "69ac2981e1e9a58055ae43d9",
+    "createdAt": "2026-03-07T13:34:57.980Z",
+    "updatedAt": "2026-03-07T13:34:57.980Z",
+    "orderNumber": "RC-90497981321",
+    "__v": 0,
+    "id": "69ac2981e1e9a58055ae43d9"
+  },
+  {
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "9876543210",
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "items": [
+      {
+        "productId": "69a71fcd72367df559531de2",
+        "name": "test Product",
+        "price": 1,
+        "quantity": 1,
+        "image": "uploads/products/product-1772560333128-302420780.jpg"
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "cod",
+    "orderType": "product_order",
+    "orderStatus": "processing",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 1,
+    "sellerToken": null,
+    "agentCode": null,
+    "commission": 0,
+    "codExtraCharge": 0,
+    "_id": "69ac298454eea9671d6be27f",
+    "createdAt": "2026-03-07T13:35:00.863Z",
+    "updatedAt": "2026-03-07T13:35:00.863Z",
+    "orderNumber": "RC-90500864627",
+    "__v": 0,
+    "id": "69ac298454eea9671d6be27f"
+  },
+  {
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "9876543210",
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "items": [
+      {
+        "productId": "69a71fcd72367df559531de2",
+        "name": "test Product",
+        "price": 1,
+        "quantity": 1,
+        "image": "uploads/products/product-1772560333128-302420780.jpg"
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "cod",
+    "orderType": "product_order",
+    "orderStatus": "processing",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 1,
+    "sellerToken": null,
+    "agentCode": null,
+    "commission": 0,
+    "codExtraCharge": 0,
+    "_id": "69ac2a371f3b7355e467fa42",
+    "createdAt": "2026-03-07T13:37:59.234Z",
+    "updatedAt": "2026-03-07T13:37:59.234Z",
+    "orderNumber": "RC-90679235108",
+    "__v": 0,
+    "id": "69ac2a371f3b7355e467fa42"
+  },
+  {
+    "customerName": "aditya Kumar",
+    "email": "adityakumar098k@gmail.com",
+    "phone": "9876543210",
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "items": [
+      {
+        "productId": "69a71fcd72367df559531de2",
+        "name": "test Product",
+        "price": 1,
+        "quantity": 1,
+        "image": "uploads/products/product-1772560333128-302420780.jpg"
+      }
+    ],
+    "totalAmount": 1,
+    "paymentMethod": "cod",
+    "orderType": "product_order",
+    "orderStatus": "processing",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 1,
+    "sellerToken": null,
+    "agentCode": null,
+    "commission": 0,
+    "codExtraCharge": 0,
+    "_id": "69ac2a3a8424348409651e87",
+    "createdAt": "2026-03-07T13:38:02.138Z",
+    "updatedAt": "2026-03-07T13:38:02.138Z",
+    "orderNumber": "RC-90682140814",
+    "__v": 0,
+    "id": "69ac2a3a8424348409651e87"
   }
 ]

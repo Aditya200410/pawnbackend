@@ -6,6 +6,7 @@ const ordersJsonPath = path.join(__dirname, '../data/orders.json');
 const Product = require('../models/Product');
 const commissionController = require('./commissionController');
 const nodemailer = require('nodemailer');
+const { autoLoginUser } = require('../utils/authHelper');
 
 // Setup nodemailer transporter (reuse config from auth.js)
 const transporter = nodemailer.createTransport({
@@ -216,17 +217,28 @@ const createOrder = async (req, res) => {
       }
     }
 
-    // Save to orders.json for admin
-    await appendOrderToJson(savedOrder);
+    // Save to orders.json for admin (Commented out to prevent nodemon restart loop)
+    // console.log('Appending to JSON...');
+    // await appendOrderToJson(savedOrder);
 
-    // Send order confirmation email (non-blocking)
+    console.log('Sending confirmation email...');
     sendOrderConfirmationEmail(savedOrder);
+
+    console.log('Auto-logging user...');
+    const authData = await autoLoginUser({
+      email,
+      phone,
+      customerName
+    });
+
+    console.log('Order creation complete, sending response.');
 
     res.status(201).json({
       success: true,
       message: 'Order created successfully!',
       order: savedOrder,
-      commission: seller ? { amount: commission, sellerName: seller.businessName } : null
+      commission: seller ? { amount: commission, sellerName: seller.businessName } : null,
+      auth: authData
     });
   } catch (error) {
     console.error('Error creating order:', error);
@@ -553,7 +565,8 @@ const requestReplacement = async (req, res) => {
 
     await order.save();
 
-    // Update JSON file too
+    // Update JSON file too (Commented out to prevent nodemon restart)
+    /*
     try {
       const ordersJsonPath = path.join(__dirname, '../data/orders.json');
       const data = await fs.readFile(ordersJsonPath, 'utf8');
@@ -566,6 +579,7 @@ const requestReplacement = async (req, res) => {
     } catch (err) {
       console.error('Failed to update orders.json for replacement:', err);
     }
+    */
 
     res.status(200).json({
       success: true,
@@ -582,6 +596,7 @@ module.exports = {
   createOrder,
   getOrdersByEmail,
   getOrderById,
+  sendOrderConfirmationEmail,
   sendOrderStatusUpdateEmail,
   requestReplacement,
 };
