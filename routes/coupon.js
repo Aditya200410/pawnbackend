@@ -10,6 +10,7 @@ router.put('/:id', authenticateToken, couponController.updateCoupon);
 router.delete('/:id', authenticateToken, couponController.deleteCoupon);
 
 // Public routes
+router.get('/public', couponController.getPublicCoupons);
 router.post('/validate', couponController.validateCoupon);
 router.post('/apply', couponController.applyCoupon);
 

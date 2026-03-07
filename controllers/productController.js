@@ -18,13 +18,81 @@ const getAllProducts = async (req, res) => {
 
     // Exclude heavy fields for the catalogue view to speed up initial load
     const products = await Product.find(query)
-      .select('name price regularPrice category subcategory item image images rating reviews inStock stock date')
-      .sort({ date: -1 });
+      .select('name price regularPrice category subcategory item image images rating reviews inStock stock date displayOrder')
+      .sort({ displayOrder: 1, date: -1 });
 
     res.json(products);
   } catch (error) {
     console.error('Error fetching products:', error);
     res.status(500).json({ message: "Error fetching products", error: error.message });
+  }
+};
+
+/**
+ * Reorder product (Move up or down)
+ */
+const reorderProduct = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { direction, section } = req.body; // 'up', 'down' and 'section' (all, featured, etc.)
+
+    const currentProduct = await Product.findById(id);
+    if (!currentProduct) return res.status(404).json({ message: "Product not found" });
+
+    // Determine filter query based on section
+    let query = {};
+    if (section === 'bestsellers') query = { isBestSeller: true };
+    else if (section === 'featured') query = { isFeatured: true };
+    else if (section === 'mostloved') query = { isMostLoved: true };
+
+    // Get products in this section sorted by displayOrder
+    const products = await Product.find(query).sort({ displayOrder: 1, date: -1 });
+    const currentIndex = products.findIndex(p => p._id.toString() === id);
+
+    if (currentIndex === -1) return res.status(404).json({ message: "Product not in current view" });
+
+    let targetIndex = -1;
+    if (direction === 'up' && currentIndex > 0) {
+      targetIndex = currentIndex - 1;
+    } else if (direction === 'down' && currentIndex < products.length - 1) {
+      targetIndex = currentIndex + 1;
+    }
+
+    if (targetIndex !== -1) {
+      const targetProduct = products[targetIndex];
+
+      // Swap displayOrder values
+      const currentOrder = currentProduct.displayOrder || 0;
+      const targetOrder = targetProduct.displayOrder || 0;
+
+      // If they have the same order (e.g., both 0), we need to normalize everyone first
+      if (currentOrder === targetOrder) {
+        // Normalize all products with sequential orders
+        for (let i = 0; i < products.length; i++) {
+          await Product.findByIdAndUpdate(products[i]._id, { displayOrder: i });
+        }
+        // Refetch and retry index
+        const updatedProducts = await Product.find(query).sort({ displayOrder: 1, date: -1 });
+        const newCurrentIndex = updatedProducts.findIndex(p => p._id.toString() === id);
+        let newTargetIndex = direction === 'up' ? newCurrentIndex - 1 : newCurrentIndex + 1;
+
+        const p1 = updatedProducts[newCurrentIndex];
+        const p2 = updatedProducts[newTargetIndex];
+
+        await Product.findByIdAndUpdate(p1._id, { displayOrder: p2.displayOrder });
+        await Product.findByIdAndUpdate(p2._id, { displayOrder: p1.displayOrder });
+      } else {
+        await Product.findByIdAndUpdate(currentProduct._id, { displayOrder: targetOrder });
+        await Product.findByIdAndUpdate(targetProduct._id, { displayOrder: currentOrder });
+      }
+
+      return res.json({ message: "Reordered successfully" });
+    }
+
+    res.status(400).json({ message: "Cannot move in that direction" });
+  } catch (error) {
+    console.error('Error reordering product:', error);
+    res.status(500).json({ message: "Error reordering product", error: error.message });
   }
 };
 
@@ -49,8 +117,8 @@ const getProductsBySection = async (req, res) => {
     }
 
     const products = await Product.find(query)
-      .select('name price regularPrice category subcategory item image images rating reviews inStock stock date')
-      .sort({ date: -1 });
+      .select('name price regularPrice category subcategory item image images rating reviews inStock stock date displayOrder')
+      .sort({ displayOrder: 1, date: -1 });
 
     res.json(products);
   } catch (error) {
@@ -392,5 +460,6 @@ module.exports = {
   createProductWithFiles,
   updateProductWithFiles,
   updateProductSections,
+  reorderProduct,
   deleteProduct
 }; 

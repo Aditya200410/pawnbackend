@@ -4289,5 +4289,58 @@
     "orderNumber": "RC-50815807258",
     "__v": 0,
     "id": "69aa07dfdcbca6bf03987411"
+  },
+  {
+    "customerName": "aditya Kumar",
+    "email": "adityakumar@gmail.com",
+    "phone": "919114703231",
+    "address": {
+      "street": "Burla",
+      "city": "Sambalpur",
+      "state": "Odisha",
+      "pincode": "768018",
+      "country": "India"
+    },
+    "items": [
+      {
+        "productId": "686807f4f80824a9e3487ed4",
+        "name": "Handcrafted Wooden Miniature Hut Showpiece (Mini House) - WC16",
+        "price": 199,
+        "quantity": 1,
+        "image": "uploads/products/product-1771741664579-328898226.jpeg"
+      },
+      {
+        "productId": "697630df31aaee41fac32391",
+        "name": "HANDCRAFTED DOKRA EARRINGS- DURGA MAA",
+        "price": 99,
+        "quantity": 1,
+        "image": "uploads/products/product-1769353438938-332525399.jpeg"
+      },
+      {
+        "productId": "6990a1de2118cc326b047fc9",
+        "name": "Bamboo Utility Tray - BA36",
+        "price": 499,
+        "quantity": 1,
+        "image": "uploads/products/product-1771086302604-962116804.jpeg"
+      }
+    ],
+    "totalAmount": 717.3,
+    "paymentMethod": "cod",
+    "orderType": "product_order",
+    "orderStatus": "processing",
+    "paymentStatus": "pending",
+    "upfrontAmount": 0,
+    "remainingAmount": 717.3,
+    "sellerToken": "6a6dd776-16ae-49c8-84cf-c038e83adfc3",
+    "agentCode": "ADITYAKUMAR032",
+    "commission": 0,
+    "codExtraCharge": 0,
+    "couponCode": "RIKO10",
+    "_id": "69ac1c13ee42d86ec42ec6b2",
+    "createdAt": "2026-03-07T12:37:39.471Z",
+    "updatedAt": "2026-03-07T12:37:39.471Z",
+    "orderNumber": "RC-87059471241",
+    "__v": 0,
+    "id": "69ac1c13ee42d86ec42ec6b2"
   }
 ]

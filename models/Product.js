@@ -93,6 +93,10 @@ const productSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  displayOrder: {
+    type: Number,
+    default: 0
+  },
   date: {
     type: Date,
     default: Date.now
@@ -100,5 +104,5 @@ const productSchema = new mongoose.Schema({
 });
 
 // Create and export the Product model
-const Product = mongoose.model('Product', productSchema);
+const Product = mongoose.models.Product || mongoose.model('Product', productSchema);
 module.exports = Product; 

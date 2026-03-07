@@ -9,6 +9,7 @@ const {
   createProductWithFiles,
   updateProductWithFiles,
   updateProductSections,
+  reorderProduct,
   deleteProduct,
   getProductsBySection
 } = require('../controllers/productController');
@@ -70,6 +71,7 @@ router.get("/:id", getProduct);
 router.post("/", authenticateToken, isAdmin, handleUpload, createProductWithFiles);
 router.put("/:id", authenticateToken, isAdmin, handleUpload, updateProductWithFiles);
 router.patch("/:id/sections", authenticateToken, isAdmin, updateProductSections);
+router.patch("/:id/reorder", authenticateToken, isAdmin, reorderProduct);
 router.delete("/:id", authenticateToken, isAdmin, deleteProduct);
 
 module.exports = router;

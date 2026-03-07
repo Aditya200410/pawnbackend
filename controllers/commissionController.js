@@ -313,6 +313,8 @@ exports.createCommissionEntry = async (orderId, sellerId, orderAmount, commissio
     let sellerCommissionAmount = 0;
     let agentCommissionAmount = 0;
 
+    const firstProductName = order.items && order.items.length > 0 ? order.items[0].name : '';
+
     if (agentId) {
       // Independent Commissions: Both Agent and Seller get their full rates
       agentCommissionAmount = orderAmount * agentRate;
@@ -322,7 +324,6 @@ exports.createCommissionEntry = async (orderId, sellerId, orderAmount, commissio
       agentCommissionAmount = Math.round(agentCommissionAmount / 10) * 10;
       sellerCommissionAmount = Math.round(sellerCommissionAmount / 10) * 10;
 
-      const firstProductName = order.items && order.items.length > 0 ? order.items[0].name : '';
       const description = firstProductName
         ? `Commission earned from: ${firstProductName} (#${order.orderNumber || orderId})`
         : `Commission earned from order #${order.orderNumber || orderId}`;

@@ -14,6 +14,29 @@ exports.getAllCoupons = async (req, res) => {
 };
 
 /**
+ * Get public coupons (Active and within validity period)
+ */
+exports.getPublicCoupons = async (req, res) => {
+  try {
+    const coupons = await Coupon.find({
+      isActive: true,
+      startDate: { $lte: new Date() },
+      endDate: { $gte: new Date(new Date().setHours(0, 0, 0, 0)) }
+    }).sort('-createdAt');
+
+    // Filter out coupons that have reached their usage limit
+    const validCoupons = coupons.filter(coupon =>
+      coupon.usageLimit === null || coupon.usedCount < coupon.usageLimit
+    );
+
+    res.json(validCoupons);
+  } catch (error) {
+    console.error('Error fetching public coupons:', error);
+    res.status(500).json({ message: "Error fetching coupons", error: error.message });
+  }
+};
+
+/**
  * Create new coupon
  */
 exports.createCoupon = async (req, res) => {

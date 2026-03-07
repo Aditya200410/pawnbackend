@@ -53,6 +53,8 @@ const upsertSetting = async (req, res) => {
       processedValue = value === '' || value === null || value === undefined ? 39 : Number(value);
     } else if (key === 'seller_commission_percentage' || key === 'agent_commission_percentage') {
       processedValue = value === '' || value === null || value === undefined ? 0 : Number(value);
+    } else if (key === 'cod_enabled') {
+      processedValue = (value === '1' || value === 1 || value === true || value === 'true') ? 1 : 0;
     }
 
     // Use findOneAndUpdate with upsert to create or update
@@ -116,12 +118,17 @@ const initializeDefaultSettings = async () => {
       {
         key: 'seller_commission_percentage',
         value: 30,
-        description: 'Percentage of sales taken as commission from sellers'
+        description: 'Percentage of sales taken as commission from distributors'
       },
       {
         key: 'agent_commission_percentage',
         value: 10,
-        description: 'Percentage of sales given as commission to agents'
+        description: 'Percentage of sales given as commission to sellers'
+      },
+      {
+        key: 'cod_enabled',
+        value: 1,
+        description: 'Enable or disable Cash on Delivery as a payment option globally'
       },
       {
         key: 'distribution_plans',
@@ -291,6 +298,29 @@ const getDistributionPlans = async (req, res) => {
   }
 };
 
+// Get COD enabled status (public endpoint)
+const getCodEnabledStatus = async (req, res) => {
+  try {
+    const setting = await Settings.findOne({ key: 'cod_enabled' });
+    let isEnabled = true; // Default to true
+
+    if (setting) {
+      isEnabled = setting.value == 1;
+    }
+
+    res.status(200).json({
+      success: true,
+      isEnabled: isEnabled
+    });
+  } catch (error) {
+    console.error('Error fetching COD status:', error);
+    res.status(200).json({
+      success: true,
+      isEnabled: true // Fallback to true
+    });
+  }
+};
+
 module.exports = {
   getAllSettings,
   getSettingByKey,
@@ -300,5 +330,6 @@ module.exports = {
   getCodUpfrontAmount,
   getSellerCommissionPercentage,
   getAgentCommissionPercentage,
-  getDistributionPlans
+  getDistributionPlans,
+  getCodEnabledStatus
 };

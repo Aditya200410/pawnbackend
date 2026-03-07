@@ -6,11 +6,15 @@ const Agent = require('../models/Agent');
 // Function to calculate available commission based on commission history and withdrawals
 exports.calculateAvailableCommission = async (sellerId) => {
   try {
-    // Get all confirmed commissions
+    // Get all confirmed commissions that are at least 7 days old
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
     const confirmedCommissions = await CommissionHistory.find({
       sellerId,
       status: 'confirmed',
-      type: 'earned'
+      type: 'earned',
+      createdAt: { $lte: sevenDaysAgo }
     });
 
     const totalConfirmedCommissions = confirmedCommissions.reduce((sum, commission) => sum + commission.amount, 0);
@@ -49,11 +53,15 @@ exports.calculateAvailableCommission = async (sellerId) => {
 // Function to calculate available commission for AGENTS
 exports.calculateAvailableAgentCommission = async (agentId) => {
   try {
-    // Get all confirmed commissions for agent
+    // Get all confirmed commissions for agent that are at least 7 days old
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
     const confirmedCommissions = await CommissionHistory.find({
       agentId,
       status: 'confirmed',
-      type: 'earned'
+      type: 'earned',
+      createdAt: { $lte: sevenDaysAgo }
     });
 
     const totalConfirmedCommissions = confirmedCommissions.reduce((sum, commission) => sum + commission.amount, 0);

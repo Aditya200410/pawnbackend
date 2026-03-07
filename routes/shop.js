@@ -8,8 +8,11 @@ const {
   updateProductWithFiles,
   deleteProduct,
   getProductsBySection,
-  updateProductSections
+  updateProductSections,
+  reorderProduct
 } = require('../controllers/productController');
+
+const { isAdmin, authenticateToken } = require('../middleware/auth');
 
 // Configure storage
 const fs = require('fs');
@@ -67,16 +70,19 @@ router.get("/section/:section", getProductsBySection);
 // Get single product
 router.get("/:id", getProduct);
 
-// Upload images and create product
-router.post("/upload", handleUpload, createProductWithFiles);
+// Upload images and create product (protected)
+router.post("/upload", authenticateToken, isAdmin, handleUpload, createProductWithFiles);
 
-// Update product by id
-router.put("/:id", handleUpload, updateProductWithFiles);
+// Update product by id (protected)
+router.put("/:id", authenticateToken, isAdmin, handleUpload, updateProductWithFiles);
 
-// Update product sections
-router.patch("/:id/sections", updateProductSections);
+// Update product sections (protected)
+router.patch("/:id/sections", authenticateToken, isAdmin, updateProductSections);
 
-// Delete product by id
-router.delete("/:id", deleteProduct);
+// Reorder product (protected)
+router.patch("/:id/reorder", authenticateToken, isAdmin, reorderProduct);
+
+// Delete product by id (protected)
+router.delete("/:id", authenticateToken, isAdmin, deleteProduct);
 
 module.exports = router;
