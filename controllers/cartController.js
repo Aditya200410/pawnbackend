@@ -19,41 +19,116 @@ const getProducts = () => {
 };
 
 // Helper function to find product across all collections
-const findProductById = async (productId) => {
-  // Try to find in regular products first
-  let product = await Product.findById(productId);
-  if (product) return product;
+const findProductById = async (id) => {
+  try {
+    // Try to find in regular products first
+    let product = await Product.findById(id);
+    if (product) return product;
 
-  // Try to find in best sellers
-  product = await BestSeller.findById(productId);
-  if (product) return product;
+    // Try to find in best sellers
+    product = await BestSeller.findById(id);
+    if (product) return product;
 
-  // Try to find in loved products
-  product = await Loved.findById(productId);
-  if (product) return product;
+    // Try to find in loved products
+    product = await Loved.findById(id);
+    if (product) return product;
 
-  // Try to find in featured products
-  product = await FeaturedProduct.findById(productId);
-  if (product) return product;
+    // Try to find in featured products
+    product = await FeaturedProduct.findById(id);
+    if (product) return product;
 
-  return null;
+    return null;
+  } catch (err) {
+    console.error("Error finding product by ID:", err);
+    return null;
+  }
+};
+
+/**
+ * MIGRATION HELPER:
+ * If the current userId is a MongoDB ObjectId, check for existing carts 
+ * under the user's email or phone and merge them into the current cart.
+ */
+const migrateAndMergeCart = async (currentCart, userIdString) => {
+  const User = require('../models/User');
+  const mongoose = require('mongoose');
+
+  if (!mongoose.Types.ObjectId.isValid(userIdString)) return currentCart;
+
+  try {
+    const user = await User.findById(userIdString);
+    if (!user) return currentCart;
+
+    const conditions = [];
+    if (user.email) conditions.push({ userId: user.email.toLowerCase() });
+    if (user.phone) conditions.push({ userId: user.phone });
+
+    if (conditions.length === 0) return currentCart;
+
+    // Find any "old" carts using email or phone
+    const oldCarts = await Cart.find({ $or: conditions });
+    if (!oldCarts || oldCarts.length === 0) return currentCart;
+
+    let targetCart = currentCart;
+    if (!targetCart) {
+      targetCart = new Cart({ userId: userIdString, items: [] });
+    }
+
+    let mergedAny = false;
+    for (const oldCart of oldCarts) {
+      if (oldCart.userId === userIdString) continue; // Already migrated or same
+
+      console.log(`Merging items from old cart (${oldCart.userId}) into new cart (${userIdString})`);
+      
+      // Merge items from old cart into target cart
+      for (const oldItem of oldCart.items) {
+        const existingItemIndex = targetCart.items.findIndex(
+          item => item.productId.toString() === oldItem.productId.toString()
+        );
+
+        if (existingItemIndex > -1) {
+          targetCart.items[existingItemIndex].quantity += oldItem.quantity;
+        } else {
+          targetCart.items.push(oldItem);
+        }
+      }
+      
+      mergedAny = true;
+      // Option 1: Delete old cart to avoid double migration
+      await Cart.findByIdAndDelete(oldCart._id);
+    }
+
+    if (mergedAny || !currentCart) {
+      await targetCart.save();
+    }
+    return targetCart;
+  } catch (err) {
+    console.error('Migration/Merge logic error:', err);
+    return currentCart;
+  }
 };
 
 // Get user's cart
 const getCart = async (req, res) => {
   try {
-    const userId = req.query.email;
-    if (!userId) {
-      return res.status(400).json({ success: false, message: 'Email is required' });
+    const identifier = req.query.email;
+    if (!identifier) {
+      return res.status(400).json({ success: false, message: 'Identifier is required' });
     }
+
+    const userId = identifier.toLowerCase();
     let cart = await Cart.findOne({ userId });
+
+    // Try to migrate or merge if it's a MongoDB ID
+    cart = await migrateAndMergeCart(cart, userId);
+
     if (!cart) {
-      // Create empty cart if it doesn't exist
+      // This should theoretically not happen now, but for safety:
       cart = new Cart({ userId, items: [] });
       await cart.save();
     }
 
-    // Fetch latest codAvailable for each item
+    // Fetch latest codAvailable for each item (as before)
     const itemsWithCod = await Promise.all(
       cart.items.map(async (item) => {
         const product = await findProductById(item.productId);
@@ -79,10 +154,11 @@ const getCart = async (req, res) => {
 // Add item to cart
 const addToCart = async (req, res) => {
   try {
-    const userId = req.body.email;
-    if (!userId) {
-      return res.status(400).json({ success: false, message: 'Email is required' });
+    const identifier = req.body.email;
+    if (!identifier) {
+      return res.status(400).json({ success: false, message: 'Identifier is required' });
     }
+    const userId = identifier.toLowerCase();
     const { productId, quantity = 1 } = req.body;
     
     // Find product in MongoDB
@@ -92,12 +168,16 @@ const addToCart = async (req, res) => {
     }
 
     let cart = await Cart.findOne({ userId });
+
+    // Migration/Merge check
+    cart = await migrateAndMergeCart(cart, userId);
+
     if (!cart) {
       // Create new cart if it doesn't exist
       cart = new Cart({ userId, items: [] });
     }
 
-    // Check if item already exists in cart
+    // Check if item already exists in cart (as before)
     const existingItemIndex = cart.items.findIndex(item => 
       item.productId.toString() === productId.toString()
     );
@@ -135,10 +215,11 @@ const addToCart = async (req, res) => {
 // Update item quantity
 const updateQuantity = async (req, res) => {
   try {
-    const userId = req.body.email;
-    if (!userId) {
+    const email = req.body.email;
+    if (!email) {
       return res.status(400).json({ success: false, message: 'Email is required' });
     }
+    const userId = email.toLowerCase();
     const { productId, quantity } = req.body;
     if (quantity < 1) {
       return res.status(400).json({ success: false, message: 'Quantity must be at least 1' });
@@ -178,10 +259,11 @@ const updateQuantity = async (req, res) => {
 // Remove item from cart
 const removeFromCart = async (req, res) => {
   try {
-    const userId = req.body.email;
-    if (!userId) {
+    const email = req.body.email;
+    if (!email) {
       return res.status(400).json({ success: false, message: 'Email is required' });
     }
+    const userId = email.toLowerCase();
     const { productId } = req.params;
     const cart = await Cart.findOne({ userId });
     if (!cart) {
@@ -207,10 +289,11 @@ const removeFromCart = async (req, res) => {
 // Clear cart
 const clearCart = async (req, res) => {
   try {
-    const userId = req.body.email;
-    if (!userId) {
+    const email = req.body.email;
+    if (!email) {
       return res.status(400).json({ success: false, message: 'Email is required' });
     }
+    const userId = email.toLowerCase();
     const cart = await Cart.findOne({ userId });
     if (!cart) {
       return res.status(404).json({ success: false, message: 'Cart not found' });
