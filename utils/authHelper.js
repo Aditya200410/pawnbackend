@@ -8,7 +8,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
  * Automatically finds or creates a user based on email or phone
  * and returns a signed JWT token and user data.
  */
-const autoLoginUser = async ({ email, phone, customerName }) => {
+const autoLoginUser = async ({ email, phone, customerName, address, city, state, zipCode, country }) => {
     try {
         let user;
 
@@ -34,6 +34,11 @@ const autoLoginUser = async ({ email, phone, customerName }) => {
                 email: email ? email.toLowerCase() : undefined,
                 phone: phone ? (phone.replace(/\D/g, '').length === 10 ? '91' + phone.replace(/\D/g, '') : phone.replace(/\D/g, '')) : undefined,
                 password: crypto.randomBytes(16).toString('hex'), // Random password for auto-created accounts
+                address: address || '',
+                city: city || '',
+                state: state || '',
+                zipCode: zipCode || '',
+                country: country || 'India',
             });
             user = await newUser.save();
             console.log(`Auto-created account for: ${email || phone}`);
@@ -55,6 +60,28 @@ const autoLoginUser = async ({ email, phone, customerName }) => {
 
             if ((!user.name || user.name === 'Valued Customer' || (user.name && user.name.startsWith('User '))) && customerName) {
                 user.name = String(customerName);
+                needsUpdate = true;
+            }
+
+            // Always update address if provided during order to keep it recent
+            if (address && address.trim() !== '') {
+                user.address = String(address);
+                needsUpdate = true;
+            }
+            if (city && city.trim() !== '') {
+                user.city = String(city);
+                needsUpdate = true;
+            }
+            if (state && state.trim() !== '') {
+                user.state = String(state);
+                needsUpdate = true;
+            }
+            if (zipCode && zipCode.trim() !== '') {
+                user.zipCode = String(zipCode);
+                needsUpdate = true;
+            }
+            if (country && country.trim() !== '') {
+                user.country = String(country);
                 needsUpdate = true;
             }
 

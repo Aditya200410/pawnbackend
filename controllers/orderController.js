@@ -228,7 +228,12 @@ const createOrder = async (req, res) => {
     const authData = await autoLoginUser({
       email,
       phone,
-      customerName
+      customerName,
+      address: addressObj.street,
+      city: addressObj.city,
+      state: addressObj.state,
+      zipCode: addressObj.pincode,
+      country: addressObj.country
     });
 
     console.log('Order creation complete, sending response.');

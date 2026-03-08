@@ -199,18 +199,23 @@ router.post('/register', async (req, res) => {
     return res.status(400).json({ message: 'Name, email, and phone are required' });
   }
   try {
-    const existingUser = await User.findOne({ $or: [{ email }, { phone }] });
+    const normalizedEmail = email.toLowerCase();
+    const existingUser = await User.findOne({ $or: [{ email: normalizedEmail }, { phone }] });
     if (existingUser) {
       return res.status(400).json({ message: 'Email or phone already registered' });
     }
     // Save user directly after OTP is verified
-    const user = new User({ name, email, password, phone });
+    const user = new User({ name, email: normalizedEmail, password, phone });
     await user.save();
     // Log in the user (issue JWT)
     const token = jwt.sign({ id: user._id, email: user.email }, JWT_SECRET, { expiresIn: '24h' });
-    return res.json({ message: 'Registration complete.', token, user: { id: user._id, name: user.name, email: user.email, phone: user.phone } });
+    return res.json({ message: 'Registration complete.', token, user: { id: user._id, name: user.name, email: user.email, phone: user.phone, address: user.address, city: user.city, state: user.state, zipCode: user.zipCode, country: user.country } });
   } catch (err) {
     console.error('Register error:', err);
+    if (err.code === 11000) {
+      const field = err.keyPattern ? Object.keys(err.keyPattern)[0] : 'record';
+      return res.status(400).json({ message: `${field.charAt(0).toUpperCase() + field.slice(1)} already exists.` });
+    }
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -218,37 +223,62 @@ router.post('/register', async (req, res) => {
 // POST /otp-login
 router.post('/otp-login', async (req, res) => {
   const { identifier, email: providedEmail } = req.body;
+  
   if (!identifier) {
     return res.status(400).json({ message: 'Email or phone is required' });
   }
+
   try {
     let user;
     const emailPattern = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
     if (emailPattern.test(identifier)) {
-      user = await User.findOne({ email: identifier });
+      user = await User.findOne({ email: identifier.toLowerCase() });
     } else {
-      // It's a phone number
-      let cleanPhone = identifier;
-      if (!identifier.startsWith('91') && identifier.length === 10) {
-        cleanPhone = '91' + identifier;
+      // It's a phone number - Normalize it
+      let cleanPhone = identifier.replace(/\D/g, '');
+      if (cleanPhone.length === 10) {
+        cleanPhone = '91' + cleanPhone;
+      } else if (cleanPhone.length === 12 && cleanPhone.startsWith('91')) {
+        // already in correct format
+      } else if (cleanPhone.length > 10) {
+        // Handle cases like 09876543210 or other variations if they exist
+        if (cleanPhone.startsWith('0') && cleanPhone.length === 11) {
+          cleanPhone = '91' + cleanPhone.slice(1);
+        }
       }
+
       user = await User.findOne({ phone: cleanPhone });
 
       if (!user) {
-        // Create new user if not found - automatic signup
+        // Automatic Signup
+        // Check if provided email is already used by another account
+        if (providedEmail) {
+          const emailInUse = await User.findOne({ email: providedEmail.toLowerCase() });
+          if (emailInUse) {
+            return res.status(400).json({ 
+              message: 'This email is already associated with another phone number. Please login with that phone number or use a different email.' 
+            });
+          }
+        }
+
         user = new User({
           phone: cleanPhone,
           name: 'User ' + cleanPhone.slice(-4),
-          email: providedEmail || undefined // Use provided email if any, else undefined for sparse index
+          email: providedEmail ? providedEmail.toLowerCase() : undefined
         });
         await user.save();
         console.log(`Auto-created user for phone: ${cleanPhone}`);
       } else if (providedEmail && !user.email) {
         // Update email for existing user if they don't have one
-        user.email = providedEmail;
-        await user.save();
-        console.log(`Updated email for existing user ${cleanPhone}: ${providedEmail}`);
+        const emailInUse = await User.findOne({ email: providedEmail.toLowerCase() });
+        if (emailInUse) {
+          console.log(`Email ${providedEmail} is already taken. Skipping update for user ${cleanPhone}`);
+        } else {
+          user.email = providedEmail.toLowerCase();
+          await user.save();
+          console.log(`Updated email for existing user ${cleanPhone}: ${providedEmail}`);
+        }
       }
     }
 
@@ -256,11 +286,38 @@ router.post('/otp-login', async (req, res) => {
       return res.status(404).json({ message: 'Could not find or create user.' });
     }
 
-    const token = jwt.sign({ id: user._id, email: user.email, phone: user.phone }, JWT_SECRET, { expiresIn: '24h' });
-    res.json({ token, user: { id: user._id, name: user.name, email: user.email, phone: user.phone } });
+    const token = jwt.sign(
+      { id: user._id, email: user.email, phone: user.phone }, 
+      JWT_SECRET, 
+      { expiresIn: '24h' }
+    );
+
+    res.json({ 
+      token, 
+      user: { 
+        id: user._id, 
+        name: user.name, 
+        email: user.email, 
+        phone: user.phone, 
+        address: user.address, 
+        city: user.city, 
+        state: user.state, 
+        zipCode: user.zipCode, 
+        country: user.country 
+      } 
+    });
   } catch (err) {
     console.error('OTP Login error:', err);
-    res.status(500).json({ message: 'Server error' });
+    
+    // Specific handling for MongoDB duplicate key errors (code 11000)
+    if (err.code === 11000) {
+      const field = err.keyPattern ? Object.keys(err.keyPattern)[0] : 'record';
+      return res.status(400).json({ 
+        message: `${field.charAt(0).toUpperCase() + field.slice(1)} already exists. Choose a different one.` 
+      });
+    }
+    
+    res.status(500).json({ message: 'Server error. Please try again later.' });
   }
 });
 
@@ -275,7 +332,7 @@ router.post('/login', async (req, res) => {
     let user;
     const emailPattern = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
     if (emailPattern.test(identifier)) {
-      user = await User.findOne({ email: identifier });
+      user = await User.findOne({ email: identifier.toLowerCase() });
     } else {
       user = await User.findOne({ phone: identifier });
     }
@@ -287,7 +344,7 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
     const token = jwt.sign({ id: user._id, email: user.email }, JWT_SECRET, { expiresIn: '24h' });
-    res.json({ token, user: { id: user._id, name: user.name, email: user.email, phone: user.phone } });
+    res.json({ token, user: { id: user._id, name: user.name, email: user.email, phone: user.phone, address: user.address, city: user.city, state: user.state, zipCode: user.zipCode, country: user.country } });
   } catch (err) {
     console.error('Login error:', err);
     res.status(500).json({ message: 'Server error' });
@@ -301,7 +358,8 @@ router.post('/forgot-password', async (req, res) => {
     return res.status(400).json({ message: 'Email is required' });
   }
   try {
-    const user = await User.findOne({ email });
+    const normalizedEmail = email.toLowerCase();
+    const user = await User.findOne({ email: normalizedEmail });
     if (!user) {
       return res.status(400).json({ message: 'No user found with this email' });
     }
@@ -309,9 +367,9 @@ router.post('/forgot-password', async (req, res) => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 min
     // Save OTP and expiry in TempUser (or create if not exists)
-    let temp = await TempUser.findOne({ email });
+    let temp = await TempUser.findOne({ email: normalizedEmail });
     if (!temp) {
-      temp = await TempUser.create({ email, otp, otpExpires: expiresAt });
+      temp = await TempUser.create({ email: normalizedEmail, otp, otpExpires: expiresAt });
     } else {
       temp.otp = otp;
       temp.otpExpires = expiresAt;
@@ -320,7 +378,7 @@ router.post('/forgot-password', async (req, res) => {
 
     // Send OTP via email with new template
     try {
-      await sendOTPEmail(email, otp, user.name, 'password reset');
+      await sendOTPEmail(normalizedEmail, otp, user.name, 'password reset');
     } catch (mailErr) {
       console.error('Error sending password reset OTP email:', mailErr);
       // Don't fail the request if email fails
@@ -377,19 +435,29 @@ router.post('/logout', async (req, res) => {
 
 // PUT /update-profile (Protected)
 router.put('/update-profile', auth, async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, phone, address, city, state, zipCode, country } = req.body;
   try {
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     if (name) user.name = name;
-    if (email) user.email = email;
+    if (email) user.email = email.toLowerCase();
     if (password) user.password = password;
+    if (phone !== undefined) user.phone = phone;
+    if (address !== undefined) user.address = address;
+    if (city !== undefined) user.city = city;
+    if (state !== undefined) user.state = state;
+    if (zipCode !== undefined) user.zipCode = zipCode;
+    if (country !== undefined) user.country = country;
     await user.save();
 
-    return res.json({ message: 'Profile updated', user: { id: user._id, name: user.name, email } });
+    return res.json({ message: 'Profile updated', user: { id: user._id, name: user.name, email: user.email, phone: user.phone, address: user.address, city: user.city, state: user.state, zipCode: user.zipCode, country: user.country } });
   } catch (err) {
     console.error(err);
+    if (err.code === 11000) {
+      const field = err.keyPattern ? Object.keys(err.keyPattern)[0] : 'record';
+      return res.status(400).json({ message: `${field.charAt(0).toUpperCase() + field.slice(1)} already belongs to another account.` });
+    }
     res.status(500).json({ message: 'Error updating profile' });
   }
 });
@@ -414,6 +482,10 @@ router.post('/register-phone', async (req, res) => {
     return res.json({ message: 'Account created successfully! Please sign in.', user });
   } catch (err) {
     console.error('Register-phone error:', err);
+    if (err.code === 11000) {
+      const field = err.keyPattern ? Object.keys(err.keyPattern)[0] : 'record';
+      return res.status(400).json({ message: `${field.charAt(0).toUpperCase() + field.slice(1)} already exists.` });
+    }
     res.status(500).json({ message: 'Server error' });
   }
 });

@@ -459,10 +459,26 @@ exports.getPhonePeStatus = async (req, res) => {
 
       let authData = null;
       if (isCompleted) {
+        let addressObj = {};
+        try {
+          const Order = require('../models/Order');
+          const orderData = await Order.findOne({ transactionId: orderId });
+          if (orderData) {
+            addressObj = {
+              address: orderData.address,
+              city: orderData.city,
+              state: orderData.state,
+              zipCode: orderData.pincode,
+              country: orderData.country
+            };
+          }
+        } catch (err) {}
+
         authData = await autoLoginUser({
           email: response.data?.metaInfo?.udf2 || (response.data?.metaInfo?.email) || undefined,
           phone: response.data?.metaInfo?.udf3 || (response.data?.metaInfo?.phone) || undefined,
-          customerName: response.data?.metaInfo?.udf1 || (response.data?.metaInfo?.customerName) || 'User'
+          customerName: response.data?.metaInfo?.udf1 || (response.data?.metaInfo?.customerName) || 'User',
+          ...addressObj
         });
       }
 

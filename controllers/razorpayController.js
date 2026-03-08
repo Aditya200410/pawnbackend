@@ -375,7 +375,12 @@ exports.verifySignature = async (req, res) => {
                 const authData = await autoLoginUser({
                     email: order.email,
                     phone: order.phone,
-                    customerName: order.customerName
+                    customerName: order.customerName,
+                    address: order.address,
+                    city: order.city,
+                    state: order.state,
+                    zipCode: order.pincode,
+                    country: order.country
                 });
 
                 return res.json({
@@ -752,7 +757,12 @@ exports.getRazorpayStatus = async (req, res) => {
             authData = await autoLoginUser({
                 email: order.email,
                 phone: order.phone,
-                customerName: order.customerName
+                customerName: order.customerName,
+                address: order.address,
+                city: order.city,
+                state: order.state,
+                zipCode: order.pincode,
+                country: order.country
             });
         }
 
