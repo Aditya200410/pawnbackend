@@ -457,38 +457,8 @@ exports.getShippingInfo = async (req, res) => {
  * Returns list of available coupons
  */
 exports.getPromotions = async (req, res) => {
-    try {
-        const now = new Date();
-        const startOfToday = new Date();
-        startOfToday.setHours(0, 0, 0, 0);
-
-        const activeCoupons = await Coupon.find({
-            isActive: true,
-            startDate: { $lte: now },
-            endDate: { $gte: startOfToday }
-        }).lean();
-
-        const promotions = activeCoupons
-            .filter(coupon => coupon.usageLimit === null || coupon.usedCount < coupon.usageLimit)
-            .map(coupon => ({
-                id: coupon._id.toString(),
-                code: coupon.code,
-                name: coupon.code,
-                description: coupon.discountType === 'percentage'
-                    ? `Get ${coupon.discountValue}% off`
-                    : `Get ₹${coupon.discountValue} off`,
-                // ALWAYS use fixed_amount for list to avoid modal calculation bugs
-                value_type: 'fixed_amount',
-                offer_value: coupon.discountType === 'percentage' ? 0 : (coupon.discountValue * 100),
-                offer_amount: coupon.discountType === 'percentage' ? 0 : (coupon.discountValue * 100), // redundant Field for 1.4/1.5 mix
-                type: 'coupon'
-            }));
-
-        res.status(200).json({ promotions });
-    } catch (error) {
-        console.error('Magic Checkout Get Promotions Error:', error);
-        res.status(200).json({ promotions: [] });
-    }
+    // Promotions are disabled for Magic Checkout
+    res.status(200).json({ promotions: [] });
 };
 
 /**
@@ -496,124 +466,10 @@ exports.getPromotions = async (req, res) => {
  * Validates and applies a coupon code
  */
 exports.applyPromotion = async (req, res) => {
-    // START REQUEST LOGGING
-    const body = req.body || {};
-    const razorpay_order_id = body.order_id || body.razorpay_order_id || req.query.order_id;
-    const session_token = body.session_token || req.headers['x-session-token'];
-    const code = (body.code || body.coupon_code || body.promotion_code || '').toString().trim().toUpperCase();
-
-    console.log(`[MC_APPLY_START] Order: ${razorpay_order_id} | Session: ${session_token} | Code: ${code}`);
-    console.log(`[MC_APPLY_BODY] Full Body: ${JSON.stringify(body)}`);
-
-    try {
-        let amount_in_paise = Number(body.order_amount || body.amount || body.total_amount || 0);
-
-        if (!code) {
-            return res.status(200).json({
-                error: { code: 'INVALID_PROMOTION', description: 'Please verify the code and try again.' }
-            });
-        }
-
-        // 1. Order Lookup - Critical for Magic Checkout session validation
-        // Priority: Merchant Order (receipt) -> transactionId (razorpay_order_id)
-        if (amount_in_paise <= 0 && razorpay_order_id) {
-            const dbOrder = await Order.findOne({
-                $or: [
-                    { transactionId: razorpay_order_id },
-                    { merchantTransactionId: razorpay_order_id },
-                    { orderNumber: razorpay_order_id }
-                ]
-            }).select('totalAmount').lean();
-
-            if (dbOrder) {
-                amount_in_paise = Math.round(dbOrder.totalAmount * 100);
-                console.log(`[MC_APPLY] Found order in DB, amount: ${amount_in_paise}`);
-            }
-        }
-
-        // Safety check: if amount is still 0, we might have a session issue
-        if (amount_in_paise <= 0) {
-            console.log(`[MC_APPLY_WARNING] No order amount found for ID ${razorpay_order_id}. Manual coupon apply might be needed.`);
-        }
-
-        // 2. Coupon Lookup
-        const coupon = await Coupon.findOne({
-            code: code,
-            isActive: true,
-            startDate: { $lte: new Date() },
-            endDate: { $gte: new Date(new Date().setHours(0, 0, 0, 0)) }
-        }).lean();
-
-        if (!coupon) {
-            return res.status(200).json({
-                error: { code: 'INVALID_PROMOTION', description: 'The specified promotion code is not recognised or does not exist in the system.' }
-            });
-        }
-
-        // 3. Status Checks
-        if (coupon.usageLimit !== null && coupon.usedCount >= coupon.usageLimit) {
-            return res.status(200).json({
-                error: { code: 'INVALID_PROMOTION', description: 'This coupon has reached its usage limit.' }
-            });
-        }
-
-        if (amount_in_paise && amount_in_paise < (coupon.minPurchase * 100)) {
-            return res.status(200).json({
-                error: { code: 'REQUIREMENT_NOT_MET', description: `Review the promotion's terms. Minimum cart value of ₹${coupon.minPurchase} required.` }
-            });
-        }
-
-        if (!amount_in_paise && coupon.discountType === 'percentage') {
-            return res.status(200).json({
-                error: { code: 'REQUIREMENT_NOT_MET', description: 'Review the promotion\'s terms and adjust the cart contents accordingly.' }
-            });
-        }
-
-        // 4. Calculate Discount
-        let discount = 0;
-        const discountValue = Number(coupon.discountValue) || 0;
-        const maxDiscount = Number(coupon.maxDiscount) || 0;
-
-        if (coupon.discountType === 'percentage') {
-            discount = Math.round((amount_in_paise * discountValue) / 100);
-            if (maxDiscount > 0 && discount > (maxDiscount * 100)) {
-                discount = maxDiscount * 100;
-            }
-        } else {
-            discount = discountValue * 100;
-        }
-
-        // SANITY CHECK: discount should not exceed amount_in_paise
-        if (amount_in_paise > 0 && discount > amount_in_paise) {
-            discount = amount_in_paise;
-        }
-
-        const finalDiscount = Math.max(0, Math.round(discount) || 0);
-
-        // 5. Spec 1.4/1.5 Success Response
-        console.log(`[MC_APPLY_SUCCESS] Discount: ${finalDiscount} for Code: ${code}`);
-
-        return res.status(200).json({
-            status: 'success',
-            amount: finalDiscount, // For 1.4
-            offer_amount: finalDiscount, // For 1.5 early spec
-            promotion: {
-                id: coupon._id.toString(),
-                code: coupon.code,
-                offer_value: finalDiscount, // For 1.5 latest spec
-                offer_amount: finalDiscount, // For 1.5 older spec
-                value_type: 'fixed_amount',
-                type: 'coupon',
-                status: 'applied' // Spec 1.5 requirement
-            }
-        });
-
-    } catch (error) {
-        console.error('MAGIC_CHECKOUT_APPLY_PROMOTION_ERROR:', error);
-        return res.status(200).json({
-            error: { code: 'INVALID_PROMOTION', description: 'Something went wrong. Please check the code and try again.' }
-        });
-    }
+    // Promotions are disabled for Magic Checkout
+    return res.status(200).json({
+        error: { code: 'PROMOTIONS_DISABLED', description: 'Promotions are currently disabled for this checkout method.' }
+    });
 };
 
 /**
