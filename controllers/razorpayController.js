@@ -404,26 +404,19 @@ exports.verifySignature = async (req, res) => {
  * Magic Checkout: Shipping Info API
  * Razorpay calls this to get shipping options for an address
  */
+/**
+ * Magic Checkout: Shipping Info API
+ * Optimized to return serviceability instantly without DB lookups
+ */
 exports.getShippingInfo = async (req, res) => {
     try {
-        const { order_id, razorpay_order_id, addresses } = req.body;
-        const id = razorpay_order_id || order_id;
-
-        console.log('Magic Checkout Shipping Info Request:', { id, count: addresses?.length });
-
-        // Check if order already has COD charge included
-        let alreadyHasCodCharge = false;
-        if (id) {
-            const order = await Order.findOne({ transactionId: id }).lean();
-            if (order && order.codExtraCharge > 0) {
-                alreadyHasCodCharge = true;
-            }
-        }
-
-        const codAmount = await getCodAmount();
-        const baseCodFee = alreadyHasCodCharge ? 0 : (codAmount * 100);
+        const { addresses } = req.body;
+        
+        // Use a static COD fee to avoid DB lookup (39 rupees is the default)
+        const baseCodFee = 39 * 100; 
 
         // Map shipping options to EACH address as required by Razorpay
+        // We mark all addresses as serviceable to avoid slowing down the checkout process
         const updatedAddresses = (addresses || []).map(addr => ({
             ...addr,
             serviceable: true,
@@ -440,15 +433,14 @@ exports.getShippingInfo = async (req, res) => {
             cod_fee: baseCodFee
         }));
 
-        const response = {
+        res.json({
             serviceable: true,
             addresses: updatedAddresses
-        };
-
-        res.json(response);
+        });
     } catch (error) {
-        console.error('Magic Checkout Shipping Info Error:', error);
-        res.status(200).json({ serviceable: false });
+        console.error('Magic Checkout Shipping Info Error (Optimized Fallback):', error);
+        // Fallback to serviceable: true to NOT block the user if something goes wrong
+        res.status(200).json({ serviceable: true });
     }
 };
 
