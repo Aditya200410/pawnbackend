@@ -406,29 +406,29 @@ exports.verifySignature = async (req, res) => {
  */
 /**
  * Magic Checkout: Shipping Info API
- * Optimized to return serviceability instantly without DB lookups
+ * Optimized to return serviceability instantly
  */
 exports.getShippingInfo = async (req, res) => {
+    // Log for debugging
+    console.log(`[RAZORPAY_SERVICEABILITY] Check received at ${new Date().toISOString()}`);
+    
     try {
-        const { addresses } = req.body;
+        const { addresses = [] } = req.body;
         
-        // Use a static COD fee to avoid DB lookup (39 rupees is the default)
+        // Static COD fee for maximum speed (39 rupees)
         const baseCodFee = 39 * 100; 
 
-        // Map shipping options to EACH address as required by Razorpay
-        // We mark all addresses as serviceable to avoid slowing down the checkout process
-        const updatedAddresses = (addresses || []).map(addr => ({
+        // Mark every address as serviceable immediately
+        const updatedAddresses = addresses.map(addr => ({
             ...addr,
             serviceable: true,
-            shipping_options: [
-                {
-                    id: "standard",
-                    name: "Standard Shipping",
-                    amount: 0,
-                    currency: "INR",
-                    description: "3-5 business days"
-                }
-            ],
+            shipping_options: [{
+                id: "standard",
+                name: "Standard Shipping",
+                amount: 0,
+                currency: "INR",
+                description: "3-5 business days"
+            }],
             cod_available: true,
             cod_fee: baseCodFee
         }));
@@ -438,8 +438,7 @@ exports.getShippingInfo = async (req, res) => {
             addresses: updatedAddresses
         });
     } catch (error) {
-        console.error('Magic Checkout Shipping Info Error (Optimized Fallback):', error);
-        // Fallback to serviceable: true to NOT block the user if something goes wrong
+        console.error('[RAZORPAY_SERVICEABILITY] Error:', error);
         res.status(200).json({ serviceable: true });
     }
 };
