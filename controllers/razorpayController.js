@@ -403,10 +403,7 @@ exports.verifySignature = async (req, res) => {
 /**
  * Magic Checkout: Shipping Info API
  * Razorpay calls this to get shipping options for an address
- */
-/**
- * Magic Checkout: Shipping Info API
- * Optimized to return serviceability instantly
+ * Optimized to return serviceability instantly but with accurate data
  */
 exports.getShippingInfo = async (req, res) => {
     // Log for debugging
@@ -415,31 +412,36 @@ exports.getShippingInfo = async (req, res) => {
     try {
         const { addresses = [] } = req.body;
         
-        // Static COD fee for maximum speed (39 rupees)
-        const baseCodFee = 39 * 100; 
+        // Fetch COD upfront amount from settings for accuracy
+        const baseCodFeeAmount = await getCodAmount();
+        const baseCodFee = baseCodFeeAmount * 100; // in paise
 
         // Mark every address as serviceable immediately
         const updatedAddresses = addresses.map(addr => ({
             ...addr,
             serviceable: true,
+            shipping_fee: 0, // Standard shipping is free
+            shipping_method: "Standard Shipping",
+            cod_available: true,
+            cod_fee: baseCodFee,
             shipping_options: [{
                 id: "standard",
                 name: "Standard Shipping",
                 amount: 0,
                 currency: "INR",
                 description: "3-5 business days"
-            }],
-            cod_available: true,
-            cod_fee: baseCodFee
+            }]
         }));
 
         res.json({
-            serviceable: true,
             addresses: updatedAddresses
         });
     } catch (error) {
         console.error('[RAZORPAY_SERVICEABILITY] Error:', error);
-        res.status(200).json({ serviceable: true });
+        // Fallback to basic positive response to avoid blocking checkout
+        res.status(200).json({ 
+            addresses: (req.body.addresses || []).map(a => ({ ...a, serviceable: true, cod_available: true, shipping_fee: 0, cod_fee: 3900 }))
+        });
     }
 };
 
@@ -457,9 +459,13 @@ exports.getPromotions = async (req, res) => {
  * Validates and applies a coupon code
  */
 exports.applyPromotion = async (req, res) => {
-    // Promotions are disabled for Magic Checkout
+    // Promotions are disabled for Magic Checkout as requested
+    // We return a REQUIREMENT_NOT_MET as it's a valid Magic Checkout error code
     return res.status(200).json({
-        error: { code: 'PROMOTIONS_DISABLED', description: 'Promotions are currently disabled for this checkout method.' }
+        error: { 
+            code: 'REQUIREMENT_NOT_MET', 
+            description: 'Coupons are currently disabled for Magic Checkout calls. Please use the standard checkout for coupons.' 
+        }
     });
 };
 
