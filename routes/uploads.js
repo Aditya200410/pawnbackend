@@ -2,26 +2,70 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const fs = require('fs');
+const Jimp = require('jimp').Jimp;
 
 // Serve files from the uploads directory
-router.get('/*', (req, res) => {
+router.get('/*', async (req, res) => {
     // req.params[0] will contain the path after /api/uploads/
     const filePath = req.params[0];
-    const absolutePath = path.join(__dirname, '../public/uploads', filePath);
+    const absolutePath = path.normalize(path.join(__dirname, '../public/uploads', filePath));
 
     // Security: Prevent directory traversal
-    const uploadsRoot = path.join(__dirname, '../public/uploads');
+    const uploadsRoot = path.normalize(path.join(__dirname, '../public/uploads'));
     if (!absolutePath.startsWith(uploadsRoot)) {
         return res.status(403).json({ message: 'Access denied' });
     }
 
     // Check if file exists
-    if (fs.existsSync(absolutePath)) {
-        // Let express handle Content-Type based on extension
-        res.sendFile(absolutePath);
-    } else {
-        res.status(404).json({ message: 'File not found' });
+    if (!fs.existsSync(absolutePath)) {
+        return res.status(404).json({ message: 'File not found' });
     }
+
+    // Handle thumbnail request
+    if (req.query.thumbnail === 'true') {
+        try {
+            const ext = path.extname(absolutePath).toLowerCase();
+            // Skip non-image files
+            if (!['.jpg', '.jpeg', '.png', '.webp', '.gif'].includes(ext)) {
+                return res.sendFile(absolutePath);
+            }
+
+            const thumbnailDir = path.join(uploadsRoot, '.thumbnails');
+            if (!fs.existsSync(thumbnailDir)) {
+                fs.mkdirSync(thumbnailDir, { recursive: true });
+            }
+
+            // Create a unique cache filename based on original path
+            const cacheFilename = Buffer.from(filePath).toString('base64').replace(/[/+=]/g, '_') + '_thumb.jpg';
+            const cachePath = path.join(thumbnailDir, cacheFilename);
+
+            // Check if cached thumbnail exists and is not older than source
+            if (fs.existsSync(cachePath)) {
+                const sourceStat = fs.statSync(absolutePath);
+                const cacheStat = fs.statSync(cachePath);
+                if (cacheStat.mtime > sourceStat.mtime) {
+                    return res.sendFile(cachePath);
+                }
+            }
+
+            // Generate thumbnail
+            const image = await Jimp.read(absolutePath);
+            await image
+                .resize({ width: 50 }) // Small width for fast load
+                .quality(60) // Lower quality
+                .write(cachePath);
+
+            return res.sendFile(cachePath);
+        } catch (error) {
+            console.error('Thumbnail generation error:', error);
+            // Fallback to original image if generation fails
+            return res.sendFile(absolutePath);
+        }
+    }
+
+    // Serve original file
+    res.sendFile(absolutePath);
 });
 
 module.exports = router;
+
