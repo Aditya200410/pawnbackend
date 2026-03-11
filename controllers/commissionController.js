@@ -37,7 +37,7 @@ exports.getCommissionHistory = async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit)
-      .populate('orderId', 'orderNumber customerName')
+      .populate('orderId', 'orderNumber customerName orderStatus')
       .populate('withdrawalId', 'amount status')
       .populate('processedBy', 'name email');
 
@@ -338,7 +338,7 @@ exports.createCommissionEntry = async (orderId, sellerId, orderAmount, commissio
         commissionRate: agentRate,
         orderAmount,
         description,
-        status: 'confirmed',
+        status: 'pending',
         orderDetails: {
           orderNumber: order.orderNumber || `Order-${orderId}`,
           customerName: order.customerName || 'Unknown Customer',
@@ -357,9 +357,7 @@ exports.createCommissionEntry = async (orderId, sellerId, orderAmount, commissio
       if (agentId) {
         await Agent.findByIdAndUpdate(agentId, {
           $inc: {
-            totalCommission: agentCommissionAmount,
-            totalOrders: 1
-            // We can add pendingCommission logic here if status starts as pending
+            pendingCommission: agentCommissionAmount
           }
         });
       }
@@ -388,7 +386,7 @@ exports.createCommissionEntry = async (orderId, sellerId, orderAmount, commissio
       commissionRate: commissionRate !== null ? commissionRate : sellerRate,
       orderAmount,
       description: sellerDescription,
-      status: 'confirmed',
+      status: 'pending',
       orderDetails: {
         orderNumber: order.orderNumber || `Order-${orderId}`,
         customerName: order.customerName || 'Unknown Customer',
@@ -404,10 +402,15 @@ exports.createCommissionEntry = async (orderId, sellerId, orderAmount, commissio
     await sellerEntry.save();
     createdEntries.push(sellerEntry);
 
-    // Update order's commission field for easy reference
+    // Update order's commission fields for easy reference
+    order.sellerId = sellerId;
+    order.agentId = agentId;
+    order.sellerCommission = sellerCommissionAmount;
+    order.agentCommission = agentCommissionAmount;
     order.commission = sellerCommissionAmount + agentCommissionAmount;
     await order.save();
 
+    /*
     // Update seller's commission totals
     const seller = await Seller.findById(sellerId);
     if (seller) {
@@ -417,6 +420,7 @@ exports.createCommissionEntry = async (orderId, sellerId, orderAmount, commissio
     } else {
       console.error('Seller not found for ID:', sellerId);
     }
+    */
 
     return createdEntries;
 
@@ -494,7 +498,7 @@ exports.getAgentCommissionHistory = async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit)
-      .populate('orderId', 'orderNumber customerName');
+      .populate('orderId', 'orderNumber customerName orderStatus');
 
     const total = await CommissionHistory.countDocuments(query);
 
@@ -653,4 +657,56 @@ exports.recalculateSellerCommission = async (sellerId) => {
     console.error('Error recalculating seller commission:', error);
     throw error;
   }
-}; 
+};
+
+// Confirm commission by order ID (called when order status becomes 'delivered')
+exports.confirmCommissionByOrder = async (orderId) => {
+  try {
+    const CommissionHistory = require('../models/CommissionHistory');
+    const Seller = require('../models/Seller');
+    const Agent = require('../models/Agent');
+
+    const commissions = await CommissionHistory.find({
+      orderId,
+      status: 'pending'
+    });
+
+    if (commissions.length === 0) {
+      console.log(`No pending commissions found for order ${orderId}`);
+      return;
+    }
+
+    for (const commission of commissions) {
+      commission.status = 'confirmed';
+      commission.confirmedAt = new Date();
+      await commission.save();
+
+      if (commission.agentId) {
+        // Update Agent totals
+        await Agent.findByIdAndUpdate(commission.agentId, {
+          $inc: {
+            totalCommission: commission.amount,
+            totalOrders: 1,
+            pendingCommission: -commission.amount
+          }
+        });
+      } else if (commission.sellerId) {
+        // Update Seller totals
+        const seller = await Seller.findById(commission.sellerId);
+        if (seller) {
+          seller.totalCommission = (seller.totalCommission || 0) + commission.amount;
+          seller.totalOrders = (seller.totalOrders || 0) + 1;
+          await seller.save();
+          
+          // Also recalculate available commission
+          await exports.recalculateSellerCommission(seller._id);
+        }
+      }
+    }
+
+    console.log(`Confirmed ${commissions.length} commissions for order ${orderId}`);
+  } catch (error) {
+    console.error('Error confirming commission by order:', error);
+    throw error;
+  }
+};

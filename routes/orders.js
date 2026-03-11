@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const { createOrder, getOrdersByEmail, getOrderById, sendOrderStatusUpdateEmail, requestReplacement } = require('../controllers/orderController');
 const { authenticateToken, isAdmin } = require('../middleware/auth');
+const commissionController = require('../controllers/commissionController');
 
 const ordersFilePath = path.join(__dirname, '../data/orders.json');
 
@@ -48,7 +49,9 @@ router.get('/json', authenticateToken, isAdmin, async (req, res) => {
         // Show COD orders unless they explicitly failed (e.g. upfront payment failed)
         { paymentMethod: 'cod', paymentStatus: { $ne: 'failed' } }
       ]
-    }).sort({ createdAt: -1 });
+    }).sort({ createdAt: -1 })
+      .populate('sellerId', 'businessName email')
+      .populate('agentId', 'name email personalAgentCode');
     res.json({ success: true, orders });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch orders from MongoDB', error: error.message });
@@ -92,6 +95,11 @@ router.put("/:id/status", authenticateToken, isAdmin, async (req, res) => {
 
     // Send status update email (non-blocking)
     sendOrderStatusUpdateEmail(updatedOrder).catch(err => console.error('Order status update email error:', err));
+
+    // If status is updated to delivered, confirm commissions
+    if (orderStatus === 'delivered' || orderStatus === 'delivered_replacement') {
+      commissionController.confirmCommissionByOrder(id).catch(err => console.error('Error confirming commission on deliver:', err));
+    }
 
     res.json({ success: true, order: updatedOrder });
   } catch (error) {
@@ -147,6 +155,10 @@ router.put("/:id", authenticateToken, isAdmin, async (req, res) => {
       writeOrders(orders);
     }
     */
+    // If status is updated to delivered, confirm commissions
+    if (updateData.orderStatus === 'delivered' || updateData.orderStatus === 'delivered_replacement') {
+      commissionController.confirmCommissionByOrder(id).catch(err => console.error('Error confirming commission on deliver:', err));
+    }
 
     res.json({ success: true, order: updatedOrder });
   } catch (error) {
