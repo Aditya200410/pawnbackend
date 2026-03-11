@@ -21,13 +21,19 @@ router.get('/*', async (req, res) => {
         return res.status(404).json({ message: 'File not found' });
     }
 
+    // Cache options: 7 days
+    const cacheOptions = {
+        maxAge: '7d',
+        immutable: true
+    };
+
     // Handle thumbnail request
     if (req.query.thumbnail === 'true') {
         try {
             const ext = path.extname(absolutePath).toLowerCase();
             // Skip non-image files
             if (!['.jpg', '.jpeg', '.png', '.webp', '.gif'].includes(ext)) {
-                return res.sendFile(absolutePath);
+                return res.sendFile(absolutePath, cacheOptions);
             }
 
             const thumbnailDir = path.join(uploadsRoot, '.thumbnails');
@@ -43,28 +49,28 @@ router.get('/*', async (req, res) => {
             if (fs.existsSync(cachePath)) {
                 const sourceStat = fs.statSync(absolutePath);
                 const cacheStat = fs.statSync(cachePath);
-                if (cacheStat.mtime > sourceStat.mtime) {
-                    return res.sendFile(cachePath);
+                if (cacheStat.mtime >= sourceStat.mtime) {
+                    return res.sendFile(cachePath, cacheOptions);
                 }
             }
 
-            // Generate thumbnail
+            // Generate thumbnail using Jimp
             const image = await Jimp.read(absolutePath);
             await image
-                .resize({ width: 50 }) // Small width for fast load
-                .quality(60) // Lower quality
+                .resize({ width: 80 }) // Slightly larger for better 'blurred' look
+                .quality(50) // Lower quality for very small file size
                 .write(cachePath);
 
-            return res.sendFile(cachePath);
+            return res.sendFile(cachePath, cacheOptions);
         } catch (error) {
             console.error('Thumbnail generation error:', error);
             // Fallback to original image if generation fails
-            return res.sendFile(absolutePath);
+            return res.sendFile(absolutePath, cacheOptions);
         }
     }
 
-    // Serve original file
-    res.sendFile(absolutePath);
+    // Serve original file with caching
+    res.sendFile(absolutePath, cacheOptions);
 });
 
 module.exports = router;
