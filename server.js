@@ -192,7 +192,6 @@ app.post(['/razorpay/get-promotions', '/api/razorpay/get-promotions', '/v1/magic
 app.post(['/razorpay/shipping-info', '/api/razorpay/shipping-info', '/v1/magic_checkout/merchant/shipping-info', '/api/v1/magic_checkout/merchant/shipping-info'], razorpayController.getShippingInfo);
 
 app.use('/api/payment', paymentRoutes);
-app.use('/api/api/payment', paymentRoutes);
 app.use('/api', paymentRoutes);
 
 // Comprehensive fallback for ANY path containing razorpay

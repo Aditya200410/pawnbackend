@@ -10,16 +10,16 @@ router.get('/razorpay/status/:orderId', razorpayController.getRazorpayStatus);
 // Magic Checkout Mandatory Endpoints (Public)
 router.post('/razorpay/shipping-info', razorpayController.getShippingInfo);
 router.post('/v1/magic_checkout/merchant/shipping-info', razorpayController.getShippingInfo);
-router.get('/razorpay/shipping-info', (req, res) => res.status(200).json({ message: "Magic Checkout Shipping API is active. Please use POST and 'api/api' path." }));
+router.get('/razorpay/shipping-info', (req, res) => res.status(200).json({ message: "Magic Checkout Shipping API is active. Please use POST and 'api' path." }));
 
 router.post('/razorpay/get-promotions', razorpayController.getPromotions);
 router.post('/v1/magic_checkout/merchant/promotions', razorpayController.getPromotions);
-router.get('/razorpay/get-promotions', (req, res) => res.status(200).json({ message: "Magic Checkout Promotions API is active. Please use POST and 'api/api' path." }));
+router.get('/razorpay/get-promotions', (req, res) => res.status(200).json({ message: "Magic Checkout Promotions API is active. Please use POST and 'api' path." }));
 
 // Magic Checkout Apply API (Public)
 router.post('/razorpay/apply-promotion', razorpayController.applyPromotion);
 router.post('/v1/magic_checkout/merchant/coupon/apply', razorpayController.applyPromotion);
-router.get('/razorpay/apply-promotion', (req, res) => res.status(200).json({ message: "Magic Checkout Apply API is active. Please use POST and 'api/api' path." }));
+router.get('/razorpay/apply-promotion', (req, res) => res.status(200).json({ message: "Magic Checkout Apply API is active. Please use POST and 'api' path." }));
 
 // Razorpay Webhook
 router.post('/razorpay/webhook', razorpayController.handleWebhook);
