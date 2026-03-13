@@ -38,14 +38,17 @@ const uploadFiles = upload.fields([
   { name: 'video', maxCount: 1 }
 ]);
 
-// Middleware to handle multer upload
 const handleUpload = (req, res, next) => {
+  console.log('Multer handleUpload called');
   uploadFiles(req, res, function (err) {
     if (err instanceof multer.MulterError) {
+      console.error('Multer error:', err);
       return res.status(400).json({ error: 'File upload error', details: err.message });
     } else if (err) {
+      console.error('Unexpected upload error:', err);
       return res.status(500).json({ error: 'File upload error', details: err.message });
     }
+    console.log('Multer upload successful');
     next();
   });
 };
